@@ -1,0 +1,1 @@
+select 'db_check_block_corruption' as "db_check_block_corruption",file#,block# from v$database_block_corruption;

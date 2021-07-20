@@ -1,0 +1,1 @@
+select 'db_check_archive_mode' as "db_check_archive_mode",log_mode from v$database;
