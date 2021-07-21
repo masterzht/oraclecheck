@@ -5,7 +5,7 @@ select 'db_check_' as "db_check_",
        round((e.value - b.value) / 1000 / 1000, 2) as "Time (s)",
        round(((e.value - b.value) *100 / 1000 / 1000) / (select (new.value-old.value)/1000/1000  from wrh$_sys_time_model new,
 wrh$_sys_time_model old,wrh$_stat_name n
-where new.snap_id = (select max(snap_id)  as bid from dba_hist_snapshot)
+where new.snap_id = (select max(snap_id) as bid from dba_hist_snapshot)
 and   old.snap_id = (select max(snap_id) -1 as bid from dba_hist_snapshot)
 and  new.stat_id= n.stat_id
 and new.stat_id=old.stat_id
