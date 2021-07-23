@@ -1,4 +1,4 @@
-# 6.7 segments by physical read
+# 6.7 segments by physical reads
 select
        'db_check_' as "db_check_"
      , n.owner
