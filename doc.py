@@ -26,7 +26,7 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
     print(f"正在巡检{business_name}系统, 请耐心等待...")
 
     db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, \
-    db_recovery, archive_mode, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads,\
+    db_recovery, archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads,\
     sql_ordered_by_reads, instance_info, memory_info, \
     user_expire_days, backup_info, db_top_activity, index_no_foreignkey, big_table_no_index, \
     database_patch, block_corruption, alert_check \
@@ -99,7 +99,9 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
                'log_frequency': log_frequency,
                # 3.6 闪回区
                'db_recovery': db_recovery,
+               # 5.4 dba privs
 
+               'dba_privs': dba_privs,
                # 6.2 load profile
                'load_profile': load_profile,
                # 6.3 time model

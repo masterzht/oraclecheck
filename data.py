@@ -320,6 +320,9 @@ def get_local_info(oracle_home, sqlplus_path):
 
     # 3.7
     archive_mode = get_local_all(oracle_home, sqlplus_path, "archive_mode")
+
+    dba_privs = get_local_all(oracle_home, sqlplus_path, "dba_privs")
+
     # 6.2 load profile
     load_profile = get_local_all(oracle_home, sqlplus_path, "load_profile")
     # 6.3 time model
@@ -347,7 +350,7 @@ def get_local_info(oracle_home, sqlplus_path):
     alert_check = get_local_all(oracle_home, sqlplus_path, "alert_check")
 
     return db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, db_recovery, \
-           archive_mode, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
+           archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
            sql_ordered_by_reads,\
            instance_info, memory_info, user_expire_days, backup_info, db_top_activity, index_no_foreignkey, \
            big_table_no_index, database_patch, block_corruption, alert_check
