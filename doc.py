@@ -63,6 +63,8 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
                'hostname': remove_last_line(command_local('hostname')),
                'ipfrag_low': remove_last_line(command_local('cat /proc/sys/net/ipv4/ipfrag_low_thresh')),
                'ipfrag_high': remove_last_line(command_local('cat /proc/sys/net/ipv4/ipfrag_high_thresh')),
+               'open_files': remove_last_line(command_local("""ulimit -a | grep files | awk '{print $4}'""")),
+               'max_user_processes': remove_last_line(command_local("""ulimit -a | grep processes | awk '{print $5}'""")),
 
                # 1.2 系统内存参数
                'os_param': os_param,
