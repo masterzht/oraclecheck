@@ -334,12 +334,13 @@ def get_local_info(oracle_home, sqlplus_path):
 
     # 6.11
     sql_ordered_by_reads = get_local_all(oracle_home, sqlplus_path, "sql_ordered_by_reads")
+    # 7.1 backup_info
+    backup_info = get_local_all(oracle_home, sqlplus_path, "backup_info")
 
     instance_info = get_local_all(oracle_home, sqlplus_path, "instance_info")
     memory_info = get_local_all(oracle_home, sqlplus_path, "memory_info")
 
     user_expire_days = get_local_all(oracle_home, sqlplus_path, "user_expire_days")
-    backup_info = get_local_all(oracle_home, sqlplus_path, "backup_info")
     db_top_activity = get_local_all(oracle_home, sqlplus_path, "db_top_activity")
     index_no_foreignkey = get_local_all(oracle_home, sqlplus_path, "index_no_foreignkey")
     big_table_no_index = get_local_all(oracle_home, sqlplus_path, "big_table_no_index")
@@ -351,6 +352,7 @@ def get_local_info(oracle_home, sqlplus_path):
 
     return db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, db_recovery, \
            archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
-           sql_ordered_by_reads,\
-           instance_info, memory_info, user_expire_days, backup_info, db_top_activity, index_no_foreignkey, \
+           sql_ordered_by_reads, backup_info, \
+           instance_info, memory_info, user_expire_days, db_top_activity, index_no_foreignkey, \
            big_table_no_index, database_patch, block_corruption, alert_check
+

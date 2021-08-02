@@ -27,8 +27,8 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
 
     db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, \
     db_recovery, archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads,\
-    sql_ordered_by_reads, instance_info, memory_info, \
-    user_expire_days, backup_info, db_top_activity, index_no_foreignkey, big_table_no_index, \
+    sql_ordered_by_reads, backup_info, instance_info, memory_info, \
+    user_expire_days, db_top_activity, index_no_foreignkey, big_table_no_index, \
     database_patch, block_corruption, alert_check \
         = get_local_info(oracle_home, sqlplus_path)
 
@@ -112,10 +112,11 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
                # segments by logical reads
                'segments_by_logical_reads': segments_by_logical_reads,
                # segments by logical reads
-               'segments_by_physical_reads':segments_by_physical_reads,
+               'segments_by_physical_reads': segments_by_physical_reads,
                # 6.11
                'sql_ordered_by_reads': sql_ordered_by_reads,
-
+               # 7.1 backup_info
+               'backup_info': backup_info,
                # 8.0 错误日志检查
                'alert_check': alert_check,
                }
