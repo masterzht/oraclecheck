@@ -337,7 +337,7 @@ def get_local_info(oracle_home, sqlplus_path):
 
     # 6.11
     sql_ordered_by_reads = get_local_all(oracle_home, sqlplus_path, "sql_ordered_by_reads")
-    #6.12 db_top_activity
+    # 6.12db_top_activity
     db_top_activity = get_local_all(oracle_home, sqlplus_path, "db_top_activity")
 
     # 7.1 backup_info
