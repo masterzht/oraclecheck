@@ -26,10 +26,10 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
     print(f"正在巡检{business_name}系统, 请耐心等待...")
 
     db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, \
-    db_recovery, archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads,\
-    sql_ordered_by_reads, backup_info, instance_info, memory_info, \
-    user_expire_days, db_top_activity, index_no_foreignkey, big_table_no_index, \
-    database_patch, block_corruption, alert_check \
+    db_recovery, archive_mode, dba_privs, database_patch, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads,\
+    sql_ordered_by_reads, db_top_activity, backup_info, instance_info, memory_info, \
+    user_expire_days, index_no_foreignkey, big_table_no_index, \
+    block_corruption, alert_check \
         = get_local_info(oracle_home, sqlplus_path)
 
     os_set = command_local("cat /proc/meminfo |grep -E 'Mem|Cache|Swap|Huge'").replace(":", "").replace("kB", "").split(
@@ -102,8 +102,10 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
                # 3.6 闪回区
                'db_recovery': db_recovery,
                # 5.4 dba privs
-
                'dba_privs': dba_privs,
+
+               # 5.11 database patch 数据库补丁信息
+               'database_patch': database_patch,
                # 6.2 load profile
                'load_profile': load_profile,
                # 6.3 time model
@@ -115,6 +117,8 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
                'segments_by_physical_reads': segments_by_physical_reads,
                # 6.11
                'sql_ordered_by_reads': sql_ordered_by_reads,
+               # 6.11
+               'db_top_activity': db_top_activity,
                # 7.1 backup_info
                'backup_info': backup_info,
                # 8.0 错误日志检查

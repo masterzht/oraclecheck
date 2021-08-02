@@ -323,6 +323,9 @@ def get_local_info(oracle_home, sqlplus_path):
 
     dba_privs = get_local_all(oracle_home, sqlplus_path, "dba_privs")
 
+    # 5.11 数据库补丁信息
+    database_patch = get_local_all(oracle_home, sqlplus_path, "database_patch")
+
     # 6.2 load profile
     load_profile = get_local_all(oracle_home, sqlplus_path, "load_profile")
     # 6.3 time model
@@ -334,6 +337,9 @@ def get_local_info(oracle_home, sqlplus_path):
 
     # 6.11
     sql_ordered_by_reads = get_local_all(oracle_home, sqlplus_path, "sql_ordered_by_reads")
+    #6.12 db_top_activity
+    db_top_activity = get_local_all(oracle_home, sqlplus_path, "db_top_activity")
+
     # 7.1 backup_info
     backup_info = get_local_all(oracle_home, sqlplus_path, "backup_info")
 
@@ -341,18 +347,16 @@ def get_local_info(oracle_home, sqlplus_path):
     memory_info = get_local_all(oracle_home, sqlplus_path, "memory_info")
 
     user_expire_days = get_local_all(oracle_home, sqlplus_path, "user_expire_days")
-    db_top_activity = get_local_all(oracle_home, sqlplus_path, "db_top_activity")
     index_no_foreignkey = get_local_all(oracle_home, sqlplus_path, "index_no_foreignkey")
     big_table_no_index = get_local_all(oracle_home, sqlplus_path, "big_table_no_index")
-    database_patch = get_local_all(oracle_home, sqlplus_path, "database_patch")
     block_corruption = get_local_all(oracle_home, sqlplus_path, "block_corruption")
 
     # 告警日志
     alert_check = get_local_all(oracle_home, sqlplus_path, "alert_check")
 
     return db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, db_recovery, \
-           archive_mode, dba_privs, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
+           archive_mode, dba_privs, database_patch, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
            sql_ordered_by_reads, backup_info, \
            instance_info, memory_info, user_expire_days, db_top_activity, index_no_foreignkey, \
-           big_table_no_index, database_patch, block_corruption, alert_check
+           big_table_no_index, block_corruption, alert_check
 

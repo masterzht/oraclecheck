@@ -30,7 +30,7 @@ round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
 where a.SAMPLE_TIME between (sysdate - 1) and sysdate)
 select x.* from (
 SELECT
---'db_check_db_top_activity' as "db_check_db_top_activity",
+'db_check_db_top_activity' as "db_check_db_top_activity",
 sql_id,
 CAST (round( 100.0 * COUNT(*) / (select count(*) from tmp) , 2 ) AS REAL ) ratio,
 CAST (round( 10.0 * COUNT(*) / (select count(*) from tmp) , 2 ) AS REAL ) average_active_session,
