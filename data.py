@@ -356,7 +356,7 @@ def get_local_info(oracle_home, sqlplus_path):
 
     return db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, db_recovery, \
            archive_mode, dba_privs, database_patch, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
-           sql_ordered_by_reads, backup_info, \
-           instance_info, memory_info, user_expire_days, db_top_activity, index_no_foreignkey, \
+           sql_ordered_by_reads, db_top_activity, backup_info, \
+           instance_info, memory_info, user_expire_days, index_no_foreignkey, \
            big_table_no_index, block_corruption, alert_check
 
