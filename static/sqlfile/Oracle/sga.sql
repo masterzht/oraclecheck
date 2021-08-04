@@ -1,5 +1,5 @@
 select
-       'db_check' as "db_check",
+       'db_check_' as "db_check_",
        COMPONENT,
        round(CURRENT_SIZE/1024/1024/1024,2) as CURRENT_G,
        round(MIN_SIZE/1024/1024/1024,2) MIN_G,

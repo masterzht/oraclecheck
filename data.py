@@ -362,3 +362,5 @@ def get_local_info(oracle_home, sqlplus_path):
            instance_info, memory_info, user_expire_days, index_no_foreignkey, \
            big_table_no_index, block_corruption, alert_check
 
+
+print(get_local_all('/u01/app/oracle/product/11.2.0/db_1','/u01/app/oracle/product/11.2.0/db_1/bin/sqlplus', "sga"))
