@@ -326,6 +326,8 @@ def get_local_info(oracle_home, sqlplus_path):
     # 5.11 数据库补丁信息
     database_patch = get_local_all(oracle_home, sqlplus_path, "database_patch")
 
+    # 6.1
+    sga = get_local_all(oracle_home, sqlplus_path, "sga")
     # 6.2 load profile
     load_profile = get_local_all(oracle_home, sqlplus_path, "load_profile")
     # 6.3 time model
@@ -355,7 +357,7 @@ def get_local_info(oracle_home, sqlplus_path):
     alert_check = get_local_all(oracle_home, sqlplus_path, "alert_check")
 
     return db_info, db_parameter, resource_limit, db_load, db_disk_group, db_space, redo, log_frequency, db_recovery, \
-           archive_mode, dba_privs, database_patch, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
+           archive_mode, dba_privs, database_patch, sga, load_profile, time_model, segments_by_logical_reads, segments_by_physical_reads, \
            sql_ordered_by_reads, db_top_activity, backup_info, \
            instance_info, memory_info, user_expire_days, index_no_foreignkey, \
            big_table_no_index, block_corruption, alert_check
