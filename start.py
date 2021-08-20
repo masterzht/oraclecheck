@@ -31,6 +31,9 @@ def get_server_info(company_name, engineer_name, customer_name, customer_name2):
                     get_local_doc(company_name, engineer_name, customer_name, customer_name2, info_list[0],
                                   info_list[1], info_list[2])
                     break
+                else:
+                    print("请确认路径是否正确...")
+                    print("本次巡检失败,请重新开始...")
 
 
 def main():
