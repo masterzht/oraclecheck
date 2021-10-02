@@ -7,5 +7,5 @@
 ## 测试11g环境
 
 # 82.156.115.176  root Ss8866@123 22 system oracle 1521 aa 测试库oracle11g
-/u01/app/oracle/product/11.2.0/db_1  /u01/app/oracle/product/11.2.0/db_1/bin/sqlplus  人事OA系统
+/home/oracle  /home/oracle/bin/sqlplus  人事OA系统
 
