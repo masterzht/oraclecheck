@@ -1,0 +1,143 @@
+SQL> REM
+SQL> REM $Header: sqlhc.sql 2021/03/05 scharala $
+SQL> REM
+SQL> REM Copyright (c) 2000-2019, Oracle Corporation. All rights reserved.
+SQL> REM
+SQL> REM NAME
+SQL> REM   sqlhc.sql SQL Health-Check script for one SQL ID.
+SQL> REM
+SQL> REM DESCRIPTION
+SQL> REM   Produces multiple HTML/Text reports with a list of observations and other information
+SQL> REM   based on health-checks performed in and around a SQL statement that
+SQL> REM   may be performing poorly.
+SQL> REM
+SQL> REM   Inputs: A memory-resident SQL_ID.
+SQL> REM
+SQL> REM NOTES
+SQL> REM
+SQL> REM   In addition to the health_check report, it generates some
+SQL> REM   additional diagnostics files regarding SQL performance.
+SQL> REM
+SQL> REM   This script does not install any objects in the database.
+SQL> REM   It does not perform any DDL commands.
+SQL> REM   It only performs DML commands against the PLAN_TABLE then it
+SQL> REM   rolls back those temporary inserts.
+SQL> REM   It can be used in Dataguard or any read-only database.
+SQL> REM
+SQL> REM   1. For possible errors see sqlhc.log.
+SQL> REM   2. If site has both Tuning and Diagnostics licenses then
+SQL> REM      specified T (Oracle Tuning pack includes Oracle Diagnostics)
+SQL> REM   3. On a read-only instance, the "Observations" section with the
+SQL> REM      results of the health-checks will be missing.
+SQL> REM
+SQL> REM PRE-REQUISITES
+SQL> REM   1. Execute as SYS or user with DBA role or user with access
+SQL> REM      to data dictionary views.
+SQL> REM   2. The SQL for which this script is executed must be
+SQL> REM      memory-resident.
+SQL> REM
+SQL> REM PARAMETERS
+SQL> REM   1. Oracle Pack license (Tuning or Diagnostics or None) T|D|N
+SQL> REM   2. SQL_ID of interest.
+SQL> REM
+SQL> REM EXECUTION
+SQL> REM   1. Start SQL*Plus connecting as SYS or user with DBA role or
+SQL> REM      user with access to data dictionary views.
+SQL> REM   2. Execute script sqlhc.sql passing values for parameters.
+SQL> REM
+SQL> REM EXAMPLE
+SQL> REM   # sqlplus / as sysdba
+SQL> REM   SQL> START [path]sqlhc.sql [T|D|N] [SQL_ID]
+SQL> REM   SQL> START sqlhc.sql T 51x6yr9ym5hdc
+SQL> REM
+SQL> REM MODIFIED (03/05/2021)
+SQL> REM scharala 03/05/2021 - Fixed bugs relating to dbms_xplan and calling from TFA
+SQL> REM scharala 03/19/2021 - Reduced messages relating to CP/COP MV/RENAME on Windows / Linux
+SQL> REM csierra  Created
+SQL> 
+SQL> @@?/rdbms/admin/sqlsessstart.sql
+SP2-0310: unable to open file "/u01/app/oracle/product/11.2.0/db_1/rdbms/admin/sqlsessstart.sql"
+SQL> REM
+SQL> DEF health_checks = 'Y';
+SQL> DEF shared_cursor = 'N';
+SQL> DEF sql_monitor_reports = '12';
+SQL> REM
+SQL> DEF script = 'sqlhc';
+SQL> DEF method = 'SQLHC';
+SQL> DEF mos_doc = '1366133.1';
+SQL> DEF doc_ver = '12.1.07';
+SQL> DEF doc_date = '2019/04/21';
+SQL> -- sqldx_output: HTML/CSV/BOTH/NONE
+SQL> DEF sqldx_output = 'CSV';
+SQL> 
+SQL> /**************************************************************************************************/
+SQL> 
+SQL> EXEC DBMS_APPLICATION_INFO.SET_MODULE(module_name => '^^method. ^^doc_ver.', action_name => '^^script..sql');
+
+PL/SQL procedure successfully completed.
+
+SQL> EXEC DBMS_APPLICATION_INFO.SET_CLIENT_INFO(client_info => '^^method.');
+
+PL/SQL procedure successfully completed.
+
+SQL> VAR health_checks CHAR(1);
+SQL> EXEC :health_checks := '^^health_checks.';
+
+PL/SQL procedure successfully completed.
+
+SQL> VAR shared_cursor CHAR(1);
+SQL> EXEC :shared_cursor := '^^shared_cursor.';
+
+PL/SQL procedure successfully completed.
+
+SQL> SET TERM ON ECHO OFF;
+
+Parameter 1:
+Oracle Pack License (Tuning, Diagnostics or None) [T|D|N] (required)
+
+Enter value for 1: T
+
+
+L                                                                               
+-                                                                               
+T                                                                               
+
+
+PL/SQL procedure successfully completed.
+
+
+UNIQUE_ID                                                                       
+---------------                                                                 
+20210617_2038                                                                   
+
+
+PL/SQL procedure successfully completed.
+
+
+Parameter 2:
+SQL_ID of the SQL to be analyzed (required)
+
+Enter value for 2: 
+
+Values passed:
+License: "T"
+SQL_ID : ""
+
+
+      DBID                                                                      
+----------                                                                      
+2296151918                                                                      
+
+
+no rows selected
+
+
+PL/SQL procedure successfully completed.
+
+BEGIN
+*
+ERROR at line 1:
+ORA-20200: SQL_ID "" not found in memory nor in AWR. 
+ORA-06512: at line 4 
+
+
