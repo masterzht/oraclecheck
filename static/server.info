@@ -6,6 +6,6 @@
 
 ## 测试11g环境
 
-# 82.156.115.176  root Ss8866@123 22 system oracle 1521 aa 测试库oracle11g
-/home/oracle  /home/oracle/bin/sqlplus  人事OA系统
+82.156.115.176  root Ss8866@123 22 system Ss8866@123 1521 orcl 测试库oracle19c
+#/home/oracle  /home/oracle/bin/sqlplus  人事OA系统
 
