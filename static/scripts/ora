@@ -87,7 +87,7 @@ usage()
       - ashtop | topash
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
-      - awrsq [bid] [eid] [sql_id]             ora awrsq bid eid sql_id (all nodes), display awrsqrpt html and text information
+      - awrsqrpt [bid] [eid] [sql_id]             ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
                              
@@ -8626,7 +8626,7 @@ fi
 
 #####################################################################################################
 
-if [ "$1" = "awrsq" ]; then
+if [ "$1" = "awrsqrpt" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
      sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -9842,9 +9842,30 @@ if [ "$1" = "x" ]; then
 
     set linesize 200 pagesize 600
     set tab      off
+    col PARSING_SCHEMA_NAME for a20
     col plan_table format a180
+    col inst# for 99999
     Pro Display sql execution plan in AWR:
     select * from table(dbms_xplan.display_awr('$sqlid',format=>'advanced -PROJECTION'));
+    prompt ####################################################################
+    prompt Display current sql dba_his_sqlstat Information
+    prompt ####################################################################
+    select  instance_number as inst#,
+    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    plan_hash_value as plan_hash_value,
+    OPTIMIZER_COST,
+    PARSING_SCHEMA_NAME,
+    executions_delta "total_executions",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
+    trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
+    trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
+    trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
+    from
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    prompt ####################################################################
+    prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO    
 !
   exit 0
@@ -9866,14 +9887,34 @@ if [ "$1" = "xp" ]; then
 
     set pagesize 200
     set tab      off
-    set linesize 150
+    set linesize 350
+    col PARSING_SCHEMA_NAME for a20
+    col inst# for 99999
     set echo off
     repfooter off;
     Pro Display sql execution plan in Cursor (memory) :
     select * from table(dbms_xplan.display_cursor('$2', null, 'advanced -bytes -PROJECTION allstats last'));
+    prompt ####################################################################
+    prompt Display current sql dba_his_sqlstat Information
+    prompt ####################################################################
+    select  instance_number as inst#,
+    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    plan_hash_value as plan_hash_value,
+    OPTIMIZER_COST,
+    PARSING_SCHEMA_NAME,
+    executions_delta "total_executions",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
+    trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
+    trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
+    trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
+    from
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    prompt ####################################################################
+    prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
 !
-echo "current instance"
 exit 0
 
 fi
@@ -9897,7 +9938,8 @@ if [ "$1" = "xpo" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-     
+    col PARSING_SCHEMA_NAME for a20
+    col inst# for 99999
     set verify off
     set define on 
     --set linesize 150 pagesize 200
@@ -9985,7 +10027,26 @@ if [ "$1" = "xpo" ]; then
                                              '  - XPlan v&v_xc_version by Adrian Billington (http://www.oracle-developer.net)'
                                      end 
              )
-    order  by r;
+    order by r;
+    prompt ####################################################################
+    prompt Display current sql dba_his_sqlstat Information
+    prompt ####################################################################
+    select  instance_number as inst#,
+    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    plan_hash_value as plan_hash_value,
+    OPTIMIZER_COST,
+    PARSING_SCHEMA_NAME,
+    executions_delta "total_executions",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
+    trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
+    trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
+    trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
+    from
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    prompt ####################################################################
+    prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
     
     pro sql child numbers:
@@ -10018,6 +10079,8 @@ if [ "$1" = "xo" ]; then
 
     connect $DBUSER
     set define on
+    col PARSING_SCHEMA_NAME for a20
+    col inst# for 99999
     set verify off
     
     define v_xa_version = 1.2
@@ -10112,7 +10175,26 @@ if [ "$1" = "xo" ]; then
                                                  '  - XPlan v&v_xa_version by Adrian Billington (http://www.oracle-developer.net)'
                                          end
              )
-    order  by r;
+    order by r;
+    prompt ####################################################################
+    prompt Display current sql dba_his_sqlstat Information
+    prompt ####################################################################
+    select  instance_number as inst#,
+    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    plan_hash_value as plan_hash_value,
+    OPTIMIZER_COST,
+    PARSING_SCHEMA_NAME,
+    executions_delta "total_executions",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
+    trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
+    trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
+    trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
+    from
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    prompt ####################################################################
+    prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
 !
   exit 0
