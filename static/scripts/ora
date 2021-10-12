@@ -83,7 +83,7 @@ usage()
       - ashcnt [30]min                         active sessions count(gv_active_session_history),default recent 30min
       - ashdump  [1]min                        dump ash records into trc file,default value is 1 minutes      
       - ashevent 10 2                          ora ashevent recent [10] minutes ,[def=2] ash top n events , grp by inst_id,sample_time,events
-      - ashsql \"14:15\" 20                    gv_active_session_history and dba_hist_active_sess_history ,group by sql_id and event                       
+      - ashsql \"14:15\" 20                    gv_active_session_history and dba_hist_active_sess_history ,group by sql_id and event
       - ashtop | topash
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
@@ -120,7 +120,7 @@ usage()
       - dup_index <owner>
       
       - event                                  v\$session summary by event
-      - event2sqlid <event_name> <bid> <eid>   dba_hist_active_sess_history
+      - event2sqlid <event_name> <bid> <eid>   dba_hist_active_sess_history, such as ./ora event2sqlid \"db file sequential read\" 560 561
       - event_set                              list all event for alter system set events or set event=      
       - expdash \"2020/05/27 10:33:40\" 30     12.2+ only ; to default DIR ; listed in term   
                                           
@@ -4452,6 +4452,7 @@ if [ "$1" = "event2sqlid" ]; then
 !
 echo "full nodes"
 echo "usage: ora event2sqlid \"direct path read\" 8888 8890"
+echo "then login sqlplus and run @cursor"
 exit 0
 fi
 
