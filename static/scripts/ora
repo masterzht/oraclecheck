@@ -115,6 +115,7 @@ usage()
       - dashsql                                same with ashsql 
       - dbtime                                 dbtime by day / by top
       - ddl  <name> [owner] [type]             DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
+      - ddl/get_ddl <name>                     DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
       - degree | parallel                      degree of objects (tables and indexes) ,and running parallel processes
       - dg | dg_info                           data guard :contributed by Albert Liang
       - dir                                    show all directories info
