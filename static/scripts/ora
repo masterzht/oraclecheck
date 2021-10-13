@@ -10381,8 +10381,7 @@ if [ "$1" = "active" ]; then
 
     connect $DBUSER
 
-  set linesize 3000
-  set pages 1000
+  set linesize 200 pagesize 20
   col username for a10
   col spid for a6
   col sid_and_serial# for a15
