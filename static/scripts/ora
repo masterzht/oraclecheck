@@ -10234,7 +10234,9 @@ if [ "$1" = "tbs" ]; then
 
     set linesize 200 pagesize 20
     col autoextensible format a4 heading "autoExt"
-    col tbsn format a20 trunc
+    col USED for a20 trunc
+    col USED_PCT for a10 trunc
+    col TABLESPACE_NAME for a20 trunc
     col contents format a10 trunc
     col status format a8
     col RENTENTION format a9 trunc
@@ -10246,9 +10248,14 @@ if [ "$1" = "tbs" ]; then
     spool ora_tbs_$filedate.log
     pro "order by usage percent:"
     SELECT 
-      d.tablespace_name tbsn,round(a.bytes/1024/1024-round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/1024/1024)) as free_M 
-      ,d.STATUS status,d.contents contents,d.extent_management manage,d.segment_space_management space_manage,
-      d.bigfile big,d.LOGGING logging   ,d.RETENTION rentention--,d.ENCRYPTED encry
+      d.tablespace_name,
+      round(a.bytes/1024/1024-round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/1024/1024)) as free_M ,
+      d.STATUS status,
+      d.contents contents,
+      d.extent_management manage,
+      d.segment_space_management space_manage,
+      d.bigfile big,d.LOGGING logging,
+      d.RETENTION rentention--,d.ENCRYPTED encry
       ,d.BLOCK_SIZE blk_sz,NVL(a.count, 1) files,
       round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/1024/1024) 
       used_M, round(a.bytes/1024/1024) total_M 
@@ -10289,6 +10296,66 @@ if [ "$1" = "tbs" ]; then
     WHERE d.tablespace_name = a.tablespace_name(+)   AND d.tablespace_name = t.tablespace_name(+)   
          AND d.extent_management = 'LOCAL'   AND d.contents = 'TEMPORARY' 
     ORDER BY usage_pct;
+
+
+ SELECT a.tablespace_name,
+       round((total-free) / maxsize * 100, 1) || '%' as used_pct,
+       rpad(lpad('#',ceil((nvl(total-free,0)/b.maxsize)*20),'#'),20,' ') as used,
+       b.autoextensible,
+       round(total/1024,1) as TOTAL_GB,
+       round((total - free)/1024,1) as USED_GB,
+       round(free/1024,1) as FREE_GB,
+       b.cnt DATAFILE_COUNT,
+       c.status,
+       c.CONTENTS,
+       c.extent_management as MANAGE,
+       c.allocation_type,
+       b.maxsize
+FROM   (SELECT tablespace_name,
+               round(SUM(bytes) / ( 1024 * 1024 ), 1) free
+        FROM   dba_free_space
+        GROUP BY tablespace_name) a,
+       (SELECT tablespace_name,
+               round(SUM(bytes) / ( 1024 * 1024 ), 1) total,
+               count(*)                               cnt,
+               max(autoextensible)                  autoextensible,
+               sum(decode(autoextensible, 'YES', floor(maxbytes/1048576), floor(bytes / 1048576 ))) maxsize
+        FROM   dba_data_files
+        GROUP  BY tablespace_name) b,
+       dba_tablespaces c
+WHERE  a.tablespace_name = b.tablespace_name
+       AND a.tablespace_name = c.tablespace_name
+UNION ALL
+SELECT /*+ NO_MERGE */
+  a.tablespace_name,
+        round(100 * (b.tot_used_mb / a.maxsize ),1) || '%' as used_pct,
+        rpad(lpad('#',ceil((nvl(b.tot_used_mb+0.001,0)/a.maxsize)*20),'#'),20,' ') as used,
+        a.aet as autoextensible,
+        round(a.avail_size_mb/1024,1) as TOTAL_GB,
+        round(b.tot_used_mb/1024,1) as USED_GB,
+        round((a.avail_size_mb - b.tot_used_mb)/1024,1) as FREE_GB,
+        a.cnt DATAFILE_COUNT,
+        c.status,
+        c.CONTENTS,
+        c.extent_management,
+        c.allocation_type,
+        a.maxsize
+FROM   (SELECT tablespace_name,
+               sum(bytes)/1024/1024 as avail_size_mb,
+               max(autoextensible)       aet,
+               count(*)                  cnt,
+               sum(decode(autoextensible, 'YES', floor(maxbytes/1048576), floor(bytes/1048576))) maxsize
+        FROM   dba_temp_files
+        GROUP  BY tablespace_name) A,
+       (SELECT tablespace_name,
+               SUM(bytes_used) /1024/1024 as tot_used_mb
+        FROM   gv\$temp_extent_pool
+        GROUP  BY tablespace_name) B,
+       dba_tablespaces c
+WHERE  a.tablespace_name = b.tablespace_name
+       AND a.tablespace_name = c.tablespace_name
+order by 3 desc,2 desc;
+
     $ECHO
     
     Pro Non sys user objects stored in SYS tablespace:
