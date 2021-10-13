@@ -7817,15 +7817,117 @@ if [ "$1" = "asm" ]; then
   sqlplus -s  /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected"
   connect $DBUSER
 
-  col name format a20
-  pro asm diskgroup info:
-  select name, total_mb, free_mb,usable_file_mb ,type,state from v\$asm_diskgroup;
-  
-  pro asm disk info:
-  select b.NAME,b.type,t.disk_number,t.TOTAL_MB,t.FREE_MB
-  from v\$asm_disk t,v\$asm_diskgroup b
-  where t.GROUP_NUMBER=b.GROUP_NUMBER 
-  order by t.disk_number; 
+set linesize 500
+set serveroutput on
+set feedback off
+set verify off
+
+
+set linesize 500
+set serveroutput on
+set feedback off
+set verify off
+
+declare
+  v_cnt number;
+  cursor c_group is SELECT
+    GROUP_NUMBER,
+    NAME as DISKGROUP_NAME,
+    lpad(round(ALLOCATION_UNIT_SIZE/1024/1024) || 'M',7) as "AU_SIZE",
+    STATE,
+    TYPE,
+    round(TOTAL_MB/1024) as TOTAL_GB,
+    round(FREE_MB/1024) as FREE_GB,
+    lpad(round((TOTAL_MB-FREE_MB)/TOTAL_MB*100) || '%',9) as Used_Pct,
+    round(USABLE_FILE_MB/1024) as "USABLE_FILE_GB" ,
+    REQUIRED_MIRROR_FREE_MB
+from
+    V\$ASM_DISKGROUP;
+  v_group c_group%rowtype;
+  cursor c_disk is select b.GROUP_NUMBER as GROUP_NUMBER,
+  b.name as DISKGROUP_NAME,
+  a.path,
+  a.FAILGROUP,a.name as DISK_NAME,a.STATE,a.MODE_STATUS,a.HEADER_STATUS,a.MOUNT_STATUS,a.REPAIR_TIMER
+from v\$asm_disk a,v\$asm_diskgroup b where a.GROUP_NUMBER = b.GROUP_NUMBER order by b.GROUP_NUMBER,a.path;
+  v_disk c_disk%rowtype;
+
+  cursor c_client is select GROUP_NUMBER,INSTANCE_NAME,DB_NAME,STATUS,SOFTWARE_VERSION,COMPATIBLE_VERSION from v\$asm_client order by GROUP_NUMBER;
+  v_client c_client%rowtype;
+
+begin
+  select count(*) into v_cnt from v\$ASM_DISKGROUP;
+if v_cnt = 0 then
+  dbms_output.put_line('
+ASM Diskgroup is not in Useage');
+  dbms_output.put_line('======================');
+else
+  dbms_output.put_line('
+ASM Diskgroup Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '| AU_SIZE |' || '     STATE ' || '|   TYPE |' || ' TOTAL_GB ' || '| FREE_GB |' || ' "Used_Pct%" ' || '| USABLE_FILE_GB |' || ' REQUIRED_MIRROR_FREE_MB ' || '|');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------');
+  open c_group;
+    loop fetch c_group into v_group;
+    exit when c_group%notfound;
+    dbms_output.put_line('| ' || rpad(v_group.GROUP_NUMBER,6) ||' | '|| rpad(v_group.DISKGROUP_NAME,14) || ' | '|| lpad(v_group.AU_SIZE,7) || ' | '|| lpad(v_group.STATE,9) || ' | '|| lpad(v_group.TYPE,6) || ' | '|| lpad(v_group.TOTAL_GB,8) || ' | '|| lpad(v_group.FREE_GB,7) || ' | '|| lpad(v_group.Used_Pct,11) || ' | '|| lpad(v_group.USABLE_FILE_GB,14) || ' | '|| lpad(v_group.REQUIRED_MIRROR_FREE_MB,24) || '|');
+    end loop;
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------');
+  close c_group;
+  dbms_output.put_line('
+ASM Disk Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                            PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '   STATE ' || '| MODE_STATS |' || ' HEADER_STATS ' || '| MOUNT_STATS |' || ' REPAIR_TIMER ' || '|');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_disk;
+    loop fetch c_disk into v_disk;
+    exit when c_disk%notfound;
+    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,47) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,7) || ' | '|| lpad(v_disk.MODE_STATUS,10) || ' | '|| lpad(v_disk.HEADER_STATUS,12) || ' | '|| lpad(v_disk.MOUNT_STATUS,11) || ' | '|| lpad(v_disk.REPAIR_TIMER,13) || '|');
+    end loop;
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_disk;
+
+dbms_output.put_line('
+ASM Client Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| GROUP# |' || ' INSTANCE_NAME ' || '|  DB_NAME |' || '      STATUS |' || ' SOFTWARE_VERSION ' || '| COMPATIBLE_VERSION ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------');
+  open c_client;
+    loop fetch c_client into v_client;
+    exit when c_client%notfound;
+    dbms_output.put_line('| ' || rpad(v_client.GROUP_NUMBER,6) ||' | '|| lpad(v_client.INSTANCE_NAME,13) || ' | '|| lpad(v_client.DB_NAME,8) || ' | '|| lpad(v_client.STATUS,11) || ' | '|| lpad(v_client.SOFTWARE_VERSION,16) || ' | '|| lpad(v_client.COMPATIBLE_VERSION,19) || '|');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------');
+  close c_client;
+  end if;
+end;
+/
+
+prompt asm_rebalance_file
+
+SELECT
+    file_num,
+    MAX(extent_count) max_disk_extents,
+    MIN(extent_count) min_disk_extents,
+    MAX(extent_count) - MIN(extent_count) disk_extents_imbalance
+FROM (
+    SELECT
+    number_kffxp file_num,
+    disk_kffxp disk_num,
+    COUNT(xnum_kffxp) extent_count
+    FROM
+        x\$kffxp
+    WHERE
+        group_kffxp = 1
+        AND disk_kffxp != 65534
+        GROUP BY number_kffxp, disk_kffxp
+        ORDER BY number_kffxp, disk_kffxp)
+GROUP BY file_num
+HAVING MAX(extent_count) - MIN(extent_count) > 5
+ORDER BY disk_extents_imbalance DESC;
+
   $ECHO
 !
 exit 0
