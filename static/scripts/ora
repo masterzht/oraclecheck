@@ -10392,7 +10392,7 @@ if [ "$1" = "active" ]; then
   col program for a20
   col sql_text for a30
   col sql_id for a13
-    spool ora_active_$filedate.log
+  spool ora_active_$filedate.log
 --当前数据库中的session信息与session中正在执行的SQL语句
 
 prompt Display Avg and Max Connections of All Nodes since Instance Startup
