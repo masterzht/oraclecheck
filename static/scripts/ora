@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2018, 2028, YanKu IT GuangZhou Ltd.  All rights reserved.
 # Author:
+# 2021-10-13 3.7.4 modify ddl/get_ddl
 # 2021-10-13 3.7.4 add active , Show Active Session and SQL For Current Node.
 # 2021-10-13 3.7.4 add ORA/ora <ErrorNumber>
 # 2021-06-18 3.7.3 add awrsqrpt
