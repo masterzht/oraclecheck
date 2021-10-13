@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Copyright (c) 2018, 2028, YanKu IT GuangZhou Ltd.  All rights reserved.
-# Author:   
+# Author:
+# 2021-10-13 3.7.4 add ORA
 # 2021-06-18 3.7.3 add awrsqrpt
 # 2020-11-06 3.7.2 load command enhencement
 # 2020-11-06 3.7.1 new command logon, calculate logon frequency using listener.log
@@ -158,7 +159,8 @@ usage()
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %  
       - open_cursor [100]                      top 30 ,default >100
       - outline  <profile|patch> <name>        ora outline profile|patch name,get hint set (no sql_plan_baseline)
-                                               
+      - ORA  <Error Number>                    Display processing Ideas for Current ORA-ErrorNumber such ./ora ORA 00020
+
       - params [<pattern>]                     view all parameters, even hidden ones      
       - parameter [<pattern>] [2]              parameters in his(recent 2 snap) and current
       - pc  [8]                                get plan changed in recent [def 31] days   
@@ -10676,7 +10678,21 @@ if [ "$1" = "stats" -o "$1" = "optstats" ]; then
 exit 0
 fi
 
+###############################"ORA"#############################################
+if [ "$1" = "ORA" -o "$1" = "ora" ]; then
+  if [ "$2" = "00020" -o "$2" = "20" ]; then
+    echo "--------------------------------------------------------------------------------------------------"
+    echo "|                      Run Follow Command to Kill The Oldest 10 Sessions !!!                     |"
+    echo "--------------------------------------------------------------------------------------------------"
+    echo "|  kill -9 \`ps -ef --sort=start_time|grep LOCAL=NO|grep -v grep| head -n 10 | awk '{print \$2}'\`  |"
+    echo "--------------------------------------------------------------------------------------------------"
+    echo "|    Usage: ./ora ORA <ErrorNumber>                                                              |"
+    echo "--------------------------------------------------------------------------------------------------"
 
+    exit 1
+  fi
+exit 1
+fi
 
 
 ##################################################################################################
