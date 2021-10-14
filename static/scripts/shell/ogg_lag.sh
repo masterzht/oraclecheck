@@ -8,6 +8,8 @@
 
 
 ############################
+more ogg_lag.sh
+
 source /home/oracle/.bash_profile
 
 # define variables
