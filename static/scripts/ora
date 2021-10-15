@@ -1656,7 +1656,7 @@ fi
 
 
 ################################################################################
-if [ "$1" = "index" ]; then
+if [ "$1" = "index" -o "$1" = "ind" ]; then
 
   if [ "$2" = ""  ]; then
    read -p "Please input table_name:" tablename
@@ -1764,6 +1764,10 @@ and     inx.index_owner(+)     = inc.index_owner
 and     inx.index_name(+)      = inc.index_name
 and     inx.column_position(+) = inc.column_position
 order by ind.index_name, inc.column_position;
+
+
+
+
 $ECHO
   spool off  
 !
