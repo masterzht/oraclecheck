@@ -1,5 +1,4 @@
-
-set serveroutput on 
+set serveroutput on
 set linesize 500
 set pages 0
 declare
@@ -96,42 +95,6 @@ end;
 /
 
 
-declare
-    cursor c_wait_chain is SELECT
-       RPAD('+', LEVEL ,'-') || sid||' '||sess.module session_detail,
-       decode(blocker_sid,null,'None',blocker_sid) as blocker_sid,
-       decode(in_wait_secs,null,'None',in_wait_secs) as in_wait_secs,
-       decode(wait_event_text,null,'None',wait_event_text) as wait_event_text,
-       decode(object_name,null,'None',object_name) as object_name,
-       RPAD(' ', LEVEL )|| sql_text sql_text
-    FROM v$wait_chains c
-           LEFT OUTER JOIN dba_objects o ON (row_wait_obj# = object_id)
-                      JOIN v$session sess USING (sid)
-           LEFT OUTER JOIN v$sql sql ON (sql.sql_id = sess.sql_id AND sql.child_number = sess.sql_child_number)
-CONNECT BY     PRIOR sid = blocker_sid
-           AND PRIOR sess_serial# = blocker_sess_serial#
-           AND PRIOR INSTANCE = blocker_instance
-START WITH blocker_is_valid = 'FALSE';
-    v_wait_chain c_wait_chain%rowtype;
-begin
-
-  dbms_output.put_line('
-Wait Chain Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| SID AND MODULE       |' || ' Blocked By SID ' || '| IN_WAIT_SECS |' || ' WAIT_EVENT                          ' || '| OBJECT_NAME          |' || ' CURRENT SQL                                       ' || ' |');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_wait_chain;
-    loop fetch c_wait_chain into v_wait_chain;
-    exit when c_wait_chain%notfound;
-    dbms_output.put_line('| ' || rpad(v_wait_chain.SESSION_DETAIL,20) ||' | '|| lpad(v_wait_chain.BLOCKER_SID,14) || ' | '|| lpad(v_wait_chain.IN_WAIT_SECS,12) || ' | '|| rpad(v_wait_chain.WAIT_EVENT_TEXT,35) || ' | '|| rpad(v_wait_chain.OBJECT_NAME,20) || ' | '|| rpad(v_wait_chain.SQL_TEXT,50) || ' |');
-    end loop;
-    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-   close c_wait_chain;
-
-
-end;
-/
 --batch kill one user's session
 set serveroutput on size 100000;
 begin

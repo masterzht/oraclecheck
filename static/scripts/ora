@@ -8084,69 +8084,21 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-    --tested on rac
-    set linesize 250 pagesize 200
-    col owner format a10
-    col object_name format a20
-    col row# format a20
-    col blocker_to_be_kill format a30
-    col blocked_info format a30
-    col blocked_sql_text format a40
-    spool ora_lock_$filedate.log
-    $DEFNODISP SELECT dba_objects.owner as owner,
-    $DEFNODISP        dba_objects.object_name,       
-    $DEFNODISP        DBMS_ROWID.ROWID_CREATE (1,dba_objects.data_object_id,   locks_t.row_wait_file#,    locks_t.row_wait_block#,  locks_t.row_wait_row#  ) row#,
-    $DEFNODISP        locks_t.blocked_secs,type,locks_t.blocker_to_be_kill,locks_t.blocked_info,locks_t.blocked_sql_text
-    $DEFNODISP   FROM (
-            SELECT /*+ NO_MERGE */
-                   blocking_sess.username||'@'||blocking_sess.machine||'('||blocked_sess.module||') (SID='||blocking_sess.sid||','||blocking_sess.serial#||') ['||
-                   blocking_sess.program||'/client_PID='||blocking_sess.process||'/server_Pid='||p.spid||']' as blocker_to_be_kill,
-                   blocked_sess.username||'@'||blocked_sess.machine||'('||blocked_sess.module||') (SID='||blocked_sess.sid||','||blocked_sess.serial#||') ['||
-                   blocked_sess.program||'/client_PID='||blocked_sess.process||']' as blocked_info,
-                   blocking_lock.type,
-                   blocked_sess.row_wait_obj#,blocked_sess.row_wait_file#,blocked_sess.row_wait_block#,blocked_sess.row_wait_row#,
-                   blocked_sess.seconds_in_wait blocked_secs
-                   ,sql.sql_text blocked_sql_text
-              FROM gv\$lock blocking_lock,
-                   gv\$session blocking_sess,
-                   gv\$lock blocked_lock,
-                   gv\$session blocked_sess,
-                   gv\$sqlarea sql,
-                   gv\$process p
-             WHERE blocking_lock.block = 1
-               AND blocking_lock.id1 = blocked_lock.id1
-               AND blocking_lock.id2 = blocked_lock.id2
-               AND blocked_lock.request > 0
-               AND blocking_lock.sid = blocking_sess.sid
-               AND blocked_lock.sid = blocked_sess.sid
-               AND blocked_sess.sql_id = sql.sql_id(+)
-               and blocked_sess.inst_id= sql.inst_id(+)
-               and blocking_sess.paddr=p.addr
-               and blocking_sess.inst_id=p.inst_id
-               and blocking_sess.inst_id=blocked_sess.blocking_instance --bug found by Albert Liang
-               and blocked_sess.seconds_in_wait>=2
-               --AND blocked_sess.sql_child_number = blocked_sql.child_number
-    $DEFNODISP        ) locks_t,
-    $DEFNODISP        dba_objects
-    $DEFNODISP  WHERE locks_t.row_wait_obj# = dba_objects.object_id
-    $DEFNODISP    --AND locks_t.blocked_secs >= 2
-    ORDER BY BLOCKER_TO_BE_KILL;
-    $ECHO
-    ---------------------------------------------------------------------------------------------------
-    --tested on rac
-    set linesize 200 pagesize 30
-    col s_info format a20
-    col OBJECT_NAME format a30
+
+    set linesize 300 pagesize 30
+    col "SQL_INFO sid and serail#@inst_id" format a32
+    col OBJECT_NAME format a25
     col SQL_TEXT format a80 trunc
+    col event format a30
     col module format a10 trunc
     col machine format a15 trunc
      
      WITH sessions AS
         (SELECT /*+materialize*/
-                sid,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id
+                sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event
            FROM gv\$session
          )
-    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||'@'||s.inst_id as s_info, s.module,s.machine,object_name,s.sql_id
+    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "SQL_INFO sid and serail#@inst_id", s.module, s.machine,object_name,s.sql_id,s.event
             ,substr(sql_text,1,100) sql_text
        FROM sessions s
        LEFT OUTER JOIN dba_objects
