@@ -1785,7 +1785,8 @@ end;
 
 --alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 declare
-    v_part_cnt number;
+  v_part_cnt number;
+  v_foreign_key_cnt number;
   cursor c_constraints is select
    a.owner,
    a.table_name,
@@ -1892,65 +1893,6 @@ declare
 
          v_part c_par_ind%rowtype;
 
-         cursor c_not is SELECT X.OWNER,
-       X.TABLE_NAME,
-       X.INDEX_NAME,
-       to_char(SS.CREATED,'yyyy-mm-dd hh24:mi:ss') as created,
-       C.COLUMN_POSITION,
-       C.COLUMN_NAME,
-       S.BYTES / 1024 / 1024 M
-    --   q'[select count(*),count(distinct ]' || C.COLUMN_NAME ||
-    --   q'[) from ]' || X.OWNER || '.' || X.TABLE_NAME || q'[;]' AS QUERY_Q
-  FROM (SELECT A.OWNER, A.TABLE_NAME, A.INDEX_NAME
-          FROM DBA_INDEXES A
-         WHERE A.OWNER IN (SELECT USERNAME
-                             FROM DBA_USERS
-                            WHERE USERNAME not in('SYSTEM','WMSYS','XDB','SYS','SCOTT','QMONITOR','OUTLN','ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS',
-                       'DBSNMP','APEX_040200','AUDSYS','CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL'))
-           AND (A.OWNER, A.INDEX_NAME) NOT IN
-               (SELECT /*+unnest*/
-                 B.OBJECT_OWNER, B.OBJECT_NAME
-                  FROM GV\$SQL A, GV\$SQL_PLAN B
-                 WHERE A.SQL_ID = B.SQL_ID
-                   AND A.CHILD_NUMBER = B.CHILD_NUMBER
-                   AND B.OBJECT_OWNER IN
-                       (SELECT USERNAME
-                          FROM DBA_USERS
-                         WHERE USERNAME not in ('SYSTEM','WMSYS','XDB','SYS','SCOTT','QMONITOR','OUTLN','ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS',
-                       'DBSNMP','APEX_040200','AUDSYS','CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL'))
-                   AND B.OBJECT_TYPE LIKE '%INDEX%'
-                   AND B.TIMESTAMP > (select min(startup_time) from gv\$instance))
-           AND A.TABLE_NAME NOT LIKE 'SYS%'
-           AND A.UNIQUENESS <> 'UNIQUE') X
- INNER JOIN DBA_IND_COLUMNS C
-    ON C.INDEX_OWNER = X.OWNER
-   AND C.INDEX_NAME = X.INDEX_NAME
-   AND C.TABLE_NAME = X.TABLE_NAME
- INNER JOIN DBA_SEGMENTS S
-    ON S.SEGMENT_NAME = C.TABLE_NAME
-   AND S.OWNER = C.INDEX_OWNER
-   -- AND S.BYTES   > 10
- INNER JOIN DBA_OBJECTS SS ON SS.OBJECT_NAME = X.INDEX_NAME
- ORDER BY BYTES desc,OWNER,TABLE_NAME,INDEX_NAME,CREATED;
-         v_not c_not%rowtype;
-
-
-   cursor c_ind_monitor is select
-    u.name owner,
-    io.name index_name,
-    t.name table_name,
-    decode(bitand(i.flags, 65536), 0, 'NO', 'YES') monitoring,
-    decode(bitand(ou.flags, 1), 0, 'NO', 'YES') used,
-    ou.start_monitoring,
-    decode(ou.end_monitoring,null,'nil',ou.end_monitoring) as end_monitoring
-from sys.user$ u, sys.obj$ io, sys.obj$ t, sys.ind$ i, sys.object_usage ou
-where
-    i.obj# = ou.obj#
-    and io.obj# = ou.obj#
-    and t.obj# = i.bo#
-    and u.user# = io.owner#
-    and upper(u.name) = upper(:owner);
-   v_ind_monitor c_ind_monitor%rowtype;
 
 begin
   dbms_output.enable(buffer_size => NULL);
@@ -1988,6 +1930,9 @@ Partition Index Information(if index is Local Index)');
     dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_par_ind;
 end if;
+
+  select count(*) into v_foreign_key_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES');
+if v_foreign_key_cnt > 0 then
   dbms_output.put_line('
 Foreign Key Without Index Information');
   dbms_output.put_line('======================');
@@ -2001,37 +1946,7 @@ Foreign Key Without Index Information');
     end loop;
     dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_foreign_key_without_index;
-
-
-  dbms_output.put_line('
-Index Not Used Since Instance Startup');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| INDEX_NAME                     |' || ' CREATED             ' || '| COLUMN_POSITION |' || ' COLUMN_NAME                  ' || '| INDEX_MB         ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_not;
-    loop fetch c_not into v_not;
-    exit when c_not%notfound;
-    dbms_output.put_line('| ' || rpad(v_not.owner,20) ||' | '|| rpad(v_not.table_name,21) || ' | '|| rpad(v_not.index_name,30) || ' | '|| lpad(v_not.created,19) || ' | '|| lpad(v_not.COLUMN_POSITION,15) || ' | '|| rpad(v_not.COLUMN_NAME,28) ||  ' | '|| lpad(v_not.m,16) || ' |');
-    end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_not;
-
-
-  dbms_output.put_line('
-Index MOnitoring Usage');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| INDEX_NAME                     |' || ' monitoring ' || '| used |' || ' start_monitoring    ' || '| end_monitoring ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_ind_monitor;
-    loop fetch c_ind_monitor into v_ind_monitor;
-    exit when c_ind_monitor%notfound;
-    dbms_output.put_line('| ' || rpad(v_ind_monitor.owner,20) ||' | '|| rpad(v_ind_monitor.table_name,21) || ' | '|| rpad(v_ind_monitor.index_name,30) || ' | '|| lpad(v_ind_monitor.monitoring,10) || ' | '|| lpad(v_ind_monitor.used,4) || ' | '|| rpad(v_ind_monitor.start_monitoring,19) ||  ' | '|| lpad(v_ind_monitor.end_monitoring,14) || ' |');
-    end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_ind_monitor;
-
+end if;
 
   dbms_output.put_line('
 Show The Table Constraints');
@@ -2047,12 +1962,8 @@ Show The Table Constraints');
     dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
   close c_constraints;
 
-
 end;
 /
-
-
-
 
 undefine index_name
 undefine owner
@@ -2061,7 +1972,7 @@ var owner varchar2(100);
 
 begin
   :owner :=upper('$owner');
-  :index_name := upper('&index_name');
+  :index_name := upper('$index');
 end;
 /
 
@@ -2118,9 +2029,6 @@ select a.index_owner owner,a.index_name index_name,a.partition_name partition_na
 from dba_ind_partitions a,dba_indexes b
 where a.index_name=b.index_name and a.index_owner=b.owner and b.owner<>'SYSTEM' and a.status<>'USABLE'
 order by owner,index_name,partition_name;
-
-
-
 
 
 prompt **********************************************************************************************
