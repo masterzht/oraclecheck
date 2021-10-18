@@ -30,7 +30,7 @@ SET TRIM ON
 SET ECHO OFF
 SET FEEDBACK OFF
 
-SPOOL /home/oracle/scripts/report_sql_monitor_active.html
+SPOOL report_sql_monitor_active.html
 SELECT DBMS_SQLTUNE.report_sql_monitor(
   sql_id       => :sql_id,
   type         => 'ACTIVE', 
@@ -38,7 +38,7 @@ SELECT DBMS_SQLTUNE.report_sql_monitor(
   ) AS report
 FROM dual;
 
-!echo -e "\033[32m The file 'report_sql_monitor.html' locations '/home/oracle/scripts/' \033[0m"
+!echo -e "\033[32m The file 'report_sql_monitor.html' locations 'current folder' \033[0m"
 SET TRIM ON
 
 col comm format a300
