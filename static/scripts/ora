@@ -12425,7 +12425,8 @@ FROM v\$recovery_file_dest;
                                'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL') and a.SEGMENT_NAME=b.SEGMENT_NAME order by a.bytes desc) where  rownum < 11;
     v_big_lob c_big_lob%rowtype;
 
-    cursor c_hwmall is SELECT OWNER,
+    cursor c_hwmall is select OWNER,TABLE_NAME,SEGMENT_TYPE,SEGMENT_MB,WASTE_PER from (
+       SELECT OWNER,
        SEGMENT_NAME TABLE_NAME,
        SEGMENT_TYPE,
        round(BYTES/1024/1024,2) as SEGMENT_MB,
@@ -12456,7 +12457,7 @@ FROM v\$recovery_file_dest;
                                'ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS','DBSNMP','APPQOSSYS','APEX_040200','AUDSYS',
                                'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL')
    AND BLOCKS > 100
- ORDER BY WASTE_PER DESC;
+ ORDER BY WASTE_PER DESC) where rownum < 21;
     v_hwmall c_hwmall%rowtype;
 
 
