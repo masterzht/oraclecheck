@@ -12496,15 +12496,15 @@ Fast Recovery Dest Information');
     dbms_output.put_line('
 Non sys user objects stored in SYS tablespace');
     dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------');
   dbms_output.put_line('| OWNER                |'|| ' CNT      |' || ' SIZE_MB    ' || '|');
-  dbms_output.put_line('-----------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------');
   open c_sys_obj;
     loop fetch c_sys_obj into v_sys_obj;
     exit when c_sys_obj%notfound;
     dbms_output.put_line('| ' || rpad(v_sys_obj.owner,20) ||' | '|| lpad(v_sys_obj.cnt,8) || ' | ' || lpad(v_sys_obj.size_m,10) || ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------');
   close c_sys_obj;
 
 
