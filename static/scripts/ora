@@ -8413,7 +8413,8 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
     col event format a30
     col module format a10 trunc
     col machine format a15 trunc
-     
+    spool ora_lock_$filedate.log
+
      WITH sessions AS
         (SELECT /*+materialize*/
                 sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event
@@ -8466,7 +8467,6 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
         where  do.OBJECT_ID = lo.OBJECT_ID 
         order by owner,object_name;
         $ECHO
-      
       spool off
 !
 echo "full nodes"
