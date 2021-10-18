@@ -12333,6 +12333,8 @@ if [ "$1" = "tbs" ]; then
   set verify off
 declare
     v_cnt number;
+    v_hwm_cnt number;
+    v_sys_obj_cnt number;
 
     cursor c_tbs is SELECT a.tablespace_name,
        round((total-free) / maxsize * 100, 1) || '%' as used_pct,
@@ -12402,7 +12404,7 @@ FROM v\$recovery_file_dest;
                   round(sum(bytes/1024/1024)) as size_m
                   from dba_segments
                   where tablespace_name in ('SYSTEM','SYSAUX')
-                     and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL')
+                     and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL','LBACSYS')
                   group by owner;
     v_sys_obj c_sys_obj%rowtype;
 
@@ -12444,7 +12446,7 @@ FROM v\$recovery_file_dest;
                       ROUND((B.AVG_ROW_LEN * NUM_ROWS * (1 + (PCT_FREE / 100))) / C.BLOCKSIZE,0)) + 2 AVG_USED_BLOCKS,
                ROUND(100 * (NVL(B.CHAIN_CNT, 0) / GREATEST(NVL(B.NUM_ROWS, 1), 1)), 2) CHAIN_PER,
                B.TABLESPACE_NAME O_TABLESPACE_NAME
-          FROM SYS.DBA_SEGMENTS A, SYS.DBA_TABLES B, SYS.TS$ C
+          FROM SYS.DBA_SEGMENTS A, SYS.DBA_TABLES B, SYS.TS\$ C
          WHERE A.OWNER = B.OWNER
            AND SEGMENT_NAME = TABLE_NAME
            AND SEGMENT_TYPE = 'TABLE'
@@ -12461,6 +12463,37 @@ FROM v\$recovery_file_dest;
 begin
 
   dbms_output.enable(buffer_size => NULL);
+
+
+  select count(*) into v_sys_obj_cnt from dba_segments
+                  where tablespace_name in ('SYSTEM','SYSAUX')
+                  and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL','LBACSYS');
+
+  select count(*) into v_hwm_cnt FROM (SELECT A.OWNER OWNER,
+               A.SEGMENT_NAME,
+               A.SEGMENT_TYPE,
+               B.LAST_ANALYZED,
+               A.BYTES,
+               B.NUM_ROWS,
+               A.BLOCKS BLOCKS,
+               B.EMPTY_BLOCKS EMPTY_BLOCKS,
+               A.BLOCKS - B.EMPTY_BLOCKS - 1 HWM,
+               DECODE(ROUND((B.AVG_ROW_LEN * NUM_ROWS * (1 + (PCT_FREE / 100))) / C.BLOCKSIZE,0),0,1,
+                      ROUND((B.AVG_ROW_LEN * NUM_ROWS * (1 + (PCT_FREE / 100))) / C.BLOCKSIZE,0)) + 2 AVG_USED_BLOCKS,
+               ROUND(100 * (NVL(B.CHAIN_CNT, 0) / GREATEST(NVL(B.NUM_ROWS, 1), 1)), 2) CHAIN_PER,
+               B.TABLESPACE_NAME O_TABLESPACE_NAME
+          FROM SYS.DBA_SEGMENTS A, SYS.DBA_TABLES B, SYS.TS\$ C
+         WHERE A.OWNER = B.OWNER
+           AND SEGMENT_NAME = TABLE_NAME
+           AND SEGMENT_TYPE = 'TABLE'
+           AND B.TABLESPACE_NAME = C.NAME)
+ WHERE GREATEST(ROUND(100 * (NVL(HWM - AVG_USED_BLOCKS, 0) / GREATEST(NVL(HWM, 1), 1)), 2), 0) > 50
+   AND OWNER  not in ('OWBSYS','SYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN',
+                               'ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS','DBSNMP','APPQOSSYS','APEX_040200','AUDSYS',
+                               'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL')
+   AND BLOCKS > 100;
+
+
   dbms_output.put_line('
 FCNT Means DATAFILE_CNT
 Used% Means PCT_USED%
@@ -12493,6 +12526,7 @@ Fast Recovery Dest Information');
     dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
   close c_recovery;
 
+if v_sys_obj_cnt > 0 then
     dbms_output.put_line('
 Non sys user objects stored in SYS tablespace');
     dbms_output.put_line('======================');
@@ -12506,7 +12540,7 @@ Non sys user objects stored in SYS tablespace');
     end loop;
     dbms_output.put_line('------------------------------------------------');
   close c_sys_obj;
-
+end if;
 
   dbms_output.put_line('
 Top 20 Big Table Information in The Database');
@@ -12537,6 +12571,7 @@ Top 20 Big LOB Information in The Database (When Migrating Database,<purge dba_r
     dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
   close c_big_lob;
 
+if v_hwm_cnt > 0 then
   dbms_output.put_line('
 HWM Information Rely on Table Statistics');
   dbms_output.put_line('======================');
@@ -12550,7 +12585,7 @@ HWM Information Rely on Table Statistics');
     end loop;
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------');
   close c_hwmall;
-
+end if;
 end;
 /
     
