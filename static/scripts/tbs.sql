@@ -9,44 +9,7 @@ set serveroutput on
 set feedback off
 set verify off
 declare
-    v_cnt number;
 
-     cursor c_tmp is SELECT C.SQL_ID,
-       A.USERNAME,
-       A.SID||','||A.SERIAL# as sid_and_serial,
-       A.OSUSER,
-       A.MACHINE,
-       A.LAST_CALL_ET as elapse_time,
-       B.TABLESPACE as TABLESPACE_NAME,
-       (B.BLOCKS * (select value from v$parameter where name='db_block_size')/1024/1024) as USED_MB,
-       C.SQL_TEXT
-  FROM V$SESSION A, V$TEMPSEG_USAGE B, V$SQLAREA C
- WHERE A.SADDR = B.SESSION_ADDR
-   AND C.ADDRESS = A.SQL_ADDRESS
-   AND C.HASH_VALUE = A.SQL_HASH_VALUE
-order by b.blocks;
-    v_tmp c_tmp%rowtype;
-
-    cursor c_pga is select /*+ ordered leading(d) */ 
-    c.sql_id,
-    a.username,
-    a.sid||','||a.serial# as sid_and_serial,
-    a.machine,
-    a.LAST_CALL_ET as elapse_time,
-    to_char(a.logon_time,'yyyymmdd hh24:mi:ss') as LOGON_TIME,
-    round(d.PGA_USED_MEM / 1024 / 1024,2) as PGA_USED_MB,
-    c.sql_text
-    from v$process d,v$session a,v$sqlarea c
-    where a.sql_id = c.sql_id
-    and a.paddr = d.addr
-    and d.PGA_USED_MEM >= 1024 * 1024 * 10
-    order by d.PGA_USED_MEM; 
-    v_pga c_pga%rowtype;
-    
-
-    v_pga_cnt number;
-    v_tmp_cnt number;
- 
     cursor c_recovery is SELECT decode(name,null,'None',name) as recovery_dest,
 decode(space_limit,0,0,(space_used - SPACE_RECLAIMABLE) / space_limit * 100) as used_pct
 FROM v$recovery_file_dest;
@@ -103,59 +66,6 @@ FROM v$recovery_file_dest;
    
 begin
 
-  select count(*) into v_tmp_cnt FROM V$SESSION A, V$TEMPSEG_USAGE B, V$SQLAREA C
- WHERE A.SADDR = B.SESSION_ADDR
-   AND C.ADDRESS = A.SQL_ADDRESS
-   AND C.HASH_VALUE = A.SQL_HASH_VALUE
-order by b.blocks;
-  if v_tmp_cnt > 0 then 
-  dbms_output.put_line('
-Current Usage Information of Temp Tablespace Per Session');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| SQL_ID        |'  || ' USERNAME     |' || ' sid_and_serial# ' || '|      MACHINE |' || ' ELAPSE_TIME(S) |'|| ' TABLESPACE_NAME ' || '| USED_MB |' || '                                          SQL_TEXT ' || '|'); 
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_tmp;
-    loop fetch c_tmp into v_tmp;
-    exit when c_tmp%notfound;
-    dbms_output.put_line('| ' || lpad(v_tmp.SQL_ID,13) || ' | '||rpad(v_tmp.USERNAME,12) ||' | '|| lpad(v_tmp.sid_and_serial,15) || ' | '|| lpad(v_tmp.MACHINE,12) || ' | '|| lpad(v_tmp.elapse_time,14) || ' | ' ||lpad(v_tmp.TABLESPACE_NAME,15) || ' | '|| lpad(v_tmp.USED_MB,7) || ' | '|| rpad(v_tmp.SQL_TEXT,50)  || '|');
-    end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_tmp;
-  else 
-  dbms_output.put_line('
-There is no Session that Use Temp Tablespace Disk Space');
-  dbms_output.put_line('======================');
-  end if;  
-
- select count(*) into v_pga_cnt
- from v$process d,v$session a,v$sqlarea c
-    where a.sql_id = c.sql_id
-    and a.paddr = d.addr
-    and d.PGA_USED_MEM >= 1024 * 1024 * 10
-    order by d.PGA_USED_MEM;
-  if v_pga_cnt > 0 then 
- 
-  dbms_output.put_line('
-Current Usage Information of PGA Memory(>10M) Per Session');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| SQL_ID        |'  || ' USERNAME     |' || ' sid_and_serial# ' || '|      MACHINE |' || ' ELAPSE_TIME(S) |'|| '        LOGON_TIME ' || '| PGA_USED_MB |' || '                                      SQL_TEXT ' || '|'); 
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_pga;
-    loop fetch c_pga into v_pga;
-    exit when c_pga%notfound;
-    dbms_output.put_line('| ' || lpad(v_pga.SQL_ID,13) || ' | '||rpad(v_pga.USERNAME,12) ||' | '|| lpad(v_pga.sid_and_serial,15) || ' | '|| lpad(v_pga.MACHINE,12) || ' | '|| lpad(v_pga.elapse_time,14) || ' | ' ||lpad(v_pga.LOGON_TIME,17) || ' | '|| lpad(v_pga.PGA_USED_MB,11) || ' | '|| rpad(v_pga.SQL_TEXT,46)  || '|');
-    end loop;
-    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_pga;
-  else 
-  dbms_output.put_line('
-There is no Session that PGA Memory Usage > 10M for Per Session');
-  dbms_output.put_line('======================');
-  end if;
-
-
   dbms_output.put_line('
 Fast Recovery Dest Information');
   dbms_output.put_line('======================');
@@ -198,7 +108,6 @@ Top 20 Big LOB Information in The Database (When Migrating Database,<purge dba_r
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
   close c_big_lob;
-
 
   dbms_output.put_line('
 HWM Information Rely on Table Statistics');
