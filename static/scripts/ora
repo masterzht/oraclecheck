@@ -433,10 +433,37 @@ select name, display_value
 
 Pro DataGuard RunTime Apply Info:
 Pro
+
+
+
 set linesize 400
-col target for a16
-col dest_name for a20
-select thread#,
+set serveroutput on
+set feedback off
+declare
+    v_database_role varchar2(100) :=null;
+    v_open_mode varchar2(100) :=null;
+    v_protection_mode  varchar2(100) :=null;
+    v_switchover  varchar2(100) :=null;
+    v_force_logging varchar2(100) :=null;
+
+  cursor c_lag is select inst_id,name,value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
+  v_lag c_lag%rowtype;
+  cursor c_dest_error is select inst_id,dest_name,
+  decode(regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),null,'None',
+  regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))')) as destination,
+  decode(error,null,'None',error) as error from gv\$archive_dest where destination is not null order by dest_id;
+  v_dest_error c_dest_error%rowtype;
+
+  cursor c_standby_lag is select inst_id,lpad(name,14) as name , value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
+  v_standby_lag c_standby_lag%rowtype;
+  cursor c_standby_max_seq is select thread#, max(sequence#) as mseq from v\$archived_log where applied='YES' group by thread#;
+  v_standby_max_seq c_standby_max_seq%rowtype;
+  cursor c_mrp is select thread#,process,status,sequence#,block#,blocks from v\$managed_standby where PROCESS like 'MRP%' order by sequence#;
+  v_mrp c_mrp%rowtype;
+  cursor c_convert is select q'[alter system set ]' || name || q'[ = ']' || replace(value,', ',''',''') || q'[' scope=spfile;]' command from v\$parameter where name in ('log_file_name_convert','db_file_name_convert');
+  v_convert c_convert%rowtype;
+
+  cursor c_runtime_apply_info is select thread# as thread,
        DB_UNIQUE_NAME,
        DEST_NAME,
        TARGET,
@@ -444,18 +471,16 @@ select thread#,
        error,
        RECOVERY_MODE,
        GAP_STATUS,
-       APPLIED_SEQ#,
+       Last_Archived,
+       APPLIED_SEQ# as APPLIED_SEQ,
        current_scn,
        applied_scn,
        to_char((scn_to_timestamp(current_scn)), 'yyyymmdd hh24:mi:ss') current_scn_time,
        to_char((scn_to_timestamp(applied_scn)), 'yyyymmdd hh24:mi:ss') applied_scn_time,
-       extract(day from(scn_to_timestamp(current_scn) -
-                    scn_to_timestamp(current_scn))) * 24 * 60 +
-       extract(hour from(scn_to_timestamp(current_scn) -
-                    scn_to_timestamp(current_scn))) * 60 +
-       extract(minute from(scn_to_timestamp(current_scn) -
-                    scn_to_timestamp(applied_scn))) as DELAY_TIME_MINUTE
-from 
+       extract(day from(scn_to_timestamp(current_scn) - scn_to_timestamp(current_scn))) * 24 * 60 +
+       extract(hour from(scn_to_timestamp(current_scn) - scn_to_timestamp(current_scn))) * 60 +
+       extract(minute from(scn_to_timestamp(current_scn) - scn_to_timestamp(applied_scn))) as DELAY_TIME_MINUTE
+from
 (SELECT al.thread#,
                ads.dest_id,
                ads.DEST_NAME,
@@ -495,57 +520,44 @@ from
            and ad.APPLIED_SCN <> 0
          ORDER BY al.thread#, ads.dest_id
 );
-
-set linesize 400
-set serveroutput on
-set feedback off
-declare
-    v_database_role varchar2(100) :=null;
-    v_open_mode varchar2(100) :=null;
-    v_protection_mode  varchar2(100) :=null;
-    v_switchover  varchar2(100) :=null;
-    v_force_logging varchar2(100) :=null;
-
-  cursor c_lag is select inst_id,name,value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
-  v_lag c_lag%rowtype;
-  cursor c_max_sequence is select thread#,max(sequence#) as max_sequence from v\$archived_log group by thread# order by thread#;
-  cursor c_dest_error is select inst_id,dest_name,
-  decode(regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),null,'None',
-  regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))')) as destination,
-  decode(error,null,'None',error) as error from gv\$archive_dest where destination is not null order by dest_id;
-  v_dest_error c_dest_error%rowtype;
-  v_max_sequence c_max_sequence%rowtype;
-  cursor c_standby_lag is select inst_id,lpad(name,14) as name , value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
-  v_standby_lag c_standby_lag%rowtype;
-  cursor c_standby_max_seq is select thread#, max(sequence#) as mseq from v\$archived_log where applied='YES' group by thread#;
-  v_standby_max_seq c_standby_max_seq%rowtype;
-  cursor c_mrp is select thread#,process,status,sequence#,block#,blocks from v\$managed_standby where PROCESS like 'MRP%' order by sequence#;
-  v_mrp c_mrp%rowtype;
-  cursor c_convert is select q'[alter system set ]' || name || q'[ = ']' || replace(value,', ',''',''') || q'[' scope=spfile;]' command from v\$parameter where name in ('log_file_name_convert','db_file_name_convert');
-  v_convert c_convert%rowtype;
+  v_runtime_apply_info c_runtime_apply_info%rowtype;
 
 begin
 select database_role,open_mode,PROTECTION_MODE,SWITCHOVER_STATUS,FORCE_LOGGING into v_database_role,v_open_mode,v_protection_mode,v_switchover,v_force_logging from v\$database;
 
-  dbms_output.put_line('DG Information');
-  dbms_output.put_line('=======================');
-  dbms_output.put_line('DATABASE_ROLE       :   '|| v_database_role);
-  dbms_output.put_line('OPEN_MODE           :   '|| v_open_mode);
-  dbms_output.put_line('PROTECTION_MODE     :   '|| v_protection_mode);
-  dbms_output.put_line('SWITCHOVER_STATUS   :   '|| v_switchover);
-  dbms_output.put_line('FORCE_LOGGING       :   '|| v_force_logging);
+    dbms_output.put_line('DG Information');
+    dbms_output.put_line('=======================');
+    dbms_output.put_line('DATABASE_ROLE            :   '|| v_database_role);
+    dbms_output.put_line('OPEN_MODE                :   '|| v_open_mode);
+    dbms_output.put_line('PROTECTION_MODE          :   '|| v_protection_mode);
+    dbms_output.put_line('SWITCHOVER_STATUS        :   '|| v_switchover);
+    dbms_output.put_line('FORCE_LOGGING            :   '|| v_force_logging);
 if v_database_role = 'PRIMARY' then
 
   dbms_output.put_line('
-Primary Current Max Sequence#');
+DataGuard Runtime Apply Info');
   dbms_output.put_line('=======================');
-  open c_max_sequence;
-    loop fetch c_max_sequence into v_max_sequence;
-    exit when c_max_sequence%notfound;
-    dbms_output.put_line('-------------------------------------------------------------------------');
-    dbms_output.put_line('thread# : '|| v_max_sequence.thread#  || '  |  ' || 'max sequence# :   '|| v_max_sequence.max_sequence);
+  open c_runtime_apply_info;
+    loop fetch c_runtime_apply_info into v_runtime_apply_info;
+    exit when c_runtime_apply_info%notfound;
+
+    dbms_output.put_line('Thread#                  :   '|| v_runtime_apply_info.thread);
+    dbms_output.put_line('DB_UNIQUE_NAME           :   '|| v_runtime_apply_info.DB_UNIQUE_NAME);
+    dbms_output.put_line('DEST_NAME                :   '|| v_runtime_apply_info.DEST_NAME);
+    dbms_output.put_line('TARGET                   :   '|| v_runtime_apply_info.TARGET);
+    dbms_output.put_line('DATABASE_MODE            :   '|| v_runtime_apply_info.DATABASE_MODE);
+    dbms_output.put_line('ERROR                    :   '|| v_runtime_apply_info.error);
+    dbms_output.put_line('RECOVERY_MODE            :   '|| v_runtime_apply_info.RECOVERY_MODE);
+    dbms_output.put_line('GAP_STATUS               :   '|| v_runtime_apply_info.GAP_STATUS);
+    dbms_output.put_line('Primary_Last_Archived#   :   '|| v_runtime_apply_info.Last_Archived);
+    dbms_output.put_line('APPLIED_SEQ#             :   '|| v_runtime_apply_info.APPLIED_SEQ);
+    dbms_output.put_line('current_scn              :   '|| v_runtime_apply_info.current_scn);
+    dbms_output.put_line('applied_scn              :   '|| v_runtime_apply_info.applied_scn);
+    dbms_output.put_line('current_scn_time         :   '|| v_runtime_apply_info.current_scn_time);
+    dbms_output.put_line('applied_scn_time         :   '|| v_runtime_apply_info.applied_scn_time);
+    dbms_output.put_line('DELAY_TIME_MINUTE        :   '|| v_runtime_apply_info.DELAY_TIME_MINUTE);
     end loop;
-  close c_max_sequence;
+  close c_runtime_apply_info;
 
   dbms_output.put_line('
 Primary Dest_id Error Information');
@@ -570,16 +582,6 @@ Standby Current Apply Lag Information');
     dbms_output.put_line('inst_id : ' || v_standby_lag.inst_id  || '  |  ' || 'name : ' || v_standby_lag.name || '  |  ' || 'value : ' || v_standby_lag.value);
     end loop;
   close c_standby_lag;
-
-  dbms_output.put_line('
-Standby Max Applied Archived Log Information');
-  dbms_output.put_line('=======================');
-  open c_max_sequence;
-    loop fetch c_max_sequence into v_standby_max_seq;
-    exit when c_max_sequence%notfound;
-    dbms_output.put_line('thread# : ' || v_standby_max_seq.thread#  || '  |  ' || 'max sequence# : ' || v_standby_max_seq.mseq);
-    end loop;
-  close c_max_sequence;
 
   dbms_output.put_line('
 MRP Processes Status Information');
