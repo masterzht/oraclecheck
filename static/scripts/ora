@@ -9025,7 +9025,7 @@ fi
 
 #####################################################################################################################
 
-if [ "$1" = "temp" ] ; then
+if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
 
   if [ "$2" != "" ]; then
     EXTRA_PRED="AND   s.username=upper('$2')"
@@ -9156,10 +9156,6 @@ There is no Session that PGA Memory Usage > 10M for Per Session');
 
 end;
 /
-
-
-
-
 
 
     $ECHO 
@@ -12325,74 +12321,20 @@ if [ "$1" = "tbs" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set linesize 200 pagesize 20
-    col autoextensible format a4 heading "autoExt"
-    col USED for a20 trunc
-    col USED_PCT for a10 trunc
-    col TABLESPACE_NAME for a20 trunc
-    col contents format a10 trunc
-    col status format a8
-    col RENTENTION format a9 trunc
-    col LOGGING format a8 trunc
-    col manage format a6
-    col files format 9999
-    col owner format a20 trunc
-    col blk_sz format 99999
-    spool ora_tbs_$filedate.log
-    pro "order by usage percent:"
-    SELECT 
-      d.tablespace_name,
-      round(a.bytes/1024/1024-round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/1024/1024)) as free_M ,
-      d.STATUS status,
-      d.contents contents,
-      d.extent_management manage,
-      d.segment_space_management space_manage,
-      d.bigfile big,d.LOGGING logging,
-      d.RETENTION rentention--,d.ENCRYPTED encry
-      ,d.BLOCK_SIZE blk_sz,NVL(a.count, 1) files,
-      round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/1024/1024) 
-      used_M, round(a.bytes/1024/1024) total_M 
-        ,round(DECODE(d.contents, 'UNDO', NVL(u.bytes, 0), NVL(a.bytes - NVL(f.bytes, 0), 0))/a.bytes*100,1) as usage_pct  ,autoextensible
-    FROM sys.dba_tablespaces d,
-     ( SELECT tablespace_name,SUM(bytes) bytes,SUM(maxbytes) maxb,COUNT(file_id) count ,max(autoextensible) as autoextensible
-        FROM dba_data_files 
-        GROUP BY       tablespace_name 
-      ) a,
-      ( SELECT tablespace_name,sum(bytes) bytes 
-        FROM dba_free_space  --------------------------------------------------
-        GROUP BY       tablespace_name 
-      ) f,
-      ( SELECT tablespace_name,SUM(bytes) bytes 
-        FROM dba_undo_extents 
-        WHERE STATUS IN ('ACTIVE', 'UNEXPIRED') 
-        GROUP BY       tablespace_name 
-      ) u 
-    WHERE d.tablespace_name = a.tablespace_name(+) 
-      AND d.tablespace_name = f.tablespace_name(+) 
-      AND d.tablespace_name = u.tablespace_name(+) 
-      AND NOT (d.extent_management = 'LOCAL'  AND d.contents = 'TEMPORARY') 
-    UNION ALL ------------------------------------------------------------------
-    SELECT d.tablespace_name tbsn,round(a.bytes/1024/1024-NVL(t.bytes,0)/1024/1024) as free_M
-        ,d.STATUS tbss,d.contents tbsc,d.extent_management manage, 
-       d.segment_space_management tbsm,d.bigfile tbsf,d.LOGGING tbsl,d.RETENTION tbsr--,d.ENCRYPTED tbsy
-      ,d.BLOCK_SIZE blk_sz,NVL(a.count, 1) tbsi,round(NVL(t.bytes,0)/1024/1024) tbsu,round(a.bytes/1024/1024) tbsz ,
-       round(NVL(t.bytes, 0)/a.bytes*100,1) as usage_pct  ,autoextensible
-    FROM sys.dba_tablespaces d,
-     ( SELECT tablespace_name,sum(bytes) bytes,SUM(maxbytes) maxb,count(file_id) count ,max(autoextensible) as autoextensible
-        FROM dba_temp_files 
-        GROUP BY       tablespace_name 
-      ) a,
-      ( SELECT     ss.tablespace_name,sum((ss.used_blocks * ts.blocksize)) bytes 
-        FROM gv\$sort_segment ss,sys.ts\$ ts WHERE ss.tablespace_name = ts.NAME 
-        GROUP BY       ss.tablespace_name 
-      ) t 
-    WHERE d.tablespace_name = a.tablespace_name(+)   AND d.tablespace_name = t.tablespace_name(+)   
-         AND d.extent_management = 'LOCAL'   AND d.contents = 'TEMPORARY' 
-    ORDER BY usage_pct;
+  set linesize 500
+  set serveroutput on
+  set feedback off
+  set verify off
 
 
- SELECT a.tablespace_name,
+  set linesize 500
+  set serveroutput on
+  set feedback off
+  set verify off
+declare
+    v_cnt number;
+
+    cursor c_tbs is SELECT a.tablespace_name,
        round((total-free) / maxsize * 100, 1) || '%' as used_pct,
        rpad(lpad('#',ceil((nvl(total-free,0)/b.maxsize)*20),'#'),20,' ') as used,
        b.autoextensible,
@@ -12402,7 +12344,7 @@ if [ "$1" = "tbs" ]; then
        b.cnt DATAFILE_COUNT,
        c.status,
        c.CONTENTS,
-       c.extent_management as MANAGE,
+       c.extent_management,
        c.allocation_type,
        b.maxsize
 FROM   (SELECT tablespace_name,
@@ -12449,15 +12391,168 @@ FROM   (SELECT tablespace_name,
 WHERE  a.tablespace_name = b.tablespace_name
        AND a.tablespace_name = c.tablespace_name
 order by 3 desc,2 desc;
+     v_tbs c_tbs%rowtype;
 
-    $ECHO
-    
-    Pro Non sys user objects stored in SYS tablespace:
-    select owner,count(*),round(sum(bytes/1024/1024)) as size_M 
-    from dba_segments 
-    where tablespace_name in ('SYSTEM','SYSAUX') 
-    and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS') 
-    group by owner;
+    cursor c_recovery is SELECT decode(name,null,'None',name) as recovery_dest,
+decode(space_limit,0,0,(space_used - SPACE_RECLAIMABLE) / space_limit * 100) as used_pct
+FROM v\$recovery_file_dest;
+     v_recovery c_recovery%rowtype;
+
+    cursor c_sys_obj is select owner,count(*) as cnt ,
+                  round(sum(bytes/1024/1024)) as size_m
+                  from dba_segments
+                  where tablespace_name in ('SYSTEM','SYSAUX')
+                     and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL')
+                  group by owner;
+    v_sys_obj c_sys_obj%rowtype;
+
+
+
+    cursor c_big_tab is select OWNER,SEGMENT_NAME,SIZE_MB,PARTITION_NAME from (select owner,nvl2(PARTITION_NAME,SEGMENT_NAME||'.'||PARTITION_NAME,SEGMENT_NAME) SEGMENT_NAME ,trunc(bytes/1024/1024) as SIZE_MB,decode(PARTITION_NAME,null,'None',PARTITION_NAME) as PARTITION_NAME
+    from dba_segments where segment_type like 'TABLE%' and owner  not in ('OWBSYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN',
+                            'ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS','DBSNMP','APPQOSSYS','APEX_040200','AUDSYS',
+                            'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL') order by bytes desc)
+    where  rownum < 21;
+    v_big_tab c_big_tab%rowtype;
+
+
+    cursor c_big_lob is select OWNER,TABLE_NAME,COLUMN_NAME,SEGMENT_NAME,SIZE_MB from
+    (select a.owner,b.table_name,b.column_name,a.SEGMENT_NAME ,trunc(a.bytes/1024/1024) as SIZE_MB from dba_segments a,dba_lobs b
+    where a.segment_type like 'LOB%' and a.owner not in ('OWBSYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN',
+                               'ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS','DBSNMP','APPQOSSYS','APEX_040200','AUDSYS',
+                               'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL') and a.SEGMENT_NAME=b.SEGMENT_NAME order by a.bytes desc) where  rownum < 11;
+    v_big_lob c_big_lob%rowtype;
+
+    cursor c_hwmall is SELECT OWNER,
+       SEGMENT_NAME TABLE_NAME,
+       SEGMENT_TYPE,
+       round(BYTES/1024/1024,2) as SEGMENT_MB,
+       GREATEST(ROUND(100 * (NVL(HWM - AVG_USED_BLOCKS, 0) /
+                      GREATEST(NVL(HWM, 1), 1)),
+                      2),
+                0) WASTE_PER
+  FROM (SELECT A.OWNER OWNER,
+               A.SEGMENT_NAME,
+               A.SEGMENT_TYPE,
+               B.LAST_ANALYZED,
+               A.BYTES,
+               B.NUM_ROWS,
+               A.BLOCKS BLOCKS,
+               B.EMPTY_BLOCKS EMPTY_BLOCKS,
+               A.BLOCKS - B.EMPTY_BLOCKS - 1 HWM,
+               DECODE(ROUND((B.AVG_ROW_LEN * NUM_ROWS * (1 + (PCT_FREE / 100))) / C.BLOCKSIZE,0),0,1,
+                      ROUND((B.AVG_ROW_LEN * NUM_ROWS * (1 + (PCT_FREE / 100))) / C.BLOCKSIZE,0)) + 2 AVG_USED_BLOCKS,
+               ROUND(100 * (NVL(B.CHAIN_CNT, 0) / GREATEST(NVL(B.NUM_ROWS, 1), 1)), 2) CHAIN_PER,
+               B.TABLESPACE_NAME O_TABLESPACE_NAME
+          FROM SYS.DBA_SEGMENTS A, SYS.DBA_TABLES B, SYS.TS$ C
+         WHERE A.OWNER = B.OWNER
+           AND SEGMENT_NAME = TABLE_NAME
+           AND SEGMENT_TYPE = 'TABLE'
+           AND B.TABLESPACE_NAME = C.NAME)
+ WHERE GREATEST(ROUND(100 * (NVL(HWM - AVG_USED_BLOCKS, 0) / GREATEST(NVL(HWM, 1), 1)), 2), 0) > 50
+   AND OWNER  not in ('OWBSYS','SYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN',
+                               'ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS','DBSNMP','APPQOSSYS','APEX_040200','AUDSYS',
+                               'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL')
+   AND BLOCKS > 100
+ ORDER BY WASTE_PER DESC;
+    v_hwmall c_hwmall%rowtype;
+
+
+begin
+
+  dbms_output.enable(buffer_size => NULL);
+  dbms_output.put_line('
+FCNT Means DATAFILE_CNT
+Used% Means PCT_USED%
+AUTO? Means AUTOEXTEND
+MANAGE? Means EXTENT_MANAGEMENT
+Tablespace Used Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| TABLESPACE_NAME     |' || ' Used% ' || '|                 Used |' || ' AUTO? ' || '| TOTAL_GB |' || ' USED_GB ' || '| FREE_GB |' || ' FCNT ' || '| STATUS |' || '  CONTENTS ' || '| MANAGE? |' || ' MAXSIZE(MB) ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_tbs;
+    loop fetch c_tbs into v_tbs;
+    exit when c_tbs%notfound;
+    dbms_output.put_line('| ' || rpad(v_tbs.TABLESPACE_NAME,19) ||' | '|| lpad(v_tbs.used_pct,5) || ' | '|| rpad(v_tbs.used,20) || ' | '|| lpad(v_tbs.autoextensible,5) || ' | '|| lpad(v_tbs.TOTAL_GB,8) || ' | '|| lpad(v_tbs.USED_GB,7) || ' | '|| lpad(v_tbs.FREE_GB,7) || ' | '|| lpad(v_tbs.DATAFILE_COUNT,4) || ' | '|| lpad(v_tbs.STATUS,6) || ' | '|| lpad(v_tbs.CONTENTS,9) || ' | '||lpad(v_tbs.extent_management,7) ||' | ' || lpad(v_tbs.maxsize,12) || '|');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_tbs;
+
+  dbms_output.put_line('
+Fast Recovery Dest Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| RECOVERY_DEST                                                                                |' || ' Used_Pct% ' || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
+  open c_recovery;
+    loop fetch c_recovery into v_recovery;
+    exit when c_recovery%notfound;
+    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,10) || '|');
+    end loop;
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
+  close c_recovery;
+
+    dbms_output.put_line('
+Non sys user objects stored in SYS tablespace');
+    dbms_output.put_line('======================');
+  dbms_output.put_line('-----------------------------------------------------');
+  dbms_output.put_line('| OWNER                |'|| ' CNT      |' || ' SIZE_MB    ' || '|');
+  dbms_output.put_line('-----------------------------------------------------');
+  open c_sys_obj;
+    loop fetch c_sys_obj into v_sys_obj;
+    exit when c_sys_obj%notfound;
+    dbms_output.put_line('| ' || rpad(v_sys_obj.owner,20) ||' | '|| lpad(v_sys_obj.cnt,8) || ' | ' || lpad(v_sys_obj.size_m,10) || ' |');
+    end loop;
+    dbms_output.put_line('----------------------------------------------------');
+  close c_sys_obj;
+
+
+  dbms_output.put_line('
+Top 20 Big Table Information in The Database');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER            |' || ' SEGMENT_NAME                     ' || '|   SIZE(MB) ' || '| PARTITION_NAME                ' ||'|');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------');
+  open c_big_tab;
+    loop fetch c_big_tab into v_big_tab;
+    exit when c_big_tab%notfound;
+    dbms_output.put_line('| ' || rpad(v_big_tab.OWNER,16) ||' | '|| rpad(v_big_tab.SEGMENT_NAME,32) || ' | '|| lpad(v_big_tab.SIZE_MB,10) || ' | ' || rpad(v_big_tab.PARTITION_NAME,30)|| '|');
+    end loop;
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------');
+  close c_big_tab;
+
+
+  dbms_output.put_line('
+Top 20 Big LOB Information in The Database (When Migrating Database,<purge dba_recyclebin;> can purge unnecessary LOB)');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER            |' || ' TABLE_NAME                ' || '| COLUMN_NAME          |' || ' SEGMENT_NAME                   ' || '| SIZE(MB) ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
+  open c_big_lob;
+    loop fetch c_big_lob into v_big_lob;
+    exit when c_big_lob%notfound;
+    dbms_output.put_line('| ' || rpad(v_big_lob.OWNER,16) ||' | '|| rpad(v_big_lob.TABLE_NAME,25) || ' | '|| rpad(v_big_lob.COLUMN_NAME,20) ||  ' | '|| rpad(v_big_lob.SEGMENT_NAME,30) ||  ' | '|| lpad(v_big_lob.SIZE_MB,9) ||'|');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------');
+  close c_big_lob;
+
+  dbms_output.put_line('
+HWM Information Rely on Table Statistics');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER                 |' || ' TABLE_NAME                       |' || ' SEGMENT_TYPE   ' || '| SEGMENT_MB     |' || ' WASTER% ' || '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------');
+  open c_hwmall;
+    loop fetch c_hwmall into v_hwmall;
+    exit when c_hwmall%notfound;
+    dbms_output.put_line('| ' || rpad(v_hwmall.owner,21) || ' | ' || rpad(v_hwmall.TABLE_NAME,32) ||' | '|| rpad(v_hwmall.SEGMENT_TYPE,14) || ' | ' || lpad(v_hwmall.SEGMENT_MB,14) || ' | ' || lpad(v_hwmall.WASTE_PER || '%',7) || ' |');
+    end loop;
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------');
+  close c_hwmall;
+
+end;
+/
     
     spool off
 !
