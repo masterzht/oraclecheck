@@ -8407,7 +8407,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
     connect $DBUSER
 
     set linesize 300 pagesize 30
-    col "SQL_INFO sid and serail#@inst_id" format a32
+    col "sid and serial@inst_id" format a32
     col OBJECT_NAME format a25
     col SQL_TEXT format a80 trunc
     col event format a30
@@ -8419,7 +8419,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
                 sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event
            FROM gv\$session
          )
-    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "SQL_INFO sid and serail#@inst_id", s.module, s.machine,object_name,s.sql_id,s.event
+    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id", s.module, s.machine,object_name,s.sql_id,s.event
             ,substr(sql_text,1,100) sql_text
        FROM sessions s
        LEFT OUTER JOIN dba_objects
