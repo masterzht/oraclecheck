@@ -416,7 +416,7 @@ Pro
     set pagesize 200
     set linesize 200
     col name for a30
-    col display_value for a70
+    col display_value for a100
 select name, display_value
   from (select name, display_value
           from v\$parameter
@@ -433,8 +433,6 @@ select name, display_value
 
 Pro DataGuard RunTime Apply Info:
 Pro
-
-
 
 set linesize 400
 set serveroutput on
@@ -469,6 +467,7 @@ declare
        TARGET,
        DATABASE_MODE,
        error,
+       DESTINATION,
        RECOVERY_MODE,
        GAP_STATUS,
        Last_Archived,
@@ -547,6 +546,7 @@ DataGuard Runtime Apply Info');
     dbms_output.put_line('TARGET                   :   '|| v_runtime_apply_info.TARGET);
     dbms_output.put_line('DATABASE_MODE            :   '|| v_runtime_apply_info.DATABASE_MODE);
     dbms_output.put_line('ERROR                    :   '|| v_runtime_apply_info.error);
+    dbms_output.put_line('DESTINATION              :   '|| v_runtime_apply_info.DESTINATION);
     dbms_output.put_line('RECOVERY_MODE            :   '|| v_runtime_apply_info.RECOVERY_MODE);
     dbms_output.put_line('GAP_STATUS               :   '|| v_runtime_apply_info.GAP_STATUS);
     dbms_output.put_line('Primary_Last_Archived#   :   '|| v_runtime_apply_info.Last_Archived);
@@ -579,7 +579,9 @@ Standby Current Apply Lag Information');
   open c_standby_lag;
     loop fetch c_standby_lag into v_standby_lag;
     exit when c_standby_lag%notfound;
-    dbms_output.put_line('inst_id : ' || v_standby_lag.inst_id  || '  |  ' || 'name : ' || v_standby_lag.name || '  |  ' || 'value : ' || v_standby_lag.value);
+    dbms_output.put_line('DEST_ID                  :   '|| v_standby_lag.inst_id);
+    dbms_output.put_line('DEST_NAME                :   '|| rpad(ltrim(v_standby_lag.name),20));
+    dbms_output.put_line('VALUE                    :   '|| rpad(ltrim(v_standby_lag.value),20));
     end loop;
   close c_standby_lag;
 
@@ -589,7 +591,11 @@ MRP Processes Status Information');
   open c_mrp;
     loop fetch c_mrp into v_mrp;
     exit when c_mrp%notfound;
-    dbms_output.put_line('thread# : ' ||v_mrp.thread#  || '  |  ' || 'PROCESS : ' ||v_mrp.PROCESS  || '  |  ' || 'STATUS :' ||v_mrp.STATUS || '  |  ' ||'SEQUENCE# :' || v_mrp.SEQUENCE# || '  |  ' ||'BLOCK# :' || v_mrp.BLOCK#);
+    dbms_output.put_line('thread#                  :   '|| v_mrp.thread#);
+    dbms_output.put_line('PROCESS                  :   '|| v_mrp.PROCESS);
+    dbms_output.put_line('STATUS                   :   '|| v_mrp.STATUS);
+    dbms_output.put_line('SEQUENCE#                :   '|| v_mrp.SEQUENCE#);
+    dbms_output.put_line('BLOCK#                   :   '|| v_mrp.BLOCK#);
     end loop;
   close c_mrp;
   dbms_output.put_line('
