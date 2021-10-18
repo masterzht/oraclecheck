@@ -628,24 +628,18 @@ if [ "$1" = "db_link" -o "$1" = "dblink" ]; then
 
     connect $DBUSER
 
-set linesize 300
+set linesize 300 pagesize 100
 set timing off
 col owner head OWNER for a15
-col db_link head DB_LINK for a20
+col db_link head DB_LINK for a30
 col username head USERNAME for a20
 col host head HOST for a40
-col cmd for a100
+col show_dblink_ddl_command for a110
 prompt show the dblinks information
-select
-owner,
-db_link,
-username,
-host,
-created
-from dba_db_links;
+select owner,db_link,username,host,to_char(created,'yyyy-mm-dd hh24:mi:ss') as created from dba_db_links;
 
 prompt show the DDL of dblink creation
-select q'[create public database link ]' || DB_LINK || q'[ connect to ]' || USERNAME || q'[ identified by ]' || 'password using ' || q'[']'||HOST||q'[';]' as cmd
+select q'[create public database link ]' || DB_LINK || q'[ connect to ]' || USERNAME || q'[ identified by ]' || 'password using ' || q'[']'||HOST||q'[';]' as show_dblink_ddl_command
 from dba_db_links;
 
 -- who is querying via dblink?
@@ -671,7 +665,7 @@ substr(
    ),1,1
 ) "S",
 substr(w.event,1,10) "WAITING"
-from  x$k2gte g, x$ktcxb t, x$ksuse s, v$session_wait w, v$session s2
+from  x\$k2gte g, x\$ktcxb t, x\$ksuse s, v\$session_wait w, v\$session s2
 where  g.K2GTDXCB =t.ktcxbxba
 and   g.K2GTDSES=t.ktcxbses
 and  s.addr=g.K2GTDSES
