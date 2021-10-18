@@ -12321,16 +12321,12 @@ if [ "$1" = "tbs" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-  set linesize 500
+  set linesize 200 pages 0
   set serveroutput on
   set feedback off
   set verify off
+  spool ora_tbs_${filedate}.log
 
-
-  set linesize 500
-  set serveroutput on
-  set feedback off
-  set verify off
 declare
     v_cnt number;
     v_hwm_cnt number;
