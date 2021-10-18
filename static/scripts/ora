@@ -114,7 +114,8 @@ usage()
                                                
       - dashcnt \"yyyy/mm/dd hh24:mi\" [30]    dba_hist_active_sess_history count by sample_time from given time last for 30(def) minutes
       - dashevent \"yyyy/mm/dd hh24:mi\" 20 2  ora dashevent given starttime,last for [20] min, top 2 events,grp by inst_id,sample_time,events
-      - dashsql                                same with ashsql 
+      - dashsql                                same with ashsql
+      - dblink/db_link/link                    show dblink Information
       - dbtime                                 dbtime by day / by top
       - ddl  <name> [owner] [type]             DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
       - ddl/get_ddl <name>                     DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
@@ -622,7 +623,7 @@ fi
 
 
 ##################################show dblink information ##############################################
-if [ "$1" = "db_link" -o "$1" = "dblink" ]; then
+if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
