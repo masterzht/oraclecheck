@@ -12463,8 +12463,6 @@ FROM v\$recovery_file_dest;
 begin
 
   dbms_output.enable(buffer_size => NULL);
-
-
   select count(*) into v_sys_obj_cnt from dba_segments
                   where tablespace_name in ('SYSTEM','SYSAUX')
                   and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL','LBACSYS');
