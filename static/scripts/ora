@@ -9057,33 +9057,6 @@ if [ "$1" = "temp" ] ; then
     select sum(round(BYTES/1024/1024)+1) total_size_mb
     from dba_temp_files ;
     $ECHO
-    
-    Pro sessions used more than 10M temp space(sort_usage):
-    set linesize 200 pagesize 30
-    col username format a11
-    col status format a8
-    col sql_id format a13
-    col tablespace format a10
-    col segtype format a10
-    col contents format a10
-    SELECT se.inst_id,
-           se.username username,
-           se.SID sid,
-           se.serial#,
-           se.status status,
-           se.sql_id,
-           su.TABLESPACE tablespace,
-           su.segtype,
-           su.CONTENTS CONTENTS,
-           round(su.blocks * 8192 / 1024 / 1024, 2) size_MB 
-    FROM gv\$session se,
-         gv\$sort_usage su
-    WHERE se.saddr=su.session_addr
-    AND   se.inst_id=su.inst_id
-    and   se.inst_id=$INST
-    and  round(su.blocks * 8192 / 1024 / 1024, 2)>=10
-    ORDER BY size_MB;
-    $ECHO
 
    set linesize 500
    set serveroutput on
