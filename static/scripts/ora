@@ -1891,7 +1891,8 @@ declare
        to_char(b.last_analyzed,'yymmdd hh24:mi')) as last_analyzed,
        case when b.visibility = 'VISIBLE' then 'YES' else 'NO ' end visibility,
        case when uniqueness = 'UNIQUE' then 'YES' else 'NO ' end UNIQUENESS,
-       B.CLUSTERING_FACTOR
+       B.CLUSTERING_FACTOR,
+       decode(B.GLOBAL_STATS,'YES','GLOBAL','LOCAL') as INDEX_PARTITION
   FROM DBA_IND_COLUMNS A, DBA_INDEXES B, DBA_SEGMENTS C ,DBA_TAB_COLUMNS T
  WHERE A.INDEX_NAME = B.INDEX_NAME
    AND T.TABLE_NAME = A.TABLE_NAME
@@ -1964,17 +1965,17 @@ COL# Means COLUMN_POSITION
 VIS? Means VISIABLE
 UNI? Means UNIQUE
 USA? Means USABLE
-Index Information(contains Global and Local index)');
+Index Information(contains Global and Local index See the Last Column)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME             |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE          ' || '| COL# |' || ' TABLESPACE_NAME ' || '| INDEX_TYPE |' || ' DEGREE ' || '| INDEX_MB |' || ' DESCEND ' || '| USA? |'  || ' LAST_ANALYZED '|| '| VIS? |'  || ' UNI? ' || '| CLUSTER FACTOR '|| '|');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME             |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE          ' || '| COL# |' || ' TABLESPACE_NAME ' || '| INDEX_TYPE |' || ' DEGREE ' || '| INDEX_MB |' || ' DESCEND ' || '| USA? |'  || ' LAST_ANALYZED '|| '| VIS? |'  || ' UNI? ' || '| CLUSTER FACTOR '|| '| GLOBAL OR LOCAL ' ||'|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_i;
     loop fetch c_i into v_i;
     exit when c_i%notfound;
-    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,22) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,20) ||' | '|| lpad(v_i.COLUMN_POSITION,4) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,10) || ' | '|| lpad(v_i.DEGREE,6) ||  ' | '|| lpad(v_i.INDEX_MB,8) || ' | '|| lpad(v_i.DESCEND,7) || ' | '|| lpad(v_i.USABLE,4) || ' | '|| lpad(v_i.LAST_ANALYZED,13) || ' | '|| lpad(v_i.visibility,4) || ' | '|| lpad(v_i.UNIQUENESS,4)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,14) ||' |');
+    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,22) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,20) ||' | '|| lpad(v_i.COLUMN_POSITION,4) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,10) || ' | '|| lpad(v_i.DEGREE,6) ||  ' | '|| lpad(v_i.INDEX_MB,8) || ' | '|| lpad(v_i.DESCEND,7) || ' | '|| lpad(v_i.USABLE,4) || ' | '|| lpad(v_i.LAST_ANALYZED,13) || ' | '|| lpad(v_i.visibility,4) || ' | '|| lpad(v_i.UNIQUENESS,4)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,14) || ' | ' || lpad(v_i.INDEX_PARTITION,15) ||' |');
     end loop;
-    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_i;
 
    select count(*) into v_part_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES') order by index_name, partition_position;
@@ -11062,52 +11063,8 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col TRU for a30
     col filename new_value filename
     col filename format a30
-    select replace(upper('$tablename'),'$','_') as filename from dual;
-    
-    --in case of \$ in table_name:
     spool ora_table_${tablename}_${filedate}.log
-     
-    $DEFNODISP pro
-    $DEFNODISP pro
-    $DEFNODISP prompt Dependencies  info:
-    $DEFNODISP 
-    $DEFNODISP col referenced_name format a30
-    $DEFNODISP col referenced_owner format a30
-    $DEFNODISP col owner format a30
-    $DEFNODISP col name format a30
-    $DEFNODISP 
-    $DEFNODISP SELECT referenced_owner,referenced_name,owner,name,type,dependency_type
-    $DEFNODISP FROM dba_dependencies 
-    $DEFNODISP where referenced_name=upper('$tablename') and referenced_owner=upper('$owner'); 
-    $DEFNODISP $ECHO    
 
-    $DEFNODISP pro
-    $DEFNODISP pro
-    $DEFNODISP Pro Child Table:
-    $DEFNODISP col child_owner format a30
-    $DEFNODISP col child_table format a30
-    $DEFNODISP col constraint_name format a30
-    $DEFNODISP col r_constraint_name format a30
-    $DEFNODISP 
-    $DEFNODISP select --r_owner parent_owner,
-    $DEFNODISP owner as child_owner,table_name as child_table,constraint_name,r_constraint_name,delete_rule,status
-    $DEFNODISP from dba_constraints 
-    $DEFNODISP where constraint_type='R' and (r_owner , r_constraint_name) in 
-    $DEFNODISP (select /*+ no_merge */owner,constraint_name 
-    $DEFNODISP from dba_constraints where owner=upper('$owner') and table_name=upper('$tablename') );
-    $DEFNODISP $ECHO
-    $DEFNODISP Pro Parent Table:
-    $DEFNODISP --find parent
-    $DEFNODISP select owner as parent_owner,table_name as parent_table
-    $DEFNODISP ,constraint_name,constraint_type
-    $DEFNODISP  from dba_constraints where (owner,constraint_name) in
-    $DEFNODISP (select r_owner,r_constraint_name from dba_constraints 
-    $DEFNODISP  where owner=upper('$owner') and table_name=upper('$tablename') and constraint_type='R'
-    $DEFNODISP  );
-    $DEFNODISP  $ECHO
-
-    pro
-    pro
     prompt Table partitions (Top 50 order by pos asc):
 
     col high_value format a40 trunc
@@ -11247,68 +11204,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
            table_name,owner,savtime DESC NULLS FIRST;
      $ECHO           
         
-    pro
-    pro
-    Pro Index statistics : 
-    set linesize 180 pagesize 100
-    col idx_type format a10 trunc
-    col deg format a3 
-    col vis format a3
-    col cols format 99
-    col lv format 99
-    col index_name format a30
-    col locked format a5 
-    col LAST_ANALYZED format a20
-    
-    SELECT /*+ NO_MERGE LEADING(pt s i) */
-          -- s.table_name,
-          -- s.table_owner,
-           s.index_name,
-          -- s.owner,
-           decode(i.index_type,'FUNCTION-BASED NORMAL','F_normal',i.index_type) as idx_type,
-           --i.partitioned,
-           --i.degree as deg,
-           --i.temporary,
-           --i.status,
-           --decode(i.VISIBILITy,'VISIBLE','Y','N') as vis,
-           --decode(i.uniqueness,'NONUNIQUE','N','UNIQUE','Y','N/A') as uni,
-           (SELECT COUNT(*)
-              FROM dba_ind_columns c
-             WHERE c.index_owner = s.owner
-               AND c.index_name = s.index_name
-               AND c.table_owner = s.table_owner
-               AND c.table_name = s.table_name) cols,
-           s.num_rows,
-           --s.sample_size,
-           --CASE WHEN s.num_rows > 0 THEN TO_CHAR(ROUND(s.sample_size * 100 / s.num_rows, 1), '99999990D0') END sample_size_perc,
-           TO_CHAR(s.last_analyzed, 'YY-MM-DD/HH24:MI:SS') last_analyzed,
-           s.distinct_keys as DK,
-           s.blevel as lv,
-           s.leaf_blocks as lf_blks,
-           s.avg_leaf_blocks_per_key as LF_key,
-           s.avg_data_blocks_per_key as DB_Key,
-           s.clustering_factor as CF,
-           --s.global_stats,
-           --s.user_stats,
-           s.stattype_locked as locked,
-           s.stale_stats as stale
-      FROM --plan_tables pt,
-           dba_ind_statistics s,
-           dba_indexes i
-     WHERE --pt.object_type = 'TABLE'
-       --AND pt.object_owner = s.table_owner
-       --AND pt.object_name = s.table_name
-           s.table_owner=upper('$owner')
-       AND s.table_name=upper('$tablename')
-       AND s.object_type = 'INDEX'
-       AND s.owner = i.owner
-       AND s.index_name = i.index_name
-       AND s.table_owner = i.table_owner
-       AND s.table_name = i.table_name
-     ORDER BY s.index_name;    
-     $ECHO
-     
-     
+
     PRO
     pro
     pro Table Columns info: 
@@ -11352,61 +11248,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     where table_name=upper('$tablename') and owner=upper('$owner')
     order by partition_position;
     $ECHO
-    
-    
-   
-    pro
-    pro
-    prompt Table Index info: 
-    col index_name format a30
-    col table_owner format a10 trunc
-    col table_name format a30
-    col INDEX_TYPE format a10 trunc
-    col degree format a7
-    col TABLESPACE_NAME format a20 trunc
-    col INDEX_PARTITION format a10 trunc
-    col temp format a4
-    select --a.table_owner,a.table_name,
-          a.index_name,a.status,
-          $ver2 decode(a.visibility,'INVISIBLE','---NO---','YES') as visible,
-          decode(a.uniqueness,'UNIQUE','YES','NO') uniq
-          ,a.index_type,a.blevel,trim(degree) as degree,
-          temporary as temp,TABLESPACE_NAME,
-          decode(b.LOCALITY,null,'NO','GLOBAL','GLOBAL PARTITIONED','LOCAL') as index_partition
-    from dba_indexes a,DBA_PART_INDEXES b
-    where a.table_name=upper('$tablename') and  a.table_owner=upper('$owner')
-    and a.owner=b.owner(+) and a.table_name=b.table_name(+) and a.index_name=b.index_name(+);
-    $ECHO
-    
-    pro
-    pro
-    prompt Table Index columns:  
 
-    col table_name format a30
-    col index_name format a30
-    col column_name format a30
-    col uniq format a4
-    col idx_type format a10
-    col pos format 99
-    break on INDEX_NAME skip 1
-
-    select col.table_name--, decode(ind.uniqueness,'UNIQUE','YES','NO') uniq
-     --,decode(ind.index_type,'FUNCTION-BASED NORMAL','FB_Normal',ind.index_type) idx_type
-     ,col.index_name  
-     ,col.column_name
-     ,col.column_position as pos
-     --,status
-     --,visibility
-   from   dba_ind_columns  col,
-          dba_indexes      ind
-   where  col.table_owner = ind.table_owner
-    and  col.index_name = ind.index_name
-    and  col.table_name = ind.table_name
-    and  ind.table_owner = upper('$owner') 
-    and  ind.table_name  = upper('$tablename') 
-   order by col.table_name, col.index_name, col.column_position ;
-   $ECHO
-   clear break
     
     pro
     pro
