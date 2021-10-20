@@ -10926,39 +10926,44 @@ if [ "$1" = "rman" ]; then
 
 
     Pro recovery_file_dest usage:
-    
+
     col name format a60
     SELECT NAME,
            round(SPACE_LIMIT / 1024 / 1024 / 1024) SPACE_LIMIT_GB,
            round((SPACE_LIMIT - SPACE_USED + SPACE_RECLAIMABLE) / 1024 / 1024 / 1024) AS SPACE_AVAILABLE_GB,
            ROUND((SPACE_USED - SPACE_RECLAIMABLE) / SPACE_LIMIT * 100, 1) AS PERCENT_USED
       FROM V\$RECOVERY_FILE_DEST;
-select  * from (
-  select
-    'db_check_backup_info' as "db_check_backup_info",
+
+    col TIME_TAKEN_DISPLAY for a18
+    col status for a10
+    col INCR_0 for a6
+    col INCR_1 for a6
+    col BK_INST for a7
+    col BACKUP_MB for 999999.99
+    select * from ( select
     j.session_recid, --j.session_stamp,
-    to_char(j.start_time, 'yyyy-mm-dd hh24:mi:ss') start_time,
-    to_char(j.end_time, 'yyyy-mm-dd hh24:mi:ss') end_time,
-    round((j.output_bytes/1024/1024),2) output_bytes,
+    to_char(j.start_time, 'mm-dd hh24:mi:ss') start_time,
+    to_char(j.end_time, 'mm-dd hh24:mi:ss') end_time,
+    round((j.output_bytes/1024/1024),2) BACKUP_MB,
     j.status,
     j.input_type,
     decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',3, 'Tuesday', 4, 'Wednesday',5, 'Thursday', 6, 'Friday',7, 'Saturday') WEEK,
     round(j.elapsed_seconds,-1) ELAPSED_TIME_SEC, j.TIME_TAKEN_DISPLAY,
-    x.cf,
-    x.df,
-    x.i0,
-    x.i1,
+    x.controlfile,
+    x.DB_FULL,
+    x.incr_0,
+    x.incr_1,
     x.l,
-    ro.inst_id output_instance,
+    ro.inst_id BK_INST,
     x.device_type
-from V\$RMAN_BACKUP_JOB_DETAILS j
+    from V\$RMAN_BACKUP_JOB_DETAILS j
     left outer join (select
                      d.session_recid, d.session_stamp,
-                     sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) CF,
+                     sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) controlfile,
                      sum(case when d.controlfile_included = 'NO'
-                               and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
-                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) I0,
-                     sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
+                               and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DB_FULL,
+                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) incr_0,
+                     sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) incr_1,
                      sum(case when d.backup_type = 'L' then d.pieces else 0 end) L,d.device_type
                    from
                      V\$BACKUP_SET_DETAILS d
@@ -10970,9 +10975,10 @@ from V\$RMAN_BACKUP_JOB_DETAILS j
                    from GV\$RMAN_OUTPUT o
                    group by o.session_recid, o.session_stamp)
     ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
-where j.start_time > trunc(sysdate)-7
-order by j.start_time desc
-) where rownum <= 100;
+    where j.start_time > trunc(sysdate)-7
+    order by j.start_time desc
+    ) where rownum <= 100;
+
     $ECHO
     
 !
@@ -12648,31 +12654,34 @@ where a.type = 'USER'
   and a.sid not in (select sid from v\$mystat where rownum = 1)
 order by LAST_CALL_ET desc;
 
+set linesize 400
+col AAS for 9999
+col RATIO for 9999
 with tmp as
     (select 1 value,
-	a.inst_id as instance_id,
-	a.SESSION_ID || ',' || a.SESSION_SERIAL# || '@'|| a.inst_id SESSION_ID,
-round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
-	(select username from dba_users u where u.user_id = a.user_id) username,
-	a.machine,
-	a.program,
-	--status,
-	case a.SQL_OPCODE
-	when 1 then 'CREATE TABLE'
-	when 2 then 'INSERT'
-	when 3 then 'SELECT'
-	when 6 then 'UPDATE'
-	when 7 then 'DELETE'
-	when 9 then 'CREATE INDEX'
-	when 11 then 'ALTER INDEX'
-	when 15 then 'ALTER INDEX' else 'Others' end command,
-	case when a.SQL_ID is null then 'Null' when a.SQL_ID is not null then a.sql_id end as SQL_ID,
-	a.SQL_PLAN_HASH_VALUE,
-	nvl(a.event, 'ON CPU') event,
-	nvl(a.wait_class, 'ON CPU') wait_class,
-	a.module,
-	a.action,
-        top_level_sql_id,
+    a.inst_id as instance_id,
+    a.SESSION_ID || ',' || a.SESSION_SERIAL# || '@'|| a.inst_id SESSION_ID,
+    round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
+    (select username from dba_users u where u.user_id = a.user_id) username,
+    a.machine,
+    a.program,
+    --status,
+    case a.SQL_OPCODE
+    when 1 then 'CREATE TABLE'
+	  when 2 then 'INSERT'
+	  when 3 then 'SELECT'
+	  when 6 then 'UPDATE'
+	  when 7 then 'DELETE'
+	  when 9 then 'CREATE INDEX'
+	  when 11 then 'ALTER INDEX'
+	  when 15 then 'ALTER INDEX' else 'Others' end command,
+	  case when a.SQL_ID is null then 'Null' when a.SQL_ID is not null then a.sql_id end as SQL_ID,
+	  a.SQL_PLAN_HASH_VALUE,
+	  nvl(a.event, 'ON CPU') event,
+	  nvl(a.wait_class, 'ON CPU') wait_class,
+	  a.module,
+	  a.action,
+    top_level_sql_id,
 	(select name from V\$ACTIVE_SERVICES s where s.NAME_HASH = a.SERVICE_HASH) SERVICE_NAME,
 (select sql_text from gv\$sql s where s.sql_id = a.sql_id and rownum = 1) sql_text
    from gv\$active_session_history a
@@ -12681,7 +12690,7 @@ select * from (
 SELECT
 sql_id,
 CAST (round( 100.0 * COUNT(*) / (select count(*) from tmp) , 2 ) AS REAL ) ratio,
-CAST (round( 10.0 * COUNT(*) / (select count(*) from tmp) , 2 ) AS REAL ) average_active_session,
+CAST (round( 10.0 * COUNT(*) / (select count(*) from tmp) , 2 ) AS REAL ) "AAS",
 ROUND(100.0 * sum(case when WAIT_CLASS = 'ON CPU' then 1 else 0 end)/count(*), 2) as "ON CPU",
 ROUND(100.0 * sum(case when WAIT_CLASS = 'Other' then 1 else 0 end)/count(*), 2) as "Other",
 ROUND(100.0 * sum(case when WAIT_CLASS = 'Application' then 1 else 0 end)/count(*), 2) as "Application",
@@ -12700,9 +12709,6 @@ k','User I/O','System I/O','Scheduler','Queueing') then 1 else 0 end)/count(*), 
 substr(max(sql_text),0,500) as sql_text
 FROM tmp GROUP BY sql_id ORDER BY COUNT (*) DESC
 ) where rownum <  10;
-
-
-
 
     $ECHO
     spool off
