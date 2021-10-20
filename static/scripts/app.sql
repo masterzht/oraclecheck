@@ -34,7 +34,7 @@ where next_time > sysdate-30 and dest_id=1
 order by next_time
 )
 where first_time != next_time
-order by  first_time, thread#
+order by first_time, thread#
 /
 
 
