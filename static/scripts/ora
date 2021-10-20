@@ -10969,7 +10969,7 @@ if [ "$1" = "rman" ]; then
                    from GV\$RMAN_OUTPUT o
                    group by o.session_recid, o.session_stamp)
     ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
-    where j.start_time > trunc(sysdate)-7
+    where j.start_time > trunc(sysdate)-30
     order by j.start_time desc
     ) where rownum <= 100;
 
