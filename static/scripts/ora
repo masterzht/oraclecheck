@@ -10942,7 +10942,7 @@ if [ "$1" = "rman" ]; then
     j.input_type,
     decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',3, 'Tuesday', 4, 'Wednesday',5, 'Thursday', 6, 'Friday',7, 'Saturday') WEEK,
     round(j.elapsed_seconds,-1) ELAPSED_SECONDS,
-    j.TIME_TAKEN,
+    j.TIME_TAKEN_DISPLAY as TIME_TAKEN,
     x.controlfile,
     x.DB_FULL,
     x.incr_0,
