@@ -56,14 +56,18 @@ status,
 sql_exec_id, 
 KEY, 
 SID, 
-round(elapsed_time/1000000) as "elapsed_time(s)", 
-round(cpu_time/1000000) as "cpu_time(s)", 
+round(elapsed_time/1000) as "elapsed_time(ms)",
+round(cpu_time/1000) as "cpu_time(ms)",
+round(USER_IO_WAIT_TIME/1000) as "USER_IO(ms)",
+round(CLUSTER_WAIT_TIME/1000) as "CLUSTER(ms)",
 fetches, 
 round(buffer_gets/1024/1024)||'M' as buffer_gets, 
 disk_reads
 FROM v$sql_monitor where sql_id = :sql_id order by SQL_EXEC_START;
 
-select sum(TM_DELTA_TIME)/1000/1000 as "TM_DELTA_TIME(S)",SQL_EXEC_ID from v$active_session_history where sql_id = :sql_id group by SQL_EXEC_ID ORDER BY SQL_EXEC_ID;
+select sum(TM_DELTA_TIME)/1000/1000 as "TM_DELTA_TIME(S)",
+       SQL_EXEC_ID
+from v$active_session_history where sql_id = :sql_id group by SQL_EXEC_ID ORDER BY SQL_EXEC_ID;
 
 SELECT dbms_sqltune.report_sql_monitor(
 sql_id => :sql_id,
