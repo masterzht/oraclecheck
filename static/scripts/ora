@@ -10925,12 +10925,14 @@ if [ "$1" = "rman" ]; then
     $ECHO
 
 
-    col TIME_TAKEN_DISPLAY for a18
+    col TIME_TAKEN for a10
     col status for a10
-    col INCR_0 for a6
-    col INCR_1 for a6
-    col BK_INST for a7
+    col INCR_0 for 9999
+    col INCR_1 for 9999
+    col BK_INST for 99
     col BACKUP_MB for 999999.99
+    col DEVICE_TYPE for a11
+
     select * from ( select
     j.session_recid, --j.session_stamp,
     to_char(j.start_time, 'mm-dd hh24:mi:ss') start_time,
@@ -10939,7 +10941,8 @@ if [ "$1" = "rman" ]; then
     j.status,
     j.input_type,
     decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',3, 'Tuesday', 4, 'Wednesday',5, 'Thursday', 6, 'Friday',7, 'Saturday') WEEK,
-    round(j.elapsed_seconds,-1) ELAPSED_TIME_SEC, j.TIME_TAKEN_DISPLAY,
+    round(j.elapsed_seconds,-1) ELAPSED_SECONDS,
+    j.TIME_TAKEN,
     x.controlfile,
     x.DB_FULL,
     x.incr_0,
