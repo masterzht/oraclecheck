@@ -10925,15 +10925,6 @@ if [ "$1" = "rman" ]; then
     $ECHO
 
 
-    Pro recovery_file_dest usage:
-
-    col name format a60
-    SELECT NAME,
-           round(SPACE_LIMIT / 1024 / 1024 / 1024) SPACE_LIMIT_GB,
-           round((SPACE_LIMIT - SPACE_USED + SPACE_RECLAIMABLE) / 1024 / 1024 / 1024) AS SPACE_AVAILABLE_GB,
-           ROUND((SPACE_USED - SPACE_RECLAIMABLE) / SPACE_LIMIT * 100, 1) AS PERCENT_USED
-      FROM V\$RECOVERY_FILE_DEST;
-
     col TIME_TAKEN_DISPLAY for a18
     col status for a10
     col INCR_0 for a6
