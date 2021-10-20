@@ -2891,7 +2891,7 @@ fi
 
 
 ################################################################################
-if [ "$1" = "iostat" -o "$1" = "batch_iostat" ]; then
+if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" = "batch_io" ]; then
     if [ "$2" = ""  -o  "$3" = "" ]; then
       #echo "ora iostat <bid> <eid> "
       #exit 1
