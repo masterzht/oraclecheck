@@ -1,6 +1,8 @@
 #!/bin/bash
 export ORACLE_HOME=/u01/app/oracle/product/11.2.0/db_1
 export ORACLE_SID=prod
+source /home/oracle/.bash_profile
+
 rman target / << eof
 run{
 allocate channel c1 device type disk;
