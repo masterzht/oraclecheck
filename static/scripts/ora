@@ -1734,7 +1734,6 @@ if [ "$1" = "index" -o "$1" = "ind" ]; then
    if [ "$3" = ""  ]; then
     
     defowner=`echo "select trim(12345||LISTAGG (owner,',') WITHIN GROUP (ORDER BY owner)) AS owner from dba_tables where table_name=upper('$tablename') and rownum<=4;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-100`
-    #defowner=`echo "select trim(12345||owner) as owner from dba_tables where table_name=upper('$tablename') and rownum<=1;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-30`
     if [ -z "${defowner}" ];then
        echo "table $tablename not found,please check again!"
        exit 1
@@ -1836,45 +1835,53 @@ declare
     v_i c_i%rowtype;
 
     cursor c_foreign_key_without_index is select owner,
-                                                 table_name,
-                                                 constraint_name,
-                                                 substr(cname1 || nvl2(cname2,','||cname2,null) || nvl2(cname3,','||cname3,null) || nvl2(cname4,','||cname4,null) || nvl2(cname5,','||cname5,null) || nvl2(cname6,','||cname6,null) || nvl2(cname7,','||cname7,null) || nvl2(cname8,','||cname8,null),0,400) as cols
-  from ( select b.owner,
-                b.table_name,
-                b.constraint_name,
-                max(decode( position, 1, column_name, null )) cname1,
-                max(decode( position, 2, column_name, null )) cname2,
-                max(decode( position, 3, column_name, null )) cname3,
-                max(decode( position, 4, column_name, null )) cname4,
-                max(decode( position, 5, column_name, null )) cname5,
-                max(decode( position, 6, column_name, null )) cname6,
-                max(decode( position, 7, column_name, null )) cname7,
-                max(decode( position, 8, column_name, null )) cname8,
-                count(*) col_cnt
-           from (select owner,
-                        constraint_name,
-                        column_name,
-                        position
-                   from dba_cons_columns where owner not in ('SYSTEM','OWBSYS','XS$NULL','FLOWS_FILES','WMSYS','DIP','XDB','SYS','ANONYMOUS','QMONITOR','ORDPLUGINS','OUTLN','ORDSYS','SI_INFORMTN_SCHEMA',
-                    'ORDDATA','OJVMSYS','SPATIAL_WFS_ADMIN_USR','MDSYS','LBACSYS','SPATIAL_CSW_ADMIN_USR','DVSYS','DBSNMP','APEX_PUBLIC_USER',
-                    'APPQOSSYS','APEX_040200','ORACLE_OCM','AUDSYS','CTXSYS','MDDATA','APEX_030200','EXFSYS','MGMT_VIEW','OLAPSYS','SYSMAN','OWBSYS_AUDIT',
-'WH_SYNC','GSMADMIN_INTERNAL')) a,
-                dba_constraints b
-          where a.constraint_name = b.constraint_name
-            and b.constraint_type = 'R'
-            and a.owner = b.owner
-          group by b.owner, b.table_name, b.constraint_name
-       ) cons
- where col_cnt > ALL
-         ( select count(*)
-             from dba_ind_columns i
-            where i.table_name = cons.table_name
-              and i.column_name in (cname1, cname2, cname3, cname4,
-                                    cname5, cname6, cname7, cname8 )
-              and i.column_position <= cons.col_cnt
-              and i.INDEX_OWNER = cons.owner
-            group by i.index_name
-         );
+       table_name,
+       constraint_name,
+       substr(cname1 || nvl2(cname2, ',' || cname2, null) || nvl2(cname3, ',' || cname3, null) ||
+              nvl2(cname4, ',' || cname4, null) || nvl2(cname5, ',' || cname5, null) ||
+              nvl2(cname6, ',' || cname6, null) || nvl2(cname7, ',' || cname7, null) ||
+              nvl2(cname8, ',' || cname8, null), 0, 400) as cols
+from (select b.owner,
+             b.table_name,
+             b.constraint_name,
+             max(decode(position, 1, column_name, null)) cname1,
+             max(decode(position, 2, column_name, null)) cname2,
+             max(decode(position, 3, column_name, null)) cname3,
+             max(decode(position, 4, column_name, null)) cname4,
+             max(decode(position, 5, column_name, null)) cname5,
+             max(decode(position, 6, column_name, null)) cname6,
+             max(decode(position, 7, column_name, null)) cname7,
+             max(decode(position, 8, column_name, null)) cname8,
+             count(*)                                    col_cnt
+      from (select owner,
+                   constraint_name,
+                   column_name,
+                   position
+            from dba_cons_columns
+            where owner not in
+                  ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR',
+                   'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
+                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS',
+                   'DBSNMP', 'APEX_PUBLIC_USER',
+                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS',
+                   'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT',
+                   'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
+           dba_constraints b
+      where a.constraint_name = b.constraint_name
+        and b.constraint_type = 'R'
+        and a.owner = b.owner
+      group by b.owner, b.table_name, b.constraint_name
+     ) cons
+where col_cnt > ALL
+      (select count(*)
+       from dba_ind_columns i
+       where i.table_name = cons.table_name
+         and i.column_name in (cname1, cname2, cname3, cname4,
+                               cname5, cname6, cname7, cname8)
+         and i.column_position <= cons.col_cnt
+         and i.INDEX_OWNER = cons.owner
+       group by i.index_name
+      );
          v_f c_foreign_key_without_index%rowtype;
          cursor c_par_ind is select index_name, PARTITION_POSITION as PART_POSITION, PARTITION_NAME, BLEVEL, LEAF_BLOCKS, NUM_ROWS, DISTINCT_KEYS,
                              CLUSTERING_FACTOR,
@@ -1918,19 +1925,60 @@ if v_part_cnt > 0 then
     dbms_output.put_line('
 Partition Index Information(if index is Local Index)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME         |' || ' PART_POSITION ' || '| PARTITION_NAME |' || ' BLEVEL ' || '| LEAF_BLOCKS |' || ' NUM_ROWS ' || '| DISTINCT_KEYS |' || ' CLUSTERING_FACTOR '  || '| USABLE |'|| ' HIGH_VALUE                         '|| '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME         |' || ' PART_POSITION ' || '| PARTITION_NAME |' || ' BLEVEL ' || '| LEAF_BLOCKS |' || ' NUM_ROWS ' || '| DISTINCT_KEYS |' || ' CLUSTERING_FACTOR '  || '| USABLE |'|| ' HIGH_VALUE                              '|| '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_par_ind;
     loop fetch c_par_ind into v_part;
     exit when c_par_ind%notfound;
-    dbms_output.put_line('| ' || rpad(v_part.INDEX_NAME,18) ||' | '|| lpad(v_part.PART_POSITION,13) || ' | '|| lpad(v_part.PARTITION_NAME,14) || ' | '|| lpad(v_part.BLEVEL,6) || ' | '|| lpad(v_part.LEAF_BLOCKS,11) || ' | '|| lpad(v_part.NUM_ROWS,8) ||  ' | '|| lpad(v_part.DISTINCT_KEYS,13) || ' | '|| lpad(v_part.CLUSTERING_FACTOR,17) || ' | '|| lpad(v_part.USABLE,6) || ' | '|| lpad(v_part.HIGH_VALUE,35)||'|');
+    dbms_output.put_line('| ' || rpad(v_part.INDEX_NAME,18) ||' | '|| lpad(v_part.PART_POSITION,13) || ' | '|| lpad(v_part.PARTITION_NAME,14) || ' | '|| lpad(v_part.BLEVEL,6) || ' | '|| lpad(v_part.LEAF_BLOCKS,11) || ' | '|| lpad(v_part.NUM_ROWS,8) ||  ' | '|| lpad(v_part.DISTINCT_KEYS,13) || ' | '|| lpad(v_part.CLUSTERING_FACTOR,17) || ' | '|| lpad(v_part.USABLE,6) || ' | '|| lpad(v_part.HIGH_VALUE,40)||'|');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_par_ind;
 end if;
 
-  select count(*) into v_foreign_key_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES');
+  select count(*) into v_foreign_key_cnt from (select b.owner,
+             b.table_name,
+             b.constraint_name,
+             max(decode(position, 1, column_name, null)) cname1,
+             max(decode(position, 2, column_name, null)) cname2,
+             max(decode(position, 3, column_name, null)) cname3,
+             max(decode(position, 4, column_name, null)) cname4,
+             max(decode(position, 5, column_name, null)) cname5,
+             max(decode(position, 6, column_name, null)) cname6,
+             max(decode(position, 7, column_name, null)) cname7,
+             max(decode(position, 8, column_name, null)) cname8,
+             count(*)                                    col_cnt
+      from (select owner,
+                   constraint_name,
+                   column_name,
+                   position
+            from dba_cons_columns
+            where owner not in
+                  ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR',
+                   'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
+                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS',
+                   'DBSNMP', 'APEX_PUBLIC_USER',
+                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS',
+                   'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT',
+                   'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
+           dba_constraints b
+      where a.constraint_name = b.constraint_name
+        and b.constraint_type = 'R'
+        and a.owner = b.owner
+      group by b.owner, b.table_name, b.constraint_name
+     ) cons
+where col_cnt > ALL
+      (select count(*)
+       from dba_ind_columns i
+       where i.table_name = cons.table_name
+         and i.column_name in (cname1, cname2, cname3, cname4,
+                               cname5, cname6, cname7, cname8)
+         and i.column_position <= cons.col_cnt
+         and i.INDEX_OWNER = cons.owner
+       group by i.index_name
+      );
+
 if v_foreign_key_cnt > 0 then
   dbms_output.put_line('
 Foreign Key Without Index Information');
