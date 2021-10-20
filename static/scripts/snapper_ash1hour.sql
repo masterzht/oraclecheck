@@ -34,7 +34,7 @@ with tmp as
     (select 1 value,
 	a.inst_id as instance_id,
 	a.SESSION_ID || ',' || a.SESSION_SERIAL# || '@'|| a.inst_id SESSION_ID,
-round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
+    round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
 	(select username from dba_users u where u.user_id = a.user_id) username,
 	a.machine,
 	a.program,
@@ -63,10 +63,8 @@ where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate)
 select x.* from (
 SELECT
 sql_id,
-lpad(round(100.0 * COUNT(*) / (select count(*) from gv$active_session_history a
-where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) || '%', 6,' ') as "Active%",
-CAST (round( 10.0 * COUNT(*) / (select count(*) from gv$active_session_history a
-where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) AS REAL ) as "AAS",
+lpad(round(100.0 * COUNT(*) / (select count(*) from gv$active_session_history a where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) || '%', 6,' ') as "Active%",
+CAST (round( 10.0 * COUNT(*) / (select count(*) from gv$active_session_history a where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) AS REAL ) as "AAS",
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'ON CPU' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'User I/O' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'Network' then 1 else 0 end)/count(*)) || '%',5,' ') ||
@@ -80,8 +78,7 @@ lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'System I/O' then 1 else 0 end)/co
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'Scheduler' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'Queueing' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'Other' then 1 else 0 end)/count(*)) || '%',5,' ') ||
-lpad(ROUND(100.0 * sum(case when WAIT_CLASS not in ('ON CPU','Other','Application','Configuration','Cluster','Administrative','Concurrency','Commit','Networ
-k','User I/O','System I/O','Scheduler','Queueing') then 1 else 0 end)/count(*)) || '%',5,' ')
+lpad(ROUND(100.0 * sum(case when WAIT_CLASS not in ('ON CPU','Other','Application','Configuration','Cluster','Administrative','Concurrency','Commit','Network','User I/O','System I/O','Scheduler','Queueing') then 1 else 0 end)/count(*)) || '%',5,' ')
 as "Wait_class%",
 -- substr(max(sql_text),0,10) as sql_text,
 max(command) as command,

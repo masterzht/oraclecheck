@@ -27,7 +27,6 @@ round((cast(a.sample_time as date)-a.sql_exec_start)*24*3600) SQL_ELAPSED_TIME,
 (select sql_text from gv$sql s where s.sql_id = a.sql_id and rownum = 1) sql_text
    from gv$active_session_history a
 where a.SAMPLE_TIME between (sysdate - 1) and sysdate)
-
 select * from (
 SELECT
 sql_id,
