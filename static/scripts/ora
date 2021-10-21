@@ -157,7 +157,7 @@ usage()
       - montop [20]                            save top 20(def) sql monitor files, elapsed time desc
       - monlist [50]                           lists top n (def=50) the statements that have been monitored,sql_exec_start desc
       - monsave <sqlid> [active]|text          Spool to <sql_id>_active|text.html
-      - mon_bind <sql_id>                      get sql bind values from v#sql_monitor
+      - sqlmon/sqlmonitor                      <sql_id> get v#sql_monitor Information
       - monsavehis <sqlid> [active]|text       get lastest rid sql monitor report from dba_hist_reports  
       - mon_index_create      
       - mon_unzip <12c sql mon html>           unzip 12c base64 sql monitor html to unzip_<file_name>      
@@ -757,7 +757,7 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "sqlmon" -o "$1" = "mon_bind" -o "$1" = "monbind" ]; then
+if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
 
   if [ "$2" = "" ]; then
     read -p "please input sqlid :" sqlid
