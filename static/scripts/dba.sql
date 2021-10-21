@@ -1,26 +1,7 @@
 --------------------------------------------------------------------------------
---
--- File name:   dba.sql
--- Purpose:     Convert Data Block Address (a 6 byte hex number) to file#, block#
---              and find to which segment it belongs
---
--- Author:      Tanel Poder
--- Copyright:   (c) http://www.tanelpoder.com
---              
 -- Usage:       @dba <data_block_address>
 --              @dba 40EB02
--- 	        
---	        
--- Other:       This script also tries to identify the segment into which this
---              block belongs. It first queries X$BH, as if this block is really
---              hot, it should be in buffer cache. Note that you can change this
---              query to use V$BH if you dont have access to X$ tables.
---              If the block is not in buffer cache anymore, then this script
---              can query DBA_EXTENTS next, but this can be a IO intensive operation
---              on some systems, so if X$BH already answers your question, press
---              CTRL+C here.
---
---------------------------------------------------------------------------------
+
 set linesize 300
 col rfile# new_value v_dba_rfile
 col block# new_value v_dba_block
@@ -50,7 +31,7 @@ select  /*+ ORDERED */
                18,'undo block'
         ) block_class,
 	o.object_type,
-	o.owner||'.'||o.object_name		dba_object,
+	o.owner||'.'||o.object_name dba_object,
 	bh.tch,
 	bh.mode_held,
     decode(bitand(bh.flag,1),0, 'N', 'Y')       dirty,
