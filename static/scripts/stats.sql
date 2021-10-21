@@ -1,6 +1,3 @@
-
-
-
 set timing off
 set serveroutput on
 set feedback off
