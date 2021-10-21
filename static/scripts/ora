@@ -141,7 +141,7 @@ usage()
       - highcost [50]                          high cost sql in gv#sql_plan
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
-      - hangdump                               hanganalyze 3 + systemdump 10  
+      - hangdump/hanganalyze                   hanganalyze 3 + systemdump 266
       - idx2sqlid <index_name>                 show sqls use the given index name
       - idxinfo   <index_name>                 get index info      
       - index <table_name>                     get all indexes info for given table
@@ -7451,7 +7451,7 @@ fi
 
 
 ################################################################################
-if [ "$1" = "hangdump" ]; then
+if [ "$1" = "hangdump" -o "$1" = "hanganalyze" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -7471,9 +7471,6 @@ echo "on current instance"
 echo "risk operation,commented! If need , uncomment"
 exit 0
 fi
-
-
-
 
 ################################################################################
 if [ "$1" = "outline" ]; then
