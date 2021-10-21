@@ -10738,7 +10738,7 @@ fi
 
 ###################################################################################################
 
-if [ "$1" = "lock" -o "$1" = "blocker" ]; then
+if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -10752,14 +10752,20 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
     col module format a10 trunc
     col machine format a15 trunc
     spool ora_lock_$filedate.log
-
+    pro
+    pro SHOW Blocking and Blocked Session Information...
      WITH sessions AS
         (SELECT /*+materialize*/
                 sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event
            FROM gv\$session
          )
-    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id", s.module, s.machine,object_name,s.sql_id,s.event
-            ,substr(sql_text,1,100) sql_text
+    SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id",
+    s.module,
+    s.machine,
+    object_name,
+    s.sql_id,
+    s.event,
+    substr(sql_text,1,100) sql_text
        FROM sessions s
        LEFT OUTER JOIN dba_objects
             ON (object_id = row_wait_obj#)
@@ -10771,46 +10777,51 @@ if [ "$1" = "lock" -o "$1" = "blocker" ]; then
       START WITH blocking_session IS NULL;
       $ECHO
       
-        col obj_name format a30
-        col pin_cnt format 999
-        col pin_mode format 999
-        col pin_req format 999
-        col state format a30
-        col event format a30
-        col wait_time format 999999999
-        col seconds_in_wait format 999999999
+    col obj_name format a30
+    col pin_cnt format 999
+    col pin_mode format 999
+    col pin_req format 999
+    col state format a30
+    col event format a30
+    col wait_time format 999999999
+    col seconds_in_wait format 999999999
 
-        Pro create or replace procedure hang:
-        select distinct ses.ksusenum sid, ses.ksuseser serial#,
+    Pro Show create or replace procedure hang Information...
+
+    select distinct ses.ksusenum sid, ses.ksuseser serial#,
                ob.kglnaobj obj_name,
                pn.kglpncnt pin_cnt, pn.kglpnmod pin_mode, pn.kglpnreq pin_req,
                w.state, w.event, w.wait_time, w.seconds_in_Wait
-        from   x\$kglpn pn, x\$kglob ob, x\$ksuse ses, v\$session_wait w
-        where  pn.kglpnhdl in (select kglpnhdl from x\$kglpn where kglpnreq > 0)
-        and    ob.kglhdadr = pn.kglpnhdl
-        and    pn.kglpnuse = ses.addr
-        and    w.sid = ses.indx
-        order by seconds_in_wait desc;
-        $ECHO
+    from   x\$kglpn pn, x\$kglob ob, x\$ksuse ses, v\$session_wait w
+    where  pn.kglpnhdl in (select kglpnhdl from x\$kglpn where kglpnreq > 0)
+    and    ob.kglhdadr = pn.kglpnhdl
+    and    pn.kglpnuse = ses.addr
+    and    w.sid = ses.indx
+    order by seconds_in_wait desc;
+    $ECHO
         
-       Pro v\$locked_object: 
-       col owner format a20
-       col object_name format a30
-       col oracle_username format a20
-       col os_user_name format a20
-        select do.OWNER, do.OBJECT_NAME, do.OBJECT_ID, 
-       lo.SESSION_ID, lo.ORACLE_USERNAME, lo.OS_USER_NAME, 
-       lo.PROCESS, lo.LOCKED_MODE 
-        from   dba_objects do, v\$locked_object lo 
-        where  do.OBJECT_ID = lo.OBJECT_ID 
-        order by owner,object_name;
-        $ECHO
-      spool off
+    Pro Show v\$locked_object Information...
+    col owner format a20
+    col object_name format a30
+    col oracle_username format a20
+    col os_user_name format a20
+    select do.OWNER,
+    do.OBJECT_NAME,
+    do.OBJECT_ID,
+    lo.SESSION_ID,
+    lo.ORACLE_USERNAME,
+    lo.OS_USER_NAME,
+    lo.PROCESS,
+    lo.LOCKED_MODE
+    from dba_objects do, v\$locked_object lo
+    where do.OBJECT_ID = lo.OBJECT_ID
+    order by owner,object_name;
+    $ECHO
+    spool off
 !
 echo "full nodes"
 exit 0
 fi
-
 
 ###################################################################################################
 
