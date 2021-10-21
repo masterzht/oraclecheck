@@ -151,7 +151,7 @@ usage()
       - job                                    show all jobs
       - kill <sid> <serial> [inst_id]          kill session immediate
       - longops                                show records in gv\$session_longops (running)
-      - lock|blocker                           show blocked rows and blocked chains
+      - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$      
                                                
