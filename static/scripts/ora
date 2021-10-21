@@ -757,7 +757,7 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "mon_bind" -o "$1" = "monbind" ]; then
+if [ "$1" = "sqlmon" -o "$1" = "mon_bind" -o "$1" = "monbind" ]; then
 
   if [ "$2" = "" ]; then
     read -p "please input sqlid :" sqlid
@@ -774,14 +774,70 @@ if [ "$1" = "mon_bind" -o "$1" = "monbind" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    col comm format a300
+    set long 999999999
+    set timing off
+    set verify off
+    set feedback off
+    set time off
+    prompt ######################################
+    prompt ## Parallel SQL
+    prompt ## Executing more than 5 Seconds
+    prompt ## Use /*+ monitor */ Hint to
+    prompt ######################################
+    SET LONG 1000000
+    SET LONGCHUNKSIZE 1000000
+    SET LINESIZE 1000
+    SET PAGESIZE 0
+    SET TRIM ON
+    --SET TRIMSPOOL OFF
+    SET ECHO OFF
+    SET FEEDBACK OFF
 
-    set long 9999999
-    col bind_info format a80
-    select xmltype(binds_xml) as bind_info, SQL_EXEC_START,round(elapsed_time/1e6) as ela_time,status,
-     SQL_EXEC_ID,SQL_PLAN_HASH_VALUE 
-     from gv\$sql_monitor where process_name='ora' and sql_id='$sqlid';
+    spool ora_sqlmon_$sqlid_$filedate.log
+/**
+    SELECT DBMS_SQLTUNE.report_sql_monitor(
+    sql_id       => '$sqlid',
+    type         => 'ACTIVE',
+    report_level => 'ALL'
+    ) AS report
+    FROM dual;
+*/
+    col comm format a200
+    set long 999999999
+    set linesize 500
+    set pages 1000
+    col inst_id for 99
+    col SQL_EXEC_START for a17
+    col BUFFER_GETS for a12
+    SET FEEDBACK ON
+    COL "elapsed_time(s)" for 99999
+    COL "cpu_time(s)" for 99999
+    SELECT
+    INST_ID,
+    to_char(SQL_EXEC_START,'YY-MM-DD HH24:MI:SS') SQL_EXEC_START,
+    STATUS,
+    sql_exec_id,
+    SQL_PLAN_HASH_VALUE,
+    SID,
+    round(ELAPSED_TIME/1000) as "ELAPSED_TIME(ms)",
+    round(CPU_TIME/1000) as "CPU_TIME(ms)",
+    round(USER_IO_WAIT_TIME/1000) as "USER_IO(ms)",
+    round(CLUSTER_WAIT_TIME/1000) as "CLUSTER(ms)",
+    fetches,
+    round(buffer_gets/1024/1024)||'M' as buffer_gets,
+    disk_reads FROM gv\$sql_monitor where sql_id = '$sqlid' order by SQL_EXEC_START;
+
+
+    SELECT dbms_sqltune.report_sql_monitor(
+    sql_id => '$sqlid',
+    report_level => 'ALL',
+    type=>'text'
+    ) comm
+    FROM dual
+    /
+
+spool off
     $ECHO
 !
 exit 0
@@ -15477,7 +15533,6 @@ fi
 ##############################################################################################################
 
 
-
 ###################################################################################################
 #
 # Run a shell command. Useful when combined with repeat...
@@ -15492,6 +15547,3 @@ fi
 
 usage
 echo "Command 'ora $1' not defined,please check the command again."
-
-
-
