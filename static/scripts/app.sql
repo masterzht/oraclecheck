@@ -11,6 +11,9 @@ col owner for a15
 col name for a30
 col type for a20
 select owner,name,type,executions,pins,locks from v$db_object_cache where locks > 0 and pins > 0 and type='PROCEDURE';
+
+
+
 with t1 as(
 select time_dp , 24*60*60*(time_dp - lag(time_dp) over (order by time_dp)) timediff,
   scn - lag(scn) over(order by time_dp) scndiff
@@ -23,7 +26,7 @@ order by 1
 /
 
 prompt scn rate
-
+set pages 200
 col first_change# format 99999999999999999999
 col next_change# format 99999999999999999999
 select  thread#,  first_time, next_time, first_change# ,next_change#, sequence#,
