@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Copyright (c) 2018, 2028, YanKu IT GuangZhou Ltd.  All rights reserved.
-# Author:
+# Copyright (c) 2018, 2028, YanKu IT HangZhou Ltd.  All rights reserved.
+# Author: chongzi
 # 2021-10-21 3.7.5 add 4030 sqlmon
 # 2021-10-13 3.7.4 modify table/tab
 # 2021-10-13 3.7.4 modify ddl/get_ddl
