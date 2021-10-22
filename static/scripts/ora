@@ -172,7 +172,7 @@ usage()
 
       - params [<pattern>]                     view all parameters, even hidden ones      
       - parameter [<pattern>] [2]              parameters in his(recent 2 snap) and current
-      - pc  [8]                                get plan changed in recent [def 31] days   
+      - pc/whats_changed/plan_changed  [8]     get plan changed in recent [def 31] days
       - pc2 [8]                                if last_active phv is the best       
       - pga [50]                               top 50 pga_used_mem
       - pga_detail <os_pid>|-mem <size_M>      Gives details on how PGA memory is consumed by a process (given its os PID) : ora pga_detail <pid>
@@ -12865,7 +12865,7 @@ fi
 
 #####################################################################################################
 
-if [ "$1" = "pc" ]; then
+if [ "$1" = "pc" -o "$1" = "whats_changed" -o "$1" = "plan_changed" ]; then
 
     if [ "$2" = "" ]; then
       awr_his=8
@@ -12925,6 +12925,70 @@ from tmp_ana a
 where phvs>1 and rn=1 and stddev_etime/b_avg_etime>1
 order by stddev_etime/b_avg_etime desc
 ) where rownum<=50 order by norm_stddev;
+
+
+select  sql_id,
+    plan_hash_value,
+    executions,
+    "elapsed_time(s)/per",
+    "cpu_time(s)/per",
+    "rows_processed/per",
+    "buffer_gets/per",
+    "disk_reads/per"
+from
+(   select
+    base.*,
+    count(*) over (partition by sql_id) cnt,
+    max("elapsed_time(s)/per") over (partition by sql_id) max_elp_time_per_exec
+from
+(   select
+        x.sql_id,
+        x.plan_hash_value,
+        sum(x.executions_delta) executions,
+        round(sum(x.elapsed_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "elapsed_time(s)/per",
+        round(sum(x.cpu_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "cpu_time(s)/per",
+        round(sum(x.rows_processed_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta)), 1) "rows_processed/per",
+        trunc(sum(x.buffer_gets_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))) "buffer_gets/per",
+        trunc(sum(x.disk_reads_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))) "disk_reads/per",
+        x.PARSING_SCHEMA_NAME
+    from
+        dba_hist_sqlstat x,
+        dba_hist_snapshot s
+    where
+        s.instance_number=x.instance_number
+    and s.snap_id = x.snap_id
+    --and s.begin_interval_time >
+    group by x.sql_id, x.plan_hash_value,x.PARSING_SCHEMA_NAME
+    ) base )
+where
+-- PARSING_SCHEMA_NAME = '&username' and
+max_elp_time_per_exec > 1
+and cnt > 1
+order by max_elp_time_per_exec, "elapsed_time(s)/per"
+/
+
+prompt Plan Changed
+
+/* I-what_changed */
+select sql_id,
+       parsing_schema_name,
+       round(max(elapsed_time/decode(executions,0,1,executions))/min(elapsed_time/decode(executions,0,1,executions))) DIFF,
+      min(inst_id) INST_ID
+from
+  gv\$sql
+where elapsed_time > 0
+ -- and parsing_schema_name not in ('SYS')
+group by sql_id,parsing_schema_name
+having count(distinct plan_hash_value) > 1
+   and round(max(elapsed_time/decode(executions,0,1,executions))/min(elapsed_time/decode(executions,0,1,executions))) > 100;
+
+
+
+
+
+
+
+
 $ECHO
 
 spool off   
