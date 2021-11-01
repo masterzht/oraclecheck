@@ -14211,9 +14211,9 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     begin
       :owner :=upper(':owner');
       :table_name := upper(':tablename');
-end;
-/
-declare
+      end;
+      /
+  declare
     v_cnt number;
     v_open_mode varchar2(100) :=null;
     v_protection_mode  varchar2(100) :=null;
@@ -14317,104 +14317,9 @@ SELECT NULL
  ORDER BY
        s.owner, s.table_name;
    v_temp c_temp%rowtype;
+
 begin
   dbms_output.enable(buffer_size => NULL);
-  dbms_output.put_line('
-Create Gather Statistics Procedure and Log Tables');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('create table gather_stat_log(id number,owner varchar2(32),table_name varchar2(32),percent number,degree number,gmt_create date,log_type varchar2(10),content varchar2(100));');
-  dbms_output.put_line('alter table gather_stat_log add constraint pk_gather_stat_log primary key(id);');
-  dbms_output.put_line('create index i_gather_stat_log_gc_tn on gather_stat_log(gmt_create,table_name);');
-  dbms_output.put_line('create sequence seq_gather_stat_log MINVALUE 1 MAXVALUE 999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE;
-    ');
-
-  dbms_output.put_line('    create or replace procedure gather_statistics as');
-  dbms_output.put_line('v_err varchar2(100);');
-  dbms_output.put_line('  CURSOR STALE_TABLE IS');
-  dbms_output.put_line('    SELECT OWNER,');
-  dbms_output.put_line('           SEGMENT_NAME,');
-  dbms_output.put_line('           CASE');
-  dbms_output.put_line('             WHEN SIZE_GB < 0.5 THEN');
-  dbms_output.put_line('              30');
-  dbms_output.put_line('             WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN');
-  dbms_output.put_line('              20');
-  dbms_output.put_line('             WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN');
-  dbms_output.put_line('              10');
-  dbms_output.put_line('             WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN');
-  dbms_output.put_line('              5');
-  dbms_output.put_line('             WHEN SIZE_GB >= 10 THEN');
-  dbms_output.put_line('              1');
-  dbms_output.put_line('           END AS PERCENT,');
-  dbms_output.put_line('           8 AS DEGREE');
-  dbms_output.put_line('      FROM (SELECT OWNER,');
-  dbms_output.put_line('                   SEGMENT_NAME,');
-  dbms_output.put_line('                   SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB');
-  dbms_output.put_line('              FROM DBA_SEGMENTS a');
-  dbms_output.put_line('             WHERE (owner,SEGMENT_NAME) IN');
-  dbms_output.put_line('                   (SELECT /*+ UNNEST */');
-  dbms_output.put_line('                    DISTINCT owner,TABLE_NAME');
-  dbms_output.put_line('                      FROM DBA_TAB_STATISTICS');
-  dbms_output.put_line('                     WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = ''YES'')');
-  dbms_output.put_line('                       AND OWNER not in(''SYSTEM'',');
-  dbms_output.put_line('                       ''WMSYS'',');
-  dbms_output.put_line('                       ''XDB'',');
-  dbms_output.put_line('                       ''SYS'',');
-  dbms_output.put_line('                       ''SCOTT'',');
-  dbms_output.put_line('                       ''QMONITOR'',');
-  dbms_output.put_line('                       ''OUTLN'',');
-  dbms_output.put_line('                       ''ORDSYS'',');
-  dbms_output.put_line('                       ''ORDDATA'',');
-  dbms_output.put_line('                       ''OJVMSYS'',');
-  dbms_output.put_line('                       ''MDSYS'',');
-  dbms_output.put_line('                       ''LBACSYS'',');
-  dbms_output.put_line('                       ''DVSYS'',');
-  dbms_output.put_line('                       ''DBSNMP'',''APEX_040200'',''AUDSYS'',''CTXSYS'',''APEX_030200'',''EXFSYS'',''OLAPSYS'',''SYSMAN'',''WH_SYNC'',''GSMADMIN_INTERNAL'')');
-  dbms_output.put_line('                       and stattype_locked is null');
-  dbms_output.put_line('                       and table_name not like ''SYS%'' and table_name not like ''SCH%'' and table_name not like ''BIN%'')');
-  dbms_output.put_line('               and not exists');
-  dbms_output.put_line('             (select null');
-  dbms_output.put_line('                      from dba_tables b');
-  dbms_output.put_line('                     where b.iot_type = ''IOT_OVERFLOW''');
-  dbms_output.put_line('                       and a.segment_name = b.table_name)');
-  dbms_output.put_line('             GROUP BY OWNER, SEGMENT_NAME);');
-  dbms_output.put_line('BEGIN');
-  dbms_output.put_line('  DBMS_STATS.FLUSH_DATABASE_MONITORING_INFO;');
-  dbms_output.put_line('  FOR STALE IN STALE_TABLE LOOP');
-  dbms_output.put_line('  begin');
-  dbms_output.put_line('    DBMS_STATS.GATHER_TABLE_STATS(OWNNAME          => STALE.OWNER,');
-  dbms_output.put_line('                                  TABNAME          => STALE.SEGMENT_NAME,');
-  dbms_output.put_line('                                  ESTIMATE_PERCENT => STALE.PERCENT,');
-  dbms_output.put_line('                                  METHOD_OPT       => ''for all columns size repeat'',');
-  dbms_output.put_line('                                  DEGREE           => 1,');
-  dbms_output.put_line('                                  CASCADE          => TRUE);');
-  dbms_output.put_line('    insert into gather_stat_log(id,owner,table_name,percent,degree,gmt_create,log_type) values(seq_gather_stat_log.nextval,STALE.OWNER,STALE.SEGMENT_NAME,STALE.PERCENT,8,sysdate,''info'');');
-  dbms_output.put_line('    commit;');
-  dbms_output.put_line('    exception');
-  dbms_output.put_line('        when others then');
-  dbms_output.put_line('        v_err:=substr(SQLERRM,1,80);');
-  dbms_output.put_line('        insert into gather_stat_log(id,owner,table_name,percent,degree,gmt_create,log_type,content)values(seq_gather_stat_log.nextval,STALE.OWNER,STALE.SEGMENT_NAME,STALE.PERCENT,8,sysdate,''error'',v_err);');
-  dbms_output.put_line('        commit;');
-  dbms_output.put_line('    end;');
-  dbms_output.put_line('  END LOOP;');
-  dbms_output.put_line('END;');
-  dbms_output.put_line('/
-    ');
-  dbms_output.put_line('BEGIN');
-  dbms_output.put_line('DBMS_SCHEDULER.CREATE_JOB(JOB_NAME        => ''GATHER_STATIC_JOB'',');
-  dbms_output.put_line('                          JOB_TYPE        => ''STORED_PROCEDURE'',');
-  dbms_output.put_line('                          JOB_ACTION      => ''GATHER_STATISTICS'',');
-  dbms_output.put_line('                          START_DATE      => to_date(''2019-11-04 00:10:00'',''yyyy-mm-dd hh24:mi:ss''),');
-  dbms_output.put_line('                          REPEAT_INTERVAL => ''FREQ=WEEKLY'',');
-  dbms_output.put_line('                          AUTO_DROP       => FALSE,');
-  dbms_output.put_line('                          COMMENTS        => ''GATHER STATISTICS'');');
-  dbms_output.put_line('END;');
-  dbms_output.put_line('/');
-
-  dbms_output.put_line('begin');
-  dbms_output.put_line('       DBMS_SCHEDULER.ENABLE(''GATHER_STATIC_JOB'');');
-  dbms_output.put_line('end;');
-  dbms_output.put_line('/'
-    );
 
   dbms_output.put_line('
 Auto Statistics Information');
@@ -14547,6 +14452,14 @@ end;
 /
 **/
 -- 检查无统计信息/统计信息过期/统计信息过旧的表
+
+
+col LAST_ANALYZED_TIME for a20
+col index_name for a32
+col owner for a24
+col stale_stats for a28
+col TABLE_NAME for a32
+
 
 prompt last_analyzed < 7 and last_analyzed is null and stale_stats = 'YES'
 set linesize 600
@@ -14691,8 +14604,14 @@ SELECT *
 prompt expired Index Statistics
 -- 检查无统计信息/统计信息过期/统计信息过旧的索引
 -- 数据库存在无统计信息/统计信息过期/统计信息过旧的索引，SQL解析时CBO无法生成正确的执行计划，极大影响数据库性能
+
+
 SELECT /*+ NO_MERGE */
-       s.owner, s.table_name, s.index_name, s.stale_stats, to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed_time
+       s.owner,
+       s.table_name,
+       s.index_name,
+       s.stale_stats,
+       to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed_time
   FROM dba_ind_statistics s,
        dba_indexes t
  WHERE s.OBJECT_TYPE = 'INDEX'
