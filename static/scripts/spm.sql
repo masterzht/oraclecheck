@@ -88,7 +88,7 @@ exec :pbsts := dbms_spm.evolve_sql_plan_baseline
  COMMIT=>'YES');
 -- evolue the baseline with verify on
 -- @sql_baseline_enable2.sql <sql_handle>
---
+
 
 SELECT dbms_spm.evolve_sql_plan_baseline(
          sql_handle => '&sql_handle',

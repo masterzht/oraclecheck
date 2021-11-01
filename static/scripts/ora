@@ -9973,10 +9973,8 @@ if [ "$1" = "ashevent" ]; then
     
      with tmp_ash as
     ( select to_char(sample_time,'yyyy-mm-dd hh24:mi:ss') as sample_time,nvl(event,'ON CPU') as event,count(*) cnt
-           from gv\$active_session_history
-           where --event is not null and
-                  sample_time>sysdate - $dur/24/60 --recent 10 minutes
-                  and inst_id=$INST
+           from dba_hist_active_sess_history
+           where sample_time>sysdate - $dur/24/60 --recent 10 minutes
         group by sample_time,event
     ) 
     select * from 
@@ -9990,7 +9988,7 @@ if [ "$1" = "ashevent" ]; then
     spool off
 
 !
-echo "instance_number=$INST"
+echo "Current Node"
 echo "active_session_history recent 10 minutes,top $rn events,group by sqmple_time"
 echo "ora ashevent (recent) $dur minutes ,top $rn event."
 exit 0
