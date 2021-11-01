@@ -16254,8 +16254,6 @@ exit 0
 fi
 
 ########################################################################################
-
-
 if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
 
     if [ "$2" = "" ]; then
@@ -16267,8 +16265,6 @@ if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
   sqlplus -s /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected|successfully"
 
   connect $DBUSER
-
-
   set linesize 200
   set pages 30
 
@@ -16359,14 +16355,9 @@ if [ "$1" = "monsave" -o "$1" = "savemon" ]; then
   echo "ora monsave sql_id text   or  ora monsave sql_id  (active is default)"
 fi
 
-
-##############################################################################################################
-
-
 ###################################################################################################
-#
 # Run a shell command. Useful when combined with repeat...
-#
+###################################################################################################
 if [ "$1" = "sh" ]; then
 
   shift 1
