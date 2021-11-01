@@ -79,7 +79,7 @@ oradebug tracefile_name
 oradebug hanganalyze 4
 
 -- control file
-alter  session set events 'immediate trace name controlf level 12';
+alter session set events 'immediate trace name controlf level 12';
 
 -- redo log file header
 ALTER SESSION SET EVENTS 'immediate trace name redohdr level 10';
