@@ -11002,12 +11002,12 @@ MOUNT_S Means MOUNT_STATUS
 REPAIR? Means REPAIR_TIMER');
   dbms_output.put_line('======================');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                   PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_S |' || ' HEAD_S ' || '| MOUNT_S |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND ' || '|');
+  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                         PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_S |' || ' HEAD_S ' || '| MOUNT_S |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND ' || '|');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_disk;
     loop fetch c_disk into v_disk;
     exit when c_disk%notfound;
-    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,38) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,6) || ' | '|| lpad(v_disk.HEADER_STATUS,6) || ' | '|| lpad(v_disk.MOUNT_STATUS,7) || ' | '|| lpad(v_disk.REPAIR_TIMER,7) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,100) || ' |');
+    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,28) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,6) || ' | '|| lpad(v_disk.HEADER_STATUS,6) || ' | '|| lpad(v_disk.MOUNT_STATUS,7) || ' | '|| lpad(v_disk.REPAIR_TIMER,7) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,100) || ' |');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_disk;
