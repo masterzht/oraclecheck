@@ -10964,6 +10964,7 @@ from
   a.REPAIR_TIMER,
   CASE WHEN (PATH IS NULL AND MOUNT_STATUS <> 'CACHED' or HEADER_STATUS <> 'MEMBER' or a.NAME LIKE '_DROPPED%') and b.TYPE <> 'EXTERN' THEN
   'alter diskgroup ' || b.NAME || ' add failgroup ' || a.FAILGROUP || ' disk ' || q'[']' || a.path || q'[']' || q'[ force;]'
+  ELSE 'None'
   END AS ADD_DISK_FORCE_SQL
 from v\$asm_disk a left join v\$asm_diskgroup b
 on a.GROUP_NUMBER = b.GROUP_NUMBER
@@ -11000,12 +11001,12 @@ HEAD_STA Means HEADER_STATUS
 REPAIR? Means REPAIR_TIMER');
   dbms_output.put_line('======================');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                            PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_STA |' || ' HEAD_STA ' || '| MOUNT_STA |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND ' || '|');
+  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                       PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_STA |' || ' HEAD_STA ' || '| MOUNT_STA |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND ' || '|');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_disk;
     loop fetch c_disk into v_disk;
     exit when c_disk%notfound;
-    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,47) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,8) || ' | '|| lpad(v_disk.HEADER_STATUS,8) || ' | '|| lpad(v_disk.MOUNT_STATUS,9) || ' | '|| lpad(v_disk.REPAIR_TIMER,8) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,70)|| '|');
+    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,42) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,8) || ' | '|| lpad(v_disk.HEADER_STATUS,8) || ' | '|| lpad(v_disk.MOUNT_STATUS,9) || ' | '|| lpad(v_disk.REPAIR_TIMER,7) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,70) || ' |');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_disk;
