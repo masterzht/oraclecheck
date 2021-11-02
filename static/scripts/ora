@@ -10952,15 +10952,22 @@ declare
 from
     V\$ASM_DISKGROUP;
   v_group c_group%rowtype;
-  cursor c_disk is select b.GROUP_NUMBER as GROUP_NUMBER,
-  b.name as DISKGROUP_NAME,
-  a.path,
-  a.FAILGROUP,a.name as DISK_NAME,
+  cursor c_disk is select
+  decode(b.GROUP_NUMBER,null,'None',b.GROUP_NUMBER) as GROUP_NUMBER,
+  decode(b.name,null,'None',b.name) as DISKGROUP_NAME,
+  decode(a.path,null,'None',a.path) as path,
+  decode(a.FAILGROUP,null,'None',a.FAILGROUP) as FAILGROUP,
+  decode(a.name,null,'None',a.name) as DISK_NAME,
   a.STATE,a.MODE_STATUS,
   a.HEADER_STATUS,
   a.MOUNT_STATUS,
-  a.REPAIR_TIMER
-from v\$asm_disk a,v\$asm_diskgroup b where a.GROUP_NUMBER = b.GROUP_NUMBER order by b.GROUP_NUMBER,a.path;
+  a.REPAIR_TIMER,
+  CASE WHEN (PATH IS NULL AND MOUNT_STATUS <> 'CACHED' or HEADER_STATUS <> 'MEMBER' or a.NAME LIKE '_DROPPED%') and b.TYPE <> 'EXTERN' THEN
+  'alter diskgroup ' || b.NAME || ' add failgroup ' || a.FAILGROUP || ' disk ' || q'[']' || a.path || q'[']' || q'[ force;]'
+  END AS ADD_DISK_FORCE_SQL
+from v\$asm_disk a left join v\$asm_diskgroup b
+on a.GROUP_NUMBER = b.GROUP_NUMBER
+order by b.GROUP_NUMBER,a.path;
   v_disk c_disk%rowtype;
 
   cursor c_client is select GROUP_NUMBER,INSTANCE_NAME,DB_NAME,STATUS,SOFTWARE_VERSION,COMPATIBLE_VERSION from v\$asm_client order by GROUP_NUMBER;
@@ -10987,19 +10994,20 @@ ASM Diskgroup Information');
     dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------');
   close c_group;
   dbms_output.put_line('
+ASM Disk Information
 MODE_STATUS Means MODE_STA
 HEAD_STA Means HEADER_STATUS
-ASM Disk Information');
+REPAIR? Means REPAIR_TIMER');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                            PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_STA |' || ' HEAD_STA ' || '| MOUNT_STATS |' || ' REPAIR_TIMER ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                                            PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_STA |' || ' HEAD_STA ' || '| MOUNT_STA |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND ' || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_disk;
     loop fetch c_disk into v_disk;
     exit when c_disk%notfound;
-    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,47) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,8) || ' | '|| lpad(v_disk.HEADER_STATUS,8) || ' | '|| lpad(v_disk.MOUNT_STATUS,11) || ' | '|| lpad(v_disk.REPAIR_TIMER,13) || '|');
+    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,47) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,8) || ' | '|| lpad(v_disk.HEADER_STATUS,8) || ' | '|| lpad(v_disk.MOUNT_STATUS,9) || ' | '|| lpad(v_disk.REPAIR_TIMER,8) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,70)|| '|');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_disk;
 
 dbms_output.put_line('
