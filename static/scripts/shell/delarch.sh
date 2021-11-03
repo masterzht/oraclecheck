@@ -11,6 +11,50 @@ delete force noprompt archivelog until time 'sysdate-7';
 exit;
 EOF
 done
+######
+#!/bin/bash
+. /home/oracle/.bash_profile
+
+for i in `ps -ef|grep ora_smon|grep -v grep|awk '{print $8}'`
+do
+ORACLE_SID=${i##*'_'}
+export ORACLE_SID=$ORACLE_SID
+
+sqlplus / as sysdba <<EOF
+col val new_value v_tag
+select (case when instance_number=(select min(instance_number) from gv\$instance where status='OPEN') then 1 else 0 end) val from v\$instance ;
+exit v_tag
+EOF
+
+val=$?
+
+if [ $val = 1 ]
+then
+rman target / log /home/oracle/luoji/delarch`date +%y%m%d%H`.log append<<EOF
+crosscheck archivelog all;
+delete noprompt expired archivelog all;
+delete noprompt archivelog until time 'sysdate-1';
+exit;
+EOF
+fi
+
+done
+
+cd /home/oracle/luoji
+find . -ctime +3 -name "delarch*.log" | xargs rm -f
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### meichuang ###
