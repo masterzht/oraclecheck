@@ -2,12 +2,7 @@
 --
 -- File name:   px.sql
 -- Purpose:     Report Pararallel Execution SQL globally in a RAC instance
---              
--- Author:      Tanel Poder
--- Copyright:   (c) http://blog.tanelpoder.com
---              
--- Usage:       @px.sql
---              
+--
 --------------------------------------------------------------------------------
 
 SET LINES 999 PAGES 50000 TRIMSPOOL ON TRIMOUT ON TAB OFF 

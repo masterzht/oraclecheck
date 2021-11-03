@@ -84,7 +84,7 @@ alter session set events 'immediate trace name controlf level 12';
 -- redo log file header
 ALTER SESSION SET EVENTS 'immediate trace name redohdr level 10';
 
--- data file headr
+-- data file head
 
 -- trace 1031 error -- Security An attempt was made to change the current username or password without the appropriate privilege
 alter system set events '1031 trace name errorstack level 3';
