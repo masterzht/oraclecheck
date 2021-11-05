@@ -11189,6 +11189,8 @@ declare
       then 'In RAC Env,May Cause 2PC Transaction Issue, Set <True>'
      when ksppinm = '_kcfis_storageidx_diag_mode' and ksppstvl = '2'
       then 'Open the Debug mode for storage index on the cell'
+     when ksppinm = '_rollback_segment_count' and ksppstvl < '100'
+      then 'Recommend to set to <12000>'
      when ksppinm = '_adg_parselock_timeout' and ksppstvl < '500'
       then 'ADG Env set 500 To Avoid Instance Crash ref Doc ID 2183882.1 19C also default 0' end as advice
       from x\$ksppi x, x\$ksppcv y
