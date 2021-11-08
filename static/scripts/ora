@@ -11079,7 +11079,6 @@ if [ "$1" = "parameter" ]; then
 
     connect $DBUSER
 
-
     set linesize 200 pagesize 100
     col parameter_name format a40
     col name format a40
