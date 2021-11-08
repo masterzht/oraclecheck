@@ -4,8 +4,8 @@
 # /u01/app/oracle/product/11.2.0/db_1   /u01/app/oracle/product/11.2.0/db_1/bin/sqlplus  人事OA系统
 
 
-## 测试11g环境
+## 测试19g环境
 
-82.156.115.176  root Ss8866@123 22 system Ss8866@123 1521 orcl 测试库oracle19c
+82.156.115.176  root Ss8866@123 22 system Ss8866@123 1521 yao 测试库oracle19c
 #/home/oracle  /home/oracle/bin/sqlplus  人事OA系统
 
