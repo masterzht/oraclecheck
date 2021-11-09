@@ -101,8 +101,8 @@ select
       '_highthreshold_undoretention'
       )
       union all
-      'db_check_db_parameter' as "db_check_db_parameter",
       select
+      'db_check_db_parameter' as "db_check_db_parameter",
       name,
       value,
       case when name = 'open_cursors' and (value < 300 or value > 1000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
