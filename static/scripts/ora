@@ -567,15 +567,15 @@ DataGuard Runtime Apply Info');
   dbms_output.put_line('
 Primary Dest_id Error Information');
   dbms_output.put_line('=======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| inst# |' || ' DEST_NAME            ' || '| ERROR                               |' || ' DESTINATION ADDRESS ' || '|');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# |' || ' DEST_NAME                  ' || '| ERROR                                     |' || ' DESTINATION ADDRESS ' || '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
   open c_dest_error;
     loop fetch c_dest_error into v_dest_error;
     exit when c_dest_error%notfound;
-    dbms_output.put_line('| '|| lpad(v_dest_error.inst_id,5) || ' | ' || rpad(v_dest_error.dest_name,20) || ' | ' || rpad(v_dest_error.error,35) || ' | ' || lpad(v_dest_error.destination,19) || ' |');
+    dbms_output.put_line('| '|| lpad(v_dest_error.inst_id,5) || ' | ' || rpad(v_dest_error.dest_name,26) || ' | ' || rpad(v_dest_error.error,41) || ' | ' || lpad(v_dest_error.destination,19) || ' |');
     end loop;
-    dbms_output.put_line('--------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------');
   close c_dest_error;
 else
   dbms_output.put_line('
@@ -15512,6 +15512,8 @@ if [ "$1" = "active" ]; then
   col program for a20
   col sql_text for a30
   col sql_id for a13
+  col logon_time for a10
+  col kill_sql for a60
   spool ora_active_$filedate.log
 --当前数据库中的session信息与session中正在执行的SQL语句
 
@@ -15553,6 +15555,8 @@ prompt display the active sessions and events in current node...
 col SECONDS for a7
 col KILL_SQL for a56
 col "P1 P2 P3" for a18
+col logon_time for a10
+col kill_sql for a60
 select /*+ ordered use_nl(a,b) */
     trim(to_char(a.sql_id))                                                              as sql_id,
     b.spid                                                                               as spid,
