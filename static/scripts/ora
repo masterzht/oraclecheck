@@ -15298,7 +15298,8 @@ order by 3 desc,2 desc;
      v_tbs c_tbs%rowtype;
 
     cursor c_recovery is SELECT decode(name,null,'None',name) as recovery_dest,
-decode(space_limit,0,0,(space_used - SPACE_RECLAIMABLE) / space_limit * 100) as used_pct
+    round(space_limit/1024/1024) as space_limit_mb,
+    decode(space_limit,0,0,round((space_used - SPACE_RECLAIMABLE) / space_limit * 100),2) as used_pct
 FROM v\$recovery_file_dest;
      v_recovery c_recovery%rowtype;
 
@@ -15416,15 +15417,15 @@ Tablespace Used Information');
   dbms_output.put_line('
 Fast Recovery Dest Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| RECOVERY_DEST                                                                                |' || ' Used_Pct% ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| RECOVERY_DEST                                                                                |' || ' Used_Pct% ' || ' | '||' TOTAL_SPACE_MB ' || '|');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------');
   open c_recovery;
     loop fetch c_recovery into v_recovery;
     exit when c_recovery%notfound;
-    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,10) || '|');
+    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,10) || ' | ' || lpad(v_recovery.space_limit_mb,13) || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------');
   close c_recovery;
 
 if v_sys_obj_cnt > 0 then
