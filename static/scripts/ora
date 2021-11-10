@@ -15417,15 +15417,15 @@ Tablespace Used Information');
   dbms_output.put_line('
 Fast Recovery Dest Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| RECOVERY_DEST                                                                                |' || ' Used_Pct% ' || '| TOTAL_SPACE_MB ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
   open c_recovery;
     loop fetch c_recovery into v_recovery;
     exit when c_recovery%notfound;
-    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,10) || ' | ' || lpad(v_recovery.space_limit_mb,13) || ' |');
+    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,9) || ' | ' || lpad(v_recovery.space_limit_mb,12) || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
   close c_recovery;
 
 if v_sys_obj_cnt > 0 then
