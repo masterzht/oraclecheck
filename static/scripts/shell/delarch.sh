@@ -22,7 +22,7 @@ export ORACLE_SID=$ORACLE_SID
 
 sqlplus / as sysdba <<EOF
 col val new_value v_tag
-select (case when instance_number=(select min(instance_number) from gv\$instance where status='OPEN') then 1 else 0 end) val from v\$instance ;
+select (case when (select min(instance_number) from v\$instance) = 'OPEN' then 1 else 0 end) val from v\$instance ;
 exit v_tag
 EOF
 
@@ -30,7 +30,7 @@ val=$?
 
 if [ $val = 1 ]
 then
-rman target / log /home/oracle/luoji/delarch`date +%y%m%d%H`.log append<<EOF
+rman target / log /home/oracle/scripts/delarch`date +%y%m%d%H`.log append<<EOF
 crosscheck archivelog all;
 delete noprompt expired archivelog all;
 delete noprompt archivelog until time 'sysdate-1';
