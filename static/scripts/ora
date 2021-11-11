@@ -443,6 +443,7 @@ set serveroutput on
 set feedback off
 declare
     v_database_role varchar2(100) :=null;
+    v_mrp_cnt number;
     v_open_mode varchar2(100) :=null;
     v_protection_mode  varchar2(100) :=null;
     v_switchover  varchar2(100) :=null;
@@ -590,6 +591,8 @@ Standby Current Apply Lag Information');
     end loop;
   close c_standby_lag;
 
+select count(*) into v_mrp_cnt from v\$managed_standby where PROCESS like 'MRP%';
+if v_mrp_cnt >0 then
   dbms_output.put_line('
 MRP Processes Status Information');
   dbms_output.put_line('=======================');
@@ -603,6 +606,16 @@ MRP Processes Status Information');
     dbms_output.put_line('BLOCK#                   :   '|| v_mrp.BLOCK#);
     end loop;
   close c_mrp;
+else
+  dbms_output.put_line('
+MRP Processes Status Information');
+    dbms_output.put_line('=======================');
+    dbms_output.put_line('ERROR                    : There is No MRP Process');
+    dbms_output.put_line('alter database recover managed standby database using current logfile disconnect from session;');
+
+  close c_mrp;
+
+
   dbms_output.put_line('
 db_file_name_convert and log_file_name_convert in Physical Standby');
   dbms_output.put_line('=======================');
