@@ -10767,8 +10767,6 @@ if [ "$1" = "histogram" ]; then
 exit 0
 fi
 
-
-
 ###################################################################################################
 
 if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
@@ -10793,12 +10791,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
            FROM gv\$session
          )
     SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id",
-    s.module,
-    s.machine,
-    object_name,
-    s.sql_id,
-    s.event,
-    substr(sql_text,1,100) sql_text
+    s.module, s.machine, object_name, s.sql_id, s.event, substr(sql_text,1,100) sql_text
        FROM sessions s
        LEFT OUTER JOIN dba_objects
             ON (object_id = row_wait_obj#)
@@ -10838,14 +10831,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
     col object_name format a30
     col oracle_username format a20
     col os_user_name format a20
-    select do.OWNER,
-    do.OBJECT_NAME,
-    do.OBJECT_ID,
-    lo.SESSION_ID,
-    lo.ORACLE_USERNAME,
-    lo.OS_USER_NAME,
-    lo.PROCESS,
-    lo.LOCKED_MODE
+    select do.OWNER, do.OBJECT_NAME, do.OBJECT_ID, lo.SESSION_ID, lo.ORACLE_USERNAME, lo.OS_USER_NAME, lo.PROCESS, lo.LOCKED_MODE
     from dba_objects do, v\$locked_object lo
     where do.OBJECT_ID = lo.OBJECT_ID
     order by owner,object_name;
@@ -10924,12 +10910,6 @@ fi
 if [ "$1" = "asm" ]; then
   sqlplus -s  /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected"
   connect $DBUSER
-
-set linesize 500
-set serveroutput on
-set feedback off
-set verify off
-
 
 set linesize 500
 set serveroutput on
@@ -15924,7 +15904,6 @@ if [ "$1" = "ORA" -o "$1" = "ora" ]; then
 exit 1
 fi
 
-
 ##################################################################################################
 
 #
@@ -16011,7 +15990,6 @@ if [ "$1" = "system_state" ]; then
   #echo "System state file $FILE successfully produced"
   exit 0
 fi
-
 
 ##########################################################################################
 
@@ -16335,18 +16313,11 @@ if [ "$1" = "monsave" -o "$1" = "savemon" ]; then
        ftype=txt
     fi
     
-    #if [ "$3" = "text" -o "$3" = "TEXT" ]; then
-    #   type=TEXT
-    #else 
-    #   type=ACTIVE
-    #fi
-    
     if [ "$4" != "" ]; then
        execid="SQL_EXEC_ID=>$4,"
     else 
        execid=""
     fi
-
 
   FILTER='Session altered|Connected|rows selected|successfully|MONITOR_REPORT|---------------------'
 
