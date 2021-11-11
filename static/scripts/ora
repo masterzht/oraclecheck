@@ -10996,32 +10996,33 @@ ASM Diskgroup Information');
   close c_group;
   dbms_output.put_line('
 ASM Disk Information
+G# Means GROUP#
 MODE_S Means MODE_STATUS
 HEAD_S Means HEADER_STATUS
 MOUNT_S Means MOUNT_STATUS
 REPAIR? Means REPAIR_TIMER');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| GROUP# |' || ' DISKGROUP_NAME ' || '|                         PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_S |' || ' HEAD_S ' || '| MOUNT_S |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND           ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('|  G# |' || ' DISKGROUP_NAME ' || '|                         PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_S |' || ' HEAD_S ' || '| MOUNT_S |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND           ' || '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_disk;
     loop fetch c_disk into v_disk;
     exit when c_disk%notfound;
-    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,6) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,28) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,6) || ' | '|| lpad(v_disk.HEADER_STATUS,6) || ' | '|| lpad(v_disk.MOUNT_STATUS,7) || ' | '|| lpad(v_disk.REPAIR_TIMER,7) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,90) || ' |');
+    dbms_output.put_line('| ' || rpad(v_disk.GROUP_NUMBER,3) ||' | '|| rpad(v_disk.DISKGROUP_NAME,14) || ' | '|| lpad(v_disk.path,28) || ' | '|| lpad(v_disk.FAILGROUP,14) || ' | '|| lpad(v_disk.DISK_NAME,14) || ' | '|| lpad(v_disk.STATE,6) || ' | '|| lpad(v_disk.MODE_STATUS,6) || ' | '|| lpad(v_disk.HEADER_STATUS,6) || ' | '|| lpad(v_disk.MOUNT_STATUS,7) || ' | '|| lpad(v_disk.REPAIR_TIMER,7) || ' | ' ||rpad(v_disk.ADD_DISK_FORCE_SQL,90) || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_disk;
 
 dbms_output.put_line('
 ASM Client Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| GROUP# |' || ' INSTANCE_NAME ' || '|  DB_NAME |' || '      STATUS |' || ' SOFTWARE_VERSION ' || '| COMPATIBLE_VERSION ' || '|');
+  dbms_output.put_line('|  G# |' || ' INSTANCE_NAME ' || '|  DB_NAME |' || '      STATUS |' || ' SOFTWARE_VERSION ' || '| COMPATIBLE_VERSION ' || '|');
   dbms_output.put_line('-------------------------------------------------------------------------------------------');
   open c_client;
     loop fetch c_client into v_client;
     exit when c_client%notfound;
-    dbms_output.put_line('| ' || rpad(v_client.GROUP_NUMBER,6) ||' | '|| lpad(v_client.INSTANCE_NAME,13) || ' | '|| lpad(v_client.DB_NAME,8) || ' | '|| lpad(v_client.STATUS,11) || ' | '|| lpad(v_client.SOFTWARE_VERSION,16) || ' | '|| lpad(v_client.COMPATIBLE_VERSION,19) || '|');
+    dbms_output.put_line('| ' || rpad(v_client.GROUP_NUMBER,3) ||' | '|| lpad(v_client.INSTANCE_NAME,13) || ' | '|| lpad(v_client.DB_NAME,8) || ' | '|| lpad(v_client.STATUS,11) || ' | '|| lpad(v_client.SOFTWARE_VERSION,16) || ' | '|| lpad(v_client.COMPATIBLE_VERSION,19) || '|');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------------------------');
   close c_client;
