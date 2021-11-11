@@ -14745,23 +14745,24 @@ if [ "$1" = "xp" ]; then
     set pagesize 200
     set tab      off
     set linesize 350
-    col PARSING_SCHEMA_NAME for a20
+    col PARSING_SCHEMA for a20
     col inst# for 99999
     set echo off
     repfooter off;
+    col snap_time for a17
     Pro Display sql execution plan in Cursor (memory) :
     select * from table(dbms_xplan.display_cursor('$2', null, 'advanced -bytes -PROJECTION allstats last'));
     prompt ####################################################################
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash_value,
     OPTIMIZER_COST,
-    PARSING_SCHEMA_NAME,
+    PARSING_SCHEMA_NAME as PARSING_SCHEMA,
     executions_delta "total_executions",
-    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
-    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu(ms)/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
     trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
@@ -14886,14 +14887,15 @@ if [ "$1" = "xpo" ]; then
     prompt ####################################################################
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
+    col snap_time for a17
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash_value,
     OPTIMIZER_COST,
-    PARSING_SCHEMA_NAME,
+    PARSING_SCHEMA_NAME as PARSING_SCHEMA,
     executions_delta "total_executions",
-    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
-    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu(ms)/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
     trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
@@ -14910,10 +14912,7 @@ if [ "$1" = "xpo" ]; then
 !
 
 exit 0
-
 fi
-
-
 #####################################################################################################
 
 if [ "$1" = "xo" ]; then
