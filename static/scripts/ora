@@ -10995,12 +10995,12 @@ ASM Diskgroup Information');
     dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------');
   close c_group;
   dbms_output.put_line('
-ASM Disk Information
 G# Means GROUP#
 MODE_S Means MODE_STATUS
 HEAD_S Means HEADER_STATUS
 MOUNT_S Means MOUNT_STATUS
-REPAIR? Means REPAIR_TIMER');
+REPAIR? Means REPAIR_TIMER
+ASM Disk Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('|  G# |' || ' DISKGROUP_NAME ' || '|                         PATH |' || '      FAILGROUP ' || '|      DISK_NAME |' || '  STATE ' || '| MODE_S |' || ' HEAD_S ' || '| MOUNT_S |' || ' REPAIR? ' || '| ADD_DISK_FORCE_SQL_COMMAND           ' || '|');
