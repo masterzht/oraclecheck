@@ -12944,7 +12944,7 @@ select  parsing_schema_name,
  ,round(stddev(avg_etime) over (partition by exec_user,sql_id)) as stddev_etime
  ,count(phv) over(partition by exec_user,sql_id) as phvs
  ,first_value(phv)       over (partition by exec_user,sql_id order by avg_etime desc)as worst_phv
- ,first_value(sum_execs) over (partition by exec_user,sql_id order by avg_etime desc)as w_sum_execs
+ ,first_value(sum_execs) over (partxition by exec_user,sql_id order by avg_etime desc)as w_sum_execs
  ,first_value(avg_etime) over (partition by exec_user,sql_id order by avg_etime desc)as w_avg_etime
  ,row_number() over(partition by exec_user,sql_id order by avg_etime) as rn
 from tmp_gby 
