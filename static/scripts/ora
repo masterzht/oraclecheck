@@ -815,8 +815,8 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     col SQL_EXEC_START for a17
     col BUFFER_GETS for a12
     SET FEEDBACK ON
-    COL "elapsed_time(s)" for 99999
-    COL "cpu_time(s)" for 99999
+    COL "elapsed(s)" for 99999
+    COL "cpu(s)" for 99999
     SELECT
     INST_ID,
     to_char(SQL_EXEC_START,'YY-MM-DD HH24:MI:SS') SQL_EXEC_START,
@@ -824,8 +824,8 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     sql_exec_id,
     SQL_PLAN_HASH_VALUE,
     SID,
-    round(ELAPSED_TIME/1000) as "ELAPSED_TIME(ms)",
-    round(CPU_TIME/1000) as "CPU_TIME(ms)",
+    round(ELAPSED_TIME/1000) as "ELAPSED(ms)",
+    round(CPU_TIME/1000) as "CPU(ms)",
     round(USER_IO_WAIT_TIME/1000) as "USER_IO(ms)",
     round(CLUSTER_WAIT_TIME/1000) as "CLUSTER(ms)",
     fetches,
@@ -12963,8 +12963,8 @@ order by stddev_etime/b_avg_etime desc
 select  sql_id,
     plan_hash_value,
     executions,
-    "elapsed_time(s)/per",
-    "cpu_time(s)/per",
+    "elapsed(s)/per",
+    "cpu(s)/per",
     "rows_processed/per",
     "buffer_gets/per",
     "disk_reads/per"
@@ -12972,14 +12972,14 @@ from
 (   select
     base.*,
     count(*) over (partition by sql_id) cnt,
-    max("elapsed_time(s)/per") over (partition by sql_id) max_elp_time_per_exec
+    max("elapsed(s)/per") over (partition by sql_id) max_elp_time_per_exec
 from
 (   select
         x.sql_id,
         x.plan_hash_value,
         sum(x.executions_delta) executions,
-        round(sum(x.elapsed_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "elapsed_time(s)/per",
-        round(sum(x.cpu_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "cpu_time(s)/per",
+        round(sum(x.elapsed_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "elapsed(s)/per",
+        round(sum(x.cpu_time_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))/1000000, 1) "cpu(s)/per",
         round(sum(x.rows_processed_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta)), 1) "rows_processed/per",
         trunc(sum(x.buffer_gets_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))) "buffer_gets/per",
         trunc(sum(x.disk_reads_delta)/decode(sum(x.executions_delta),0,1,sum(x.executions_delta))) "disk_reads/per",
@@ -12997,7 +12997,7 @@ where
 -- PARSING_SCHEMA_NAME = '&username' and
 max_elp_time_per_exec > 1
 and cnt > 1
-order by max_elp_time_per_exec, "elapsed_time(s)/per"
+order by max_elp_time_per_exec, "elapsed(s)/per"
 /
 
 prompt Plan Changed
@@ -14713,8 +14713,8 @@ if [ "$1" = "x" ]; then
     OPTIMIZER_COST,
     PARSING_SCHEMA_NAME,
     executions_delta "total_executions",
-    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
-    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu(ms)/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
     trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
@@ -15039,8 +15039,8 @@ if [ "$1" = "xo" ]; then
     OPTIMIZER_COST,
     PARSING_SCHEMA_NAME,
     executions_delta "total_executions",
-    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_time(ms)/per",
-    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_time(ms)/per",
+    trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed(ms)/per",
+    trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu(ms)/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io(ms)/per",
     trunc(rows_processed_delta/decode(executions_delta,0,1,executions_delta)) "rows/per",
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
