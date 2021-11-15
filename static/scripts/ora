@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2018, 2028, YanKu IT HangZhou Ltd.  All rights reserved.
 # Author: chongzi
+# 2021-11-15 3.7.5 add s or S to logon on database
 # 2021-10-21 3.7.5 add 4030 sqlmon
 # 2021-10-13 3.7.4 modify table/tab
 # 2021-10-13 3.7.4 modify ddl/get_ddl
@@ -406,8 +407,10 @@ if [ "$1" = "logon" ]; then
 exit 0
 fi
 
-
-
+################################################################################
+if [ "$1" = "s" -o "$1" = "S" ]; then
+  $ORACLE_HOME/bin/sqlplus / as sysdba
+fi
 ################################################################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
@@ -591,6 +594,8 @@ Standby Current Apply Lag Information');
   close c_standby_lag;
 
   dbms_output.put_line('
+alter database recover managed standby database cancel;
+alter database recover managed standby database using current logfile disconnect from session;
 MRP Processes Status Information');
   dbms_output.put_line('=======================');
   open c_mrp;
@@ -618,13 +623,11 @@ end if;
 end;
 /
 
-
-
-
 $ECHO
 !
 exit 0
 fi
+
 
 
 ##################################show dblink information ##############################################
