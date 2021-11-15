@@ -451,9 +451,9 @@ declare
   cursor c_lag is select inst_id,name,value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
   v_lag c_lag%rowtype;
   cursor c_dest_error is select inst_id,dest_name,
-  decode(regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),null,'None',
-  regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))')) as destination,
-  decode(error,null,'None',error) as error from gv\$archive_dest where destination is not null order by dest_id;
+  decode(regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),null,destination,'Exception') as destination,
+  decode(error,null,'None',error) as error
+  from gv\$archive_dest where destination is not null order by dest_id;
   v_dest_error c_dest_error%rowtype;
 
   cursor c_standby_lag is select inst_id,lpad(name,14) as name , value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
@@ -9637,22 +9637,6 @@ AND    a.THREAD# = b.INST_ID
 order by 1,2;
 $ECHO
 spool off
-
---rac: inst_id vs thread# ?
---Pro get log_switch_interval_s in recent 2 days
---with tmp as
---(select * from 
---    (
---    select inst_id,thread#,sequence#,first_time,
---    lag(first_time) over (partition by inst_id order by first_time desc) as next_time
---    from gv\$log_history a where first_time>sysdate-2
---    --order by first_time desc
---    ) 
---    where --rownum<=100 and 
---          next_time is not null 
---)
---select inst_id,thread#,sequence#,first_time,next_time,(next_time-first_time)*60*60*24 log_switch_interval_s
---from tmp order by inst_id,first_time;
 
 !
 exit 0
