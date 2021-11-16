@@ -14704,7 +14704,7 @@ if [ "$1" = "x" ]; then
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash_value,
     OPTIMIZER_COST,
     PARSING_SCHEMA_NAME,
@@ -15031,7 +15031,7 @@ if [ "$1" = "xo" ]; then
     prompt ####################################################################
     col snap_time for a17
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash_value,
     OPTIMIZER_COST,
     PARSING_SCHEMA_NAME,
