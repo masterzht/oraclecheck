@@ -802,14 +802,14 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     SET FEEDBACK OFF
 
     spool ora_sqlmon_$sqlid_$filedate.log
-/**
+
     SELECT DBMS_SQLTUNE.report_sql_monitor(
     sql_id       => '$sqlid',
-    type         => 'ACTIVE',
+    type         => 'HTML',
     report_level => 'ALL'
     ) AS report
     FROM dual;
-*/
+
     col comm format a200
     set long 999999999
     set linesize 500
@@ -11141,6 +11141,8 @@ declare
       then '12c new feature,default <TRUE>, recommed to set to <FALSE>'
      when ksppinm = 'adaptive_adaptive_statistics' and ksppstvl = 'TRUE'
       then '12.2 default <FALSE>, recommed to set to <FALSE>'
+     when ksppinm = '_optimizer_cbqt_or_expansion' and ksppstvl = 'TRUE'
+      then '12.2 default <FALSE>, recommed to set to <FALSE>'
      when ksppinm = '_cursor_obsolete_threshold' and ksppstvl > 1024
       then '12.2 default value 8192, this can cause high version count issue,set <1024>'
      when ksppinm = '_b_tree_bitmap_plans' and ksppstvl = 'TRUE'
@@ -11197,17 +11199,21 @@ declare
       'optimizer_mode',
       '_gc_policy_time',
       '_gc_undo_affinity',
+      '_optimizer_group_by_placement',
       'optimizer_adaptive_plans',
       '_PX_use_large_pool',
       'parallel_force_local',
-      '_cursor_obsolete_threshold',
       '_clusterwide_global_transactions',
       'optimizer_adaptive_features',
       '_optimizer_inmemory_access_path',
+      '_optimizer_cbqt_or_expansion',
+      '_optimizer_unnest_scalar_sq',
       '_sql_plan_directive_mgmt_control',
       '_optimizer_dsdir_usage_control',
       '_rollback_segment_count',
-      '_highthreshold_undoretention'
+      '_highthreshold_undoretention',
+      '_smm_max_size',
+      '_pga_max_size'
       )
       union all
       select
