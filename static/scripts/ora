@@ -802,14 +802,14 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     SET FEEDBACK OFF
 
     spool ora_sqlmon_$sqlid_$filedate.log
-
+/**
     SELECT DBMS_SQLTUNE.report_sql_monitor(
     sql_id       => '$sqlid',
     type         => 'HTML',
     report_level => 'ALL'
     ) AS report
     FROM dual;
-
+**/
     col comm format a200
     set long 999999999
     set linesize 500
@@ -13568,6 +13568,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col high_value format a40 trunc
     col partition_name format a30 trunc
     col pos format 999
+    col LAST_ANALYZED for a20
     col tablespace_name format a15 trunc
     set long 500000
 
@@ -13650,6 +13651,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col table_owner format a15 trunc
     col column_name format a25
     col data_type format a10 trunc
+    col LAST_ANALYZED for a20
     col low_val_25 format a25
     col high_val_25 format a25
     col histogram format a9 trunc
@@ -13660,7 +13662,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     select --owner,table_name,
     column_name,num_distinct as ndv,NULLABLE as nul ,NUM_NULLS,data_type,
     substr(low_value,1,25) as low_val_25,substr(high_value,1,25) as high_val_25,
-    to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
+    to_char(last_analyzed,'yyyymmdd hh24:mi:ss') as last_analyzed,
     histogram
     --,NUM_BUCKETS
     from dba_tab_columns
@@ -14694,6 +14696,7 @@ if [ "$1" = "x" ]; then
     set tab      off
     col PARSING_SCHEMA_NAME for a20
     col plan_table format a180
+    col snap_time for a17
     col inst# for 99999
     Pro Display sql execution plan in AWR:
     select * from table(dbms_xplan.display_awr('$sqlid',format=>'advanced -PROJECTION'));
@@ -15026,6 +15029,7 @@ if [ "$1" = "xo" ]; then
     prompt ####################################################################
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
+    col snap_time for a17
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash_value,
