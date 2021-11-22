@@ -12089,6 +12089,7 @@ select free_space,avg_free_size,request_misses,request_failures,aborted_requests
 col object_name format a30
 col owner format a10
 prompt object could be pin in the database
+col type for a25
 select
   owner,
   name as object_name,
@@ -12103,8 +12104,6 @@ where sharable_mem > 10000
   spool off
 !
 echo "Current instance_number is $INST"
-./ora params _memory_imm_mode_without_autosga
-
   exit 0
 fi
 
