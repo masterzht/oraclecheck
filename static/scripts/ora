@@ -7381,7 +7381,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     set linesize 200
     spool ora_topash_$filedate.log
     prompt=========================
-    prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per SQL
+    prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per ,Execution > 10 SQL
     prompt=========================
     set linesize 1000
     set pages 1000
