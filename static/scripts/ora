@@ -7568,9 +7568,8 @@ echo "dump ash records for recent $dur minutes."
 exit 0
 fi
 
-
 ################################################################################
-if [ "$1" = "hangdump" -o "$1" = "hanganalyze" ]; then
+if [ "$1" = "hangdump" -o "$1" = "hanganalyze" -o "$1" = "hang" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
