@@ -5409,8 +5409,6 @@ select ses.username,
   --and vsw.event like 'library cache%'
 order by object_name, lock_mode_held desc
 /
-
-
     $ECHO
     spool off
 !
@@ -15593,7 +15591,7 @@ if [ "$1" = "active" ]; then
 --当前数据库中的session信息与session中正在执行的SQL语句
 
 prompt Display Avg and Max Connections of All Nodes since Instance Startup
-
+prompt =======================
   col RESOURCE_NAME for a13
   col INITIAL_ALLOCATION for a18
   col LIMIT_VALUE for a11
@@ -15606,7 +15604,14 @@ select RESOURCE_NAME,
 from v\$resource_limit
 where RESOURCE_NAME in ('processes', 'sessions');
 
-select /*+use_nl(a,b,c)*/distinct a.sid || ',' || a.serial# as sid_and_serial#,
+col program for a30
+col SECONDS for a7
+col KILL_SQL for a56
+col "P1 P2 P3" for a28
+col logon_time for a10
+col kill_sql for a60
+prompt =======================
+select /*+use_nl(a,b,c)*/         distinct a.sid || ',' || a.serial# as sid_and_serial#,
                                   a.username,
                                   a.terminal,
                                   a.machine,
@@ -15626,12 +15631,13 @@ where a.paddr = b.addr(+)
 
 
 --正在执行的SQL语句的等待事件信息
-prompt display the active sessions and events in current node...
+prompt display the active sessions and events in current node
 col SECONDS for a7
 col KILL_SQL for a56
 col "P1 P2 P3" for a18
 col logon_time for a10
 col kill_sql for a60
+prompt =======================
 select /*+ ordered use_nl(a,b) */
     trim(to_char(a.sql_id))                                                              as sql_id,
     b.spid                                                                               as spid,
@@ -15650,9 +15656,13 @@ where a.type = 'USER'
   and a.wait_class <> 'Idle'
   and a.sid not in (select sid from v\$mystat where rownum = 1)
 order by LAST_CALL_ET desc;
-prompt display all status of all sessions...
+
+prompt display all status of all sessions
+prompt =======================
 select inst_id, status, count(*) from gv\$session group by inst_id,status order by inst_id,status;
-prompt display the session status that not active in current node...
+
+prompt display the session status that not active in current node
+prompt =======================
 col SECONDS for a10
 select /*+ ordered use_nl(a,b) */
     trim(to_char(a.sql_id))            as sql_id,
