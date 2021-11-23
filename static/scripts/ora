@@ -7387,6 +7387,8 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     set pages 1000
     col username for a18
     col FIRST_LOAD_TIME for a20
+    col LAST_LOAD_TIME for a18
+    col LAST_ACTIVE_TIME for a18
     SELECT * FROM (SELECT
     A.PARSING_SCHEMA_NAME as username,
     A.SQL_ID,
@@ -7411,7 +7413,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
    AND ROUND(A.BUFFER_GETS / EXECUTIONS) > $per_buffer_gets
  ORDER BY ROUND(A.BUFFER_GETS / EXECUTIONS) DESC,
 	  round(a.EXECUTIONS / (round(to_number(a.last_active_time-to_date(a.FIRST_LOAD_TIME,'yyyy-mm-dd/hh24:mi:ss')),0)+ 1)) DESC
-) WHERE EXE_PER_DAY > 1;
+) WHERE EXE_PER_DAY > 10;
 
     $ECHO
     spool off
