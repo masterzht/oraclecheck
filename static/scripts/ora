@@ -15116,10 +15116,6 @@ if [ "$1" = "tbs" ]; then
   spool ora_tbs_${filedate}.log
 
 declare
-    v_cnt number;
-    v_hwm_cnt number;
-    v_sys_obj_cnt number;
-
     cursor c_tbs is SELECT
     /*+
       BEGIN_OUTLINE_DATA
@@ -15370,6 +15366,32 @@ WHERE  a.tablespace_name = b.tablespace_name
 order by 3 desc,2 desc;
      v_tbs c_tbs%rowtype;
 
+begin
+  dbms_output.enable(buffer_size => NULL);
+  dbms_output.put_line('
+FCNT Means DATAFILE_CNT
+Used% Means PCT_USED%
+AUTO? Means AUTOEXTEND
+MANAGE? Means EXTENT_MANAGEMENT
+Tablespace Used Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| TABLESPACE_NAME     |' || ' Used% ' || '|                 Used |' || ' AUTO? ' || '| TOTAL_GB |' || ' USED_GB ' || '| FREE_GB |' || ' FCNT ' || '| STATUS |' || '  CONTENTS ' || '| MANAGE? |' || ' MAXSIZE(MB) ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_tbs;
+    loop fetch c_tbs into v_tbs;
+    exit when c_tbs%notfound;
+    dbms_output.put_line('| ' || rpad(v_tbs.TABLESPACE_NAME,19) ||' | '|| lpad(v_tbs.used_pct,5) || ' | '|| rpad(v_tbs.used,20) || ' | '|| lpad(v_tbs.autoextensible,5) || ' | '|| lpad(v_tbs.TOTAL_GB,8) || ' | '|| lpad(v_tbs.USED_GB,7) || ' | '|| lpad(v_tbs.FREE_GB,7) || ' | '|| lpad(v_tbs.DATAFILE_COUNT,4) || ' | '|| lpad(v_tbs.STATUS,6) || ' | '|| lpad(v_tbs.CONTENTS,9) || ' | '||lpad(v_tbs.extent_management,7) ||' | ' || lpad(v_tbs.maxsize,12) || '|');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_tbs;
+end;
+/
+
+declare
+    v_hwm_cnt number;
+    v_sys_obj_cnt number;
+
     cursor c_recovery is SELECT decode(name,null,'None',name) as recovery_dest,
     round(space_limit/1024/1024) as space_limit_mb,
     decode(space_limit,0,0, round(100 * ((space_used - SPACE_RECLAIMABLE) / space_limit),2)) as used_pct
@@ -15383,7 +15405,6 @@ FROM v\$recovery_file_dest;
                      and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL','LBACSYS')
                   group by owner;
     v_sys_obj c_sys_obj%rowtype;
-
 
 
     cursor c_big_tab is select
@@ -15532,9 +15553,8 @@ FROM v\$recovery_file_dest;
 
 
 begin
-
   dbms_output.enable(buffer_size => NULL);
-  select count(*) into v_sys_obj_cnt from dba_segments
+    select count(*) into v_sys_obj_cnt from dba_segments
                   where tablespace_name in ('SYSTEM','SYSAUX')
                   and owner not in ('SYS','SYSTEM','MDSYS','CTXSYS','OUTLN','OLAPSYS','DBSNMP','EXFSYS','ORDSYS','SYSMAN','XDB','ORDDATA','WMSYS','OJVMSYS','DVSYS','AUDSYS','GSMADMIN_INTERNAL','LBACSYS');
 
@@ -15562,25 +15582,6 @@ begin
                                'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL')
    AND BLOCKS > 100;
 
-
-  dbms_output.put_line('
-FCNT Means DATAFILE_CNT
-Used% Means PCT_USED%
-AUTO? Means AUTOEXTEND
-MANAGE? Means EXTENT_MANAGEMENT
-Tablespace Used Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| TABLESPACE_NAME     |' || ' Used% ' || '|                 Used |' || ' AUTO? ' || '| TOTAL_GB |' || ' USED_GB ' || '| FREE_GB |' || ' FCNT ' || '| STATUS |' || '  CONTENTS ' || '| MANAGE? |' || ' MAXSIZE(MB) ' || '|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_tbs;
-    loop fetch c_tbs into v_tbs;
-    exit when c_tbs%notfound;
-    dbms_output.put_line('| ' || rpad(v_tbs.TABLESPACE_NAME,19) ||' | '|| lpad(v_tbs.used_pct,5) || ' | '|| rpad(v_tbs.used,20) || ' | '|| lpad(v_tbs.autoextensible,5) || ' | '|| lpad(v_tbs.TOTAL_GB,8) || ' | '|| lpad(v_tbs.USED_GB,7) || ' | '|| lpad(v_tbs.FREE_GB,7) || ' | '|| lpad(v_tbs.DATAFILE_COUNT,4) || ' | '|| lpad(v_tbs.STATUS,6) || ' | '|| lpad(v_tbs.CONTENTS,9) || ' | '||lpad(v_tbs.extent_management,7) ||' | ' || lpad(v_tbs.maxsize,12) || '|');
-    end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_tbs;
-
   dbms_output.put_line('
 Fast Recovery Dest Information');
   dbms_output.put_line('======================');
@@ -15590,7 +15591,7 @@ Fast Recovery Dest Information');
   open c_recovery;
     loop fetch c_recovery into v_recovery;
     exit when c_recovery%notfound;
-    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,9) || ' | ' || lpad(v_recovery.space_limit_mb,12) || ' |');
+    dbms_output.put_line('| ' || rpad(v_recovery.recovery_dest,92) ||' | '|| lpad(v_recovery.used_pct,9) || ' | ' || lpad(v_recovery.space_limit_mb,14) || ' |');
     end loop;
     dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
   close c_recovery;
