@@ -11150,6 +11150,7 @@ declare
            when name = 'memory_target' and value <> 0 then 'Recommend to set to <0> to close AMM'
            when name = 'memory_max_target' and value <> 0 then 'Recommend to set to <0> to close AMM'
            when name = 'db_files' and value < 5000 then 'Recommend to set to more than <5000>'
+           when name = 'open_links' and value <= 10 then 'In lots of dblink DB System, set <100> Doc ID 1469649.1'
            when name = 'processes' and value < 5000 then 'Recommend to set to more than <5000>'
            when name = 'job_queue_processes' and value < 1000 then 'Recommend to set to more than <1000>'
            when name = 'sga_target' and value = 0 then 'Recommend to set the same value with sga_max_size'
@@ -11187,8 +11188,9 @@ declare
            'event',
            'archive_lag_target',
            'fast_start_parallel_rollback',
-           'optimizer_adaptive_statistics'
-           )
+           'optimizer_adaptive_statistics',
+           'open_links'
+          )
            order by name;
     v_para c_para%rowtype;
 
