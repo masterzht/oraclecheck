@@ -7383,9 +7383,9 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     set linesize 1000
     set pages 1000
     col username for a18
-    col FIRST_LOAD_TIME for a20
-    col LAST_LOAD_TIME for a18
-    col LAST_ACTIVE_TIME for a18
+    col FIRST_LOAD_TIME for a16
+    col LAST_LOAD_TIME for a15
+    col LAST_ACTIVE_TIME for a16
     SELECT * FROM (SELECT
     A.PARSING_SCHEMA_NAME as username,
     A.SQL_ID,
@@ -7396,9 +7396,9 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     (round(to_number(a.last_active_time-to_date(a.FIRST_LOAD_TIME,'yy-mm-dd/hh24:mi:ss')),0)+ 1) AS last_day,
     round(a.EXECUTIONS / (round(to_number(a.last_active_time-to_date(a.FIRST_LOAD_TIME,'yy-mm-dd/hh24:mi:ss')),0)+ 1)) AS exe_per_day,
     -- A.SQL_FULLTEXT AS SQL,
-    A.FIRST_LOAD_TIME,
-    to_char(A.LAST_LOAD_TIME,'yy-mm-dd/hh24:mi:ss') as LAST_LOAD_TIME,
-    to_char(A.LAST_ACTIVE_TIME,'yy-mm-dd/hh24:mi:ss') as LAST_ACTIVE_TIME
+    to_char(to_date(a.FIRST_LOAD_TIME,'yy-mm-dd/hh24:mi:ss'),'yymmdd hh24:mi:ss') as first_load_time,
+    to_char(A.LAST_LOAD_TIME,'yymmdd hh24:mi:ss') as LAST_LOAD_TIME,
+    to_char(A.LAST_ACTIVE_TIME,'yymmdd hh24:mi:ss') as LAST_ACTIVE_TIME
     FROM v\$SQLAREA A,
        (SELECT DISTINCT SQL_ID, SQL_PLAN_HASH_VALUE
           FROM v\$ACTIVE_SESSION_HISTORY
@@ -7410,7 +7410,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
    AND ROUND(A.BUFFER_GETS / EXECUTIONS) > $per_buffer_gets
  ORDER BY ROUND(A.BUFFER_GETS / EXECUTIONS) DESC,
 	  round(a.EXECUTIONS / (round(to_number(a.last_active_time-to_date(a.FIRST_LOAD_TIME,'yyyy-mm-dd/hh24:mi:ss')),0)+ 1)) DESC
-) WHERE EXE_PER_DAY > 10;
+) WHERE EXE_PER_DAY > 1;
 
     $ECHO
     spool off
@@ -11018,15 +11018,15 @@ declare
     ksppinm as name,
     ksppstvl as value,
     case when ksppinm = '_optim_peek_user_binds' and ksppstvl <> 'TRUE'
-      then 'Recommend set to default value <TRUE>, Peep through statistical information histogram binding variables'
+      then 'Recommend set <TRUE>, Peep through statistical information histogram binding variables'
      when ksppinm = '_undo_autotune' and ksppstvl = 'TRUE'
-      then 'Recommend set to <FALSE>, default value is TRUE Doc 1574714.1'
+      then 'Recommend set <FALSE>, default value is TRUE Doc 1574714.1'
      when ksppinm = '_optimizer_adaptive_cursor_sharing' and ksppstvl <> 'TRUE'
-      then 'Recommend set to <TRUE> to solves the execution plan remains unchanged after binding variable peeping issue'
+      then 'Recommend set <TRUE>, solves the execution plan remains unchanged after binding variable peeping issue'
      when ksppinm = '_optimzer_adaptive_extended_cursor_sharing' and ksppstvl <> 'UDO'
-      then 'should be set to <UDO> to solves the problem that the execution plan remains unchanged after binding variable peeping issue'
+      then 'Set to <UDO>, solve the execution plan remains unchanged after binding variable peeping issue'
      when ksppinm = '_optimizer_extended_cursor_sharing_rel' and  ksppstvl <> 'SIMPLE'
-      then 'Should be set to <SIMPLE> to solves the problem that the execution plan remains unchanged after binding variable peeping issue'
+      then 'Set <SIMPLE>, solve the execution plan remains unchanged after binding variable peeping issue'
      when ksppinm = 'optimizer_index_caching' and ksppstvl <> 0
       then 'optimizer_index_caching should set to <0>, default value is 0'
      when ksppinm = 'optimizer_index_cost_adj' and ksppstvl <> 100
@@ -11058,7 +11058,7 @@ declare
      when ksppinm = '_use_single_log_writer' and ksppstvl <> 'TRUE'
       then '12c new features recommend to set to <TRUE> to avoid parallel write Issue'
      when ksppinm = '_use_adaptive_log_file_sync' and ksppstvl ='TRUE'
-      then 'Set <False>, 11203 and above Version default <TRUE> May Cause log sync Issue,refer to DOC 1462942.1'
+      then 'Set <False>, Above 11203 <TRUE> May Cause log sync Issue,refer to DOC 1462942.1'
      when  ksppinm = '_optimizer_use_feedback' and ksppstvl ='TRUE'
       then 'Recommend to set <False> to close _optimizer_use_feedback '
      when ksppinm = '_datafile_write_errors_crash_instance' and ksppstvl = 'TRUE'
@@ -11072,7 +11072,7 @@ declare
      when ksppinm = '_ash_size' and ksppstvl <= '1048618'
       then 'Set <250M> If SGA is large enough, See Doc ID 1385872.1,Document 1952274.1,Document 243132.1'
      when ksppinm = '_adg_parselock_timeout' and ksppstvl < '500'
-      then 'ADG Env set 500 To Avoid Instance Crash ref Doc ID 2183882.1 19C also default 0' end as advice
+      then 'ADG Env set 500, Avoid Instance Crash ref Doc ID 2183882.1 19C also default 0' end as advice
       from x\$ksppi x, x\$ksppcv y
       where x.indx = y.indx
       and ksppinm in ('_kcfis_storageidx_diag_mode','__db_cache_size','_ksmg_granule_size',
@@ -11128,7 +11128,7 @@ declare
       union all
       select
       name,
-      value,
+      decode(value,null,'None',value) as value,
       case when name = 'open_cursors' and (value < 300 or value > 1000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
            when name = 'control_file_record_keep_time' and value <= 7 then 'control_file_record_keep_time recommend to set to <15>, 30 is enough,Doc 47322.1'
            when name = 'cursor_sharing' and value <> 'EXACT' then 'Recommend to set to <EXACT>, <FORCE> Forcing SQL that does not use binding variables into binding variables'
@@ -11148,6 +11148,7 @@ declare
            when name = 'sga_target' and value = 0 then 'Recommend to set the same value with sga_max_size'
            when name = 'sga_max_size' and value < 100 then 'According to the business and system memory settings'
            when name = 'db_cache_size' and value = 0 then 'Recommend to set a minimum value'
+           when name = 'event' and value is null then 'alter system set event ="28401 TRACE NAME CONTEXT FOREVER, LEVEL 1" scope=spfile;'
            when name = 'shared_pool_size' and value = 0 then 'Recommend to set a minimum value eg set 20G'
            when name = 'pga_aggregate_target' and value < 100 then 'According to the business and system memory settings'
            when name = 'fast_start_parallel_rollback' and value = 'FALSE' then '<FALSE> means Parallel rollback is disabled, <LOW> Limits the maximum degree of parallelism to 2 * CPU_COUNT'
@@ -11191,15 +11192,15 @@ begin
   dbms_output.put_line('
 Parameter Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| Parameter Name                         |' || ' VALUE          ' || '| Advice                                                                                                   |');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| Parameter Name                         |' || ' VALUE          ' || '| Advice                                                                                             |');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_para;
     loop fetch c_para into v_para;
     exit when c_para%notfound;
-    dbms_output.put_line('| ' || rpad(v_para.name,38) ||' | '|| rpad(v_para.VALUE,14) || ' | '|| rpad(v_para.ADVICE || '.',104) || ' |');
+    dbms_output.put_line('| ' || rpad(v_para.name,38) ||' | '|| rpad(v_para.VALUE,14) || ' | '|| rpad(v_para.ADVICE || '.',98) || ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_para;
 
 end;
