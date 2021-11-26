@@ -13822,8 +13822,6 @@ begin
   select count(*) into v_cnt from dba_segments where segment_name = upper(:table_name) and owner = upper(:owner);
 
 if v_cnt = 1 then
-
-
   dbms_output.put_line('
 Non partitioned Table Segment Information');
   dbms_output.put_line('======================');
@@ -13881,7 +13879,6 @@ Non partitioned Table Statistics STALE_STATS, Yes Means Expired');
     end loop;
     dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------');
   close c_sta;
-
 
   dbms_output.put_line('
 Non partitioned Table Modification,Stats Expired Reason Information(dba_tab_modifications)');
@@ -14004,7 +14001,121 @@ HWM Information Rely on Table Statistics');
 end if;
 end;
 /
-
+col partition_name for A20
+col SUBPARTITION_NAME for a20
+SELECT *
+  FROM (SELECT *
+          FROM (SELECT *
+                  FROM (SELECT U.NAME OWNER,
+                               O.NAME TABLE_NAME,
+                               NULL PARTITION_NAME,
+                               NULL SUBPARTITION_NAME,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO') TRUNCATED,
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS_ALL$ M,
+                               SYS.OBJ$          O,
+                               SYS.TAB$          T,
+                               SYS.USER$         U
+                         WHERE O.OBJ# = M.OBJ#
+                           AND O.OBJ# = T.OBJ#
+                           AND O.OWNER# = U.USER#
+                        UNION ALL
+                        SELECT U.NAME,
+                               O.NAME,
+                               O.SUBNAME,
+                               NULL,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS_ALL$ M, SYS.OBJ$ O, SYS.USER$ U
+                         WHERE O.OWNER# = U.USER#
+                           AND O.OBJ# = M.OBJ#
+                           AND O.TYPE# = 19
+                        UNION ALL
+                        SELECT U.NAME,
+                               O.NAME,
+                               O2.SUBNAME,
+                               O.SUBNAME,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS_ALL$ M,
+                               SYS.OBJ$          O,
+                               SYS.TABSUBPART$   TSP,
+                               SYS.OBJ$          O2,
+                               SYS.USER$         U
+                         WHERE O.OBJ# = M.OBJ#
+                           AND O.OWNER# = U.USER#
+                           AND O.OBJ# = TSP.OBJ#
+                           AND O2.OBJ# = TSP.POBJ#)
+                 WHERE OWNER NOT IN ('ANONYMOUS','APEX_030200','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
+                UNION ALL
+                SELECT *
+                  FROM (SELECT U.NAME OWNER,
+                               O.NAME TABLE_NAME,
+                               NULL PARTITION_NAME,
+                               NULL SUBPARTITION_NAME,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO') TRUNCATED,
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS$ M,
+                               SYS.OBJ$      O,
+                               SYS.TAB$      T,
+                               SYS.USER$     U
+                         WHERE O.OBJ# = M.OBJ#
+                           AND O.OBJ# = T.OBJ#
+                           AND O.OWNER# = U.USER#
+                        UNION ALL
+                        SELECT U.NAME,
+                               O.NAME,
+                               O.SUBNAME,
+                               NULL,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS$ M, SYS.OBJ$ O, SYS.USER$ U
+                         WHERE O.OWNER# = U.USER#
+                           AND O.OBJ# = M.OBJ#
+                           AND O.TYPE# = 19
+                        UNION ALL
+                        SELECT U.NAME,
+                               O.NAME,
+                               O2.SUBNAME,
+                               O.SUBNAME,
+                               M.INSERTS,
+                               M.UPDATES,
+                               M.DELETES,
+                               M.TIMESTAMP,
+                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
+                               M.DROP_SEGMENTS
+                          FROM SYS.MON_MODS$   M,
+                               SYS.OBJ$        O,
+                               SYS.TABSUBPART$ TSP,
+                               SYS.OBJ$        O2,
+                               SYS.USER$       U
+                         WHERE O.OBJ# = M.OBJ#
+                           AND O.OWNER# = U.USER#
+                           AND O.OBJ# = TSP.OBJ#
+                           AND O2.OBJ# = TSP.POBJ#)
+                 WHERE OWNER = :owner)
+         ORDER BY INSERTS DESC)
+ WHERE ROWNUM <= 50;
 
 --Table stats
 /**
@@ -14138,8 +14249,7 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
 
     cursor c_lock0 is select owner,table_name,stattype_locked
     from dba_tab_statistics
-    where owner not in ('SYSTEM','OWBSYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN','ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS',
-                    'DBSNMP','APPQOSSYS','APEX_040200','AUDSYS','CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL')
+    where owner = :owner
     and stattype_locked is not null;
     v_lock0 c_lock0%rowtype;
 
@@ -14172,8 +14282,8 @@ FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
            WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES'
 --       OR last_analyzed < sysdate -7
 )
-           AND OWNER not in('SYSTEM','WMSYS','XDB','QMONITOR','OUTLN','ORDSYS','ORDDATA','OJVMSYS','MDSYS','LBACSYS','DVSYS',
-                            'DBSNMP','APEX_040200','AUDSYS','CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL','HZMCDBAGENT')            and TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
+           AND OWNER = :owner
+           AND TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
            AND stattype_locked is null
 ) and not exists (select null from dba_tables b where b.iot_type = 'IOT_OVERFLOW' and a.segment_name = b.table_name)
 GROUP BY OWNER, SEGMENT_NAME);
@@ -14215,7 +14325,7 @@ GROUP BY OWNER, SEGMENT_NAME);
   FROM dba_tab_statistics s,
        dba_tables t
  WHERE s.object_type = 'TABLE'
-   AND s.owner NOT IN ('ANONYMOUS','APEX_030200','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
+   AND s.owner = :owner
    AND s.last_analyzed IS NOT NULL
    /*AND s.stale_stats = 'YES'*/
    AND t.temporary = 'Y'
@@ -14230,7 +14340,9 @@ SELECT NULL
  ORDER BY
        s.owner, s.table_name;
    v_temp c_temp%rowtype;
-
+   v_expired_table_cnt number;
+   v_lock_table_stats_cnt number;
+   v_temp_stat_cnt number;
 begin
   dbms_output.enable(buffer_size => NULL);
 
@@ -14248,7 +14360,20 @@ Auto Statistics Information');
     dbms_output.put_line('----------------------------------------------------');
   close c_sys;
 
-
+SELECT count(*) into v_expired_table_cnt
+FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
+      FROM DBA_SEGMENTS a
+      WHERE (owner,SEGMENT_NAME)
+      IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS
+           WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES'
+--       OR last_analyzed < sysdate -7
+)
+           AND OWNER = :owner
+           AND TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
+           AND stattype_locked is null
+) and not exists (select null from dba_tables b where b.iot_type = 'IOT_OVERFLOW' and a.segment_name = b.table_name)
+GROUP BY OWNER, SEGMENT_NAME);
+if  v_expired_table_cnt > 0 then
   dbms_output.put_line('
 The Table Statistics are Expired ');
   dbms_output.put_line('======================');
@@ -14262,7 +14387,6 @@ The Table Statistics are Expired ');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------');
   close c_expire;
-
 
    dbms_output.put_line('
 Gather table statistics using dbms_stats.gather_table_stats Based on the username entered');
@@ -14278,10 +14402,20 @@ Gather table statistics using dbms_stats.gather_table_stats Based on the usernam
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_expire0;
 
-
-
+else
   dbms_output.put_line('
-The Table Statistics are Locked Include sys,scott and business users');
+There is No Expired Table Statistics for Current Owner');
+  dbms_output.put_line('======================');
+end if;
+
+select count(*) into v_lock_table_stats_cnt
+    from dba_tab_statistics
+    where owner = :owner
+    and stattype_locked is not null;
+
+if v_lock_table_stats_cnt > 0 then
+  dbms_output.put_line('
+The Table Statistics are Locked for Current Owner');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------');
   dbms_output.put_line('| TABLE_OWNER      |' || ' TABLE_NAME                       |' || ' stattype_locked ' || '|');
@@ -14293,8 +14427,6 @@ The Table Statistics are Locked Include sys,scott and business users');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------');
   close c_lock0;
-
-
   dbms_output.put_line('
 unlock table statistics using dbms_stats.unlock_table_stats Based on the username entered');
   dbms_output.put_line('======================');
@@ -14308,10 +14440,31 @@ unlock table statistics using dbms_stats.unlock_table_stats Based on the usernam
     end loop;
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------');
   close c_lock;
+else
+  dbms_output.put_line('
+There is No Table Statistics are Locked for Current Owner');
+  dbms_output.put_line('======================');
+end if;
 
+
+
+SELECT count(*) into v_temp_stat_cnt FROM dba_tab_statistics s, dba_tables t
+ WHERE s.object_type = 'TABLE'
+   AND s.owner = :owner
+   AND s.last_analyzed IS NOT NULL
+   /*AND s.stale_stats = 'YES'*/
+   AND t.temporary = 'Y'
+   AND t.owner = s.owner
+   AND t.table_name = s.table_name
+   AND NOT EXISTS ( SELECT NULL FROM dba_external_tables e
+ WHERE e.owner = s.owner
+   AND e.table_name = s.table_name
+)
+ ORDER BY s.owner, s.table_name;
+
+if v_temp_stat_cnt > 0 then
   dbms_output.put_line('
 Temporary Table That has been Gathered Statistics');
-  dbms_output.put_line('======================');
   dbms_output.put_line('======================');
   dbms_output.put_line('---------------------------------------------------------------------');
   dbms_output.put_line('| TABLE_OWNER      |' || ' TABLE_NAME                       ' || '|');
@@ -14323,49 +14476,14 @@ Temporary Table That has been Gathered Statistics');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------');
   close c_temp;
+else
+  dbms_output.put_line('
+There is No Temporary Table That has been Gathered Statistics for Current Owner');
+  dbms_output.put_line('======================');
+end if;
 
 end;
 /
-
-/**
---查询下次执行时间
-col enabled for a10
-col job_name for a17
-col start_date for a20
-col end_date for a20
-col last_start_date for a20
-col NEXT_RUN_DATE for a20
-select JOB_NAME,
-to_char(LAST_START_DATE,'yyyy-mm-dd hh24:mi:ss') as last_start_date,
-to_char(NEXT_RUN_DATE,'yyyy-mm-dd hh24:mi:ss') as NEXT_RUN_DATE,
-to_char(START_DATE,'yyyy-mm-dd hh24:mi:ss') as start_date,
-to_char(END_DATE,'yyyy-mm-dd hh24:mi:ss') as end_date,
-ENABLED
-from dba_scheduler_jobs where job_name like '%GATHER_STATIC_JOB%';
-/
-prompt **************************
-prompt Gather Extended statistics
-prompt **************************
-
-select DBMS_STATS.REPORT_COL_USAGE(user, 'T_GAME_XYDC') from dual;
-begin
-    DBMS_STATS.SEED_COL_USAGE(null, null, 300);
-end;
-/
-select dbms_stats.create_extended_stats(user,'T_GAME_XYDC') from dual;
-begin
-    dbms_stats.gather_table_stats(user,'T_GAME_XYDC',method_opt=>'for all hidden columns size 1024');
-end;
-/
-
-select dbms_stats.create_extended_stats('BANK','FBBALANCE','(HDATE,BANKID)') from dual;
-begin
-    dbms_stats.gather_table_stats('BANK','FBBALANCE',method_opt=>'for all hidden columns size 254');
-end;
-/
-**/
--- 检查无统计信息/统计信息过期/统计信息过旧的表
-
 
 col LAST_ANALYZED_TIME for a20
 col index_name for a32
@@ -14381,7 +14499,7 @@ SELECT /*+ NO_MERGE */
   FROM dba_tab_statistics s,
        dba_tables t
  WHERE s.object_type = 'TABLE'
-   AND s.owner NOT IN ('ANONYMOUS','APEX_030200','FLOWS_FILES','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
+   AND s.owner = ':owner'
    AND (s.last_analyzed IS NULL or  s.stale_stats = 'YES' or s.last_analyzed < sysdate -7)
    AND t.owner = s.owner
    AND t.table_name = s.table_name
@@ -14394,125 +14512,6 @@ SELECT NULL
 )
  ORDER BY
        s.owner, s.table_name;
-
-prompt
-
-col partition_name for A20
-col SUBPARTITION_NAME for a20
-SELECT *
-  FROM (SELECT *
-          FROM (SELECT *
-                  FROM (SELECT U.NAME OWNER,
-                               O.NAME TABLE_NAME,
-                               NULL PARTITION_NAME,
-                               NULL SUBPARTITION_NAME,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO') TRUNCATED,
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS_ALL$ M,
-                               SYS.OBJ$          O,
-                               SYS.TAB$          T,
-                               SYS.USER$         U
-                         WHERE O.OBJ# = M.OBJ#
-                           AND O.OBJ# = T.OBJ#
-                           AND O.OWNER# = U.USER#
-                        UNION ALL
-                        SELECT U.NAME,
-                               O.NAME,
-                               O.SUBNAME,
-                               NULL,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS_ALL$ M, SYS.OBJ$ O, SYS.USER$ U
-                         WHERE O.OWNER# = U.USER#
-                           AND O.OBJ# = M.OBJ#
-                           AND O.TYPE# = 19
-                        UNION ALL
-                        SELECT U.NAME,
-                               O.NAME,
-                               O2.SUBNAME,
-                               O.SUBNAME,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS_ALL$ M,
-                               SYS.OBJ$          O,
-                               SYS.TABSUBPART$   TSP,
-                               SYS.OBJ$          O2,
-                               SYS.USER$         U
-                         WHERE O.OBJ# = M.OBJ#
-                           AND O.OWNER# = U.USER#
-                           AND O.OBJ# = TSP.OBJ#
-                           AND O2.OBJ# = TSP.POBJ#)
-                 WHERE OWNER NOT IN ('ANONYMOUS','APEX_030200','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
-                UNION ALL
-                SELECT *
-                  FROM (SELECT U.NAME OWNER,
-                               O.NAME TABLE_NAME,
-                               NULL PARTITION_NAME,
-                               NULL SUBPARTITION_NAME,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO') TRUNCATED,
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS$ M,
-                               SYS.OBJ$      O,
-                               SYS.TAB$      T,
-                               SYS.USER$     U
-                         WHERE O.OBJ# = M.OBJ#
-                           AND O.OBJ# = T.OBJ#
-                           AND O.OWNER# = U.USER#
-                        UNION ALL
-                        SELECT U.NAME,
-                               O.NAME,
-                               O.SUBNAME,
-                               NULL,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS$ M, SYS.OBJ$ O, SYS.USER$ U
-                         WHERE O.OWNER# = U.USER#
-                           AND O.OBJ# = M.OBJ#
-                           AND O.TYPE# = 19
-                        UNION ALL
-                        SELECT U.NAME,
-                               O.NAME,
-                               O2.SUBNAME,
-                               O.SUBNAME,
-                               M.INSERTS,
-                               M.UPDATES,
-                               M.DELETES,
-                               M.TIMESTAMP,
-                               DECODE(BITAND(M.FLAGS, 1), 1, 'YES', 'NO'),
-                               M.DROP_SEGMENTS
-                          FROM SYS.MON_MODS$   M,
-                               SYS.OBJ$        O,
-                               SYS.TABSUBPART$ TSP,
-                               SYS.OBJ$        O2,
-                               SYS.USER$       U
-                         WHERE O.OBJ# = M.OBJ#
-                           AND O.OWNER# = U.USER#
-                           AND O.OBJ# = TSP.OBJ#
-                           AND O2.OBJ# = TSP.POBJ#)
-                 WHERE OWNER NOT IN ('ANONYMOUS','APEX_030200','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF'))
-         ORDER BY INSERTS DESC)
- WHERE ROWNUM <= 50;
-
 
 prompt expired Index Statistics
 -- 检查无统计信息/统计信息过期/统计信息过旧的索引
@@ -14543,6 +14542,7 @@ ES','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS'
 SELECT NULL
   FROM dba_external_tables e
  WHERE e.owner = s.owner
+   AND e.owner = :owner
    AND e.table_name = s.table_name
 )
  ORDER BY
