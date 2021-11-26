@@ -10984,7 +10984,17 @@ if [ "$1" = "params" ]; then
   else
     PAT="%"
   fi
-
+  echo''
+  echo 'OS Parameter Information'
+  echo '======================'
+  echo 'redhat-release:' `cat /etc/redhat-release`
+  echo 'hostname:' `hostname`
+  echo 'UDP Buffer ipfrag_low_thresh:' `cat /proc/sys/net/ipv4/ipfrag_low_thresh` ' Bytes'
+  echo 'UDP Buffer ipfrag_high_thresh:' `cat /proc/sys/net/ipv4/ipfrag_high_thresh` ' Bytes'
+  echo 'open files:' `ulimit -a | grep files | awk '{print $4}'`
+  echo 'max user processes:' `ulimit -a | grep processes | awk '{print $5}'`
+  cat /proc/meminfo |grep -E 'Mem|Cache|Swap|Huge'
+  echo 'watchdog process:' `ps -ef | grep watchdog | grep -v grep | awk '{print $8}'  | grep -v bash`
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
