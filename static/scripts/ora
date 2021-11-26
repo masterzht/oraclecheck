@@ -7370,6 +7370,12 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
       per_buffer_gets=$3
     fi
 
+    if [ "$4" = "" ]; then
+      execution=10
+    else
+      execution=$4
+    fi
+
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -7378,7 +7384,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     set linesize 200
     spool ora_topash_$filedate.log
     prompt=========================
-    prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per ,Execution > 10 SQL
+    prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per ,Execution > $execution SQL
     prompt=========================
     set linesize 1000
     set pages 1000
@@ -7386,10 +7392,11 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
     col FIRST_LOAD_TIME for a16
     col LAST_LOAD_TIME for a15
     col LAST_ACTIVE_TIME for a16
+    col last_day for 9999
     SELECT * FROM (SELECT
     A.PARSING_SCHEMA_NAME as username,
     A.SQL_ID,
-    A.PLAN_HASH_VALUE AS PLAN_HASH_VALUE,
+    A.PLAN_HASH_VALUE AS PLAN_HASH,
     ROUND(A.BUFFER_GETS / EXECUTIONS) AS LOGICAL_READ,
     A.BUFFER_GETS,
     A.EXECUTIONS,
@@ -7410,7 +7417,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
    AND ROUND(A.BUFFER_GETS / EXECUTIONS) > $per_buffer_gets
  ORDER BY ROUND(A.BUFFER_GETS / EXECUTIONS) DESC,
 	  round(a.EXECUTIONS / (round(to_number(a.last_active_time-to_date(a.FIRST_LOAD_TIME,'yyyy-mm-dd/hh24:mi:ss')),0)+ 1)) DESC
-) WHERE EXE_PER_DAY > 1;
+) WHERE EXE_PER_DAY > $execution;
 
     $ECHO
     spool off
@@ -14606,7 +14613,7 @@ if [ "$1" = "x" ]; then
 
     set linesize 200 pagesize 600
     set tab      off
-    col PARSING_SCHEMA_NAME for a20
+    col PARSING_SCHEMA_NAME for a16
     col plan_table format a180
     col snap_time for a17
     col inst# for 99999
@@ -14615,12 +14622,13 @@ if [ "$1" = "x" ]; then
     prompt ####################################################################
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
+    col parsing_schema for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
-    plan_hash_value as plan_hash_value,
-    OPTIMIZER_COST,
-    PARSING_SCHEMA_NAME,
-    executions_delta "total_executions",
+    plan_hash_value as plan_hash,
+    OPTIMIZER_COST as opti_cost,
+    PARSING_SCHEMA_NAME as parsing_schema,
+    executions_delta "total_exec",
     trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_ms/per",
     trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_ms/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io_ms/per",
@@ -14653,7 +14661,7 @@ if [ "$1" = "xp" ]; then
     set pagesize 200
     set tab      off
     set linesize 350
-    col PARSING_SCHEMA for a20
+    col PARSING_SCHEMA for a16
     col inst# for 99999
     set echo off
     repfooter off;
@@ -14663,12 +14671,13 @@ if [ "$1" = "xp" ]; then
     prompt ####################################################################
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
+    col parsing_schema for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
-    plan_hash_value as plan_hash_value,
-    OPTIMIZER_COST,
+    plan_hash_value as hash_value,
+    OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as PARSING_SCHEMA,
-    executions_delta "total_executions",
+    executions_delta "total_exec",
     trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_ms/per",
     trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_ms/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io_ms/per",
@@ -14702,7 +14711,7 @@ if [ "$1" = "xpo" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-    col PARSING_SCHEMA_NAME for a20
+    col PARSING_SCHEMA_NAME for a16
     col inst# for 99999
     set verify off
     set define on 
@@ -14796,12 +14805,13 @@ if [ "$1" = "xpo" ]; then
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
     col snap_time for a17
+    col PARSING_SCHEMA for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
-    plan_hash_value as plan_hash_value,
-    OPTIMIZER_COST,
+    plan_hash_value as plan_hash,
+    OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as PARSING_SCHEMA,
-    executions_delta "total_executions",
+    executions_delta "total_exec",
     trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_ms/per",
     trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_ms/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io_ms/per",
@@ -14841,7 +14851,7 @@ if [ "$1" = "xo" ]; then
 
     connect $DBUSER
     set define on
-    col PARSING_SCHEMA_NAME for a20
+    col PARSING_SCHEMA_NAME for a16
     col inst# for 99999
     set verify off
     
@@ -14942,12 +14952,13 @@ if [ "$1" = "xo" ]; then
     prompt Display current sql dba_his_sqlstat Information
     prompt ####################################################################
     col snap_time for a17
+    col PARSING_SCHEMA for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
-    plan_hash_value as plan_hash_value,
-    OPTIMIZER_COST,
-    PARSING_SCHEMA_NAME,
-    executions_delta "total_executions",
+    plan_hash_value as plan_hash,
+    OPTIMIZER_COST as opti_cost,
+    PARSING_SCHEMA_NAME as PARSING_SCHEMA,
+    executions_delta "total_exec",
     trunc(ELAPSED_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "elapsed_ms/per",
     trunc(CPU_TIME_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "cpu_ms/per",
     trunc(IOWAIT_DELTA/decode(executions_delta,0,1,executions_delta)/1000) "user_io_ms/per",
