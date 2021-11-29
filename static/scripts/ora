@@ -14340,9 +14340,40 @@ SELECT NULL
  ORDER BY
        s.owner, s.table_name;
    v_temp c_temp%rowtype;
+
+   cursor c_expire_index_stats is
+   SELECT /*+ NO_MERGE */
+       s.table_name,
+       s.index_name,
+       s.stale_stats,
+       to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed
+  FROM dba_ind_statistics s,
+       dba_indexes t
+ WHERE s.OBJECT_TYPE = 'INDEX'
+   AND s.owner = :owner
+   AND (s.last_analyzed IS NULL or s.stale_stats = 'YES' or s.last_analyzed < sysdate -7)
+   AND s.table_name NOT LIKE 'BIN%'
+   AND NOT (s.table_name LIKE '%TEMP' OR s.table_name LIKE '%_TEMP_%' )
+   AND t.owner = s.owner
+   AND t.index_name = s.INDEX_NAME
+   AND t.table_name = s.table_name
+   AND t.temporary = 'N'
+   and t.index_type != 'LOB'
+   AND NOT EXISTS (
+SELECT NULL
+  FROM dba_external_tables e
+ WHERE e.owner = s.owner
+   AND e.owner = :owner
+   AND e.table_name = s.table_name
+)
+ ORDER BY
+       s.owner, s.table_name;
+   v_expire_index_stats c_expire_index_stats%rowtype;
+
    v_expired_table_cnt number;
    v_lock_table_stats_cnt number;
    v_temp_stat_cnt number;
+   v_cnt_expired_index_stats number;
 begin
   dbms_output.enable(buffer_size => NULL);
 
@@ -14482,54 +14513,13 @@ There is No Temporary Table That has been Gathered Statistics for Current Owner'
   dbms_output.put_line('======================');
 end if;
 
-end;
-/
-
-col LAST_ANALYZED_TIME for a20
-col index_name for a32
-col owner for a24
-col stale_stats for a28
-col TABLE_NAME for a32
 
 
-prompt last_analyzed < 7 and last_analyzed is null and stale_stats = 'YES'
-set linesize 600
-SELECT /*+ NO_MERGE */
-       s.owner, s.table_name, s.stale_stats , to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed_time
-  FROM dba_tab_statistics s,
-       dba_tables t
- WHERE s.object_type = 'TABLE'
-   AND s.owner = ':owner'
-   AND (s.last_analyzed IS NULL or  s.stale_stats = 'YES' or s.last_analyzed < sysdate -7)
-   AND t.owner = s.owner
-   AND t.table_name = s.table_name
-   AND t.temporary = 'N'
-   AND NOT EXISTS (
-SELECT NULL
-  FROM dba_external_tables e
- WHERE e.owner = s.owner
-   AND e.table_name = s.table_name
-)
- ORDER BY
-       s.owner, s.table_name;
-
-prompt expired Index Statistics
--- 检查无统计信息/统计信息过期/统计信息过旧的索引
--- 数据库存在无统计信息/统计信息过期/统计信息过旧的索引，SQL解析时CBO无法生成正确的执行计划，极大影响数据库性能
-
-
-SELECT /*+ NO_MERGE */
-       s.owner,
-       s.table_name,
-       s.index_name,
-       s.stale_stats,
-       to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed_time
+SELECT count(*) into v_cnt_expired_index_stats
   FROM dba_ind_statistics s,
        dba_indexes t
  WHERE s.OBJECT_TYPE = 'INDEX'
-   AND s.owner NOT IN ('ANONYMOUS','APEX_030200','APEX_040000','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FIL
-ES','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN
-','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
+   AND s.owner = :owner
    AND (s.last_analyzed IS NULL or  s.stale_stats = 'YES' or s.last_analyzed < sysdate -7)
    AND s.table_name NOT LIKE 'BIN%'
    AND NOT (s.table_name LIKE '%TEMP' OR s.table_name LIKE '%_TEMP_%' )
@@ -14548,11 +14538,27 @@ SELECT NULL
  ORDER BY
        s.owner, s.table_name;
 
-/**
-exec DBMS_STATS.IMPORT_TABLE_STATS(ownname => :owner,tabname => :table_name,stattab => '',cascade => TRUE,statown => 'OPS$ADMIN');
-**/
-
-
+if v_temp_stat_cnt > 0 then
+  dbms_output.put_line('
+Temporary Table That has been Gathered Statistics');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('---------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME       |' || ' stale_stats    ' || '| LAST_ANALYZED  ' ||'|');
+  dbms_output.put_line('---------------------------------------------------------------------');
+  open c_expire_index_stats;
+    loop fetch c_expire_index_stats into v_expire_index_stats;
+    exit when c_expire_index_stats%notfound;
+    dbms_output.put_line('| ' || rpad(v_expire_index_stats.index_name,16) || ' | ' || rpad(v_expire_index_stats.stale_stats,14) || ' | ' || rpad(v_expire_index_stats.last_analyzed,19)||' |');
+    end loop;
+    dbms_output.put_line('------------------------------------------------------------------');
+  close c_expire_index_stats;
+else
+  dbms_output.put_line('
+There is No Expired Index Stats for Current Owner');
+  dbms_output.put_line('======================');
+end if;
+end;
+/
     $ECHO
     spool off
 !
