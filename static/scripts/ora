@@ -14627,9 +14627,9 @@ if [ "$1" = "x" ]; then
     col inst# for 99999
     Pro Display sql execution plan in AWR:
     select * from table(dbms_xplan.display_awr('$sqlid',format=>'advanced -PROJECTION'));
-    prompt ####################################################################
+
     prompt Display current sql dba_his_sqlstat Information
-    prompt ####################################################################
+    prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
@@ -14645,7 +14645,7 @@ if [ "$1" = "x" ]; then
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
     dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
-    prompt ####################################################################
+    prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO    
 !
@@ -14676,9 +14676,9 @@ if [ "$1" = "xp" ]; then
     col snap_time for a17
     Pro Display sql execution plan in Cursor (memory) :
     select * from table(dbms_xplan.display_cursor('$2', null, 'advanced -bytes -PROJECTION allstats last'));
-    prompt ####################################################################
+
     prompt Display current sql dba_his_sqlstat Information
-    prompt ####################################################################
+    prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
     (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
@@ -14694,7 +14694,7 @@ if [ "$1" = "xp" ]; then
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
     dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
-    prompt ####################################################################
+    prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
 !
@@ -14809,9 +14809,9 @@ if [ "$1" = "xpo" ]; then
                                      end 
              )
     order by r;
-    prompt ####################################################################
+
     prompt Display current sql dba_his_sqlstat Information
-    prompt ####################################################################
+    prompt =======================
     col snap_time for a17
     col PARSING_SCHEMA for a16
     select  instance_number as inst#,
@@ -14828,7 +14828,7 @@ if [ "$1" = "xpo" ]; then
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
     dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
-    prompt ####################################################################
+    prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
     
@@ -14956,9 +14956,9 @@ if [ "$1" = "xo" ]; then
                                          end
              )
     order by r;
-    prompt ####################################################################
+
     prompt Display current sql dba_his_sqlstat Information
-    prompt ####################################################################
+    prompt =======================
     col snap_time for a17
     col PARSING_SCHEMA for a16
     select  instance_number as inst#,
@@ -14975,7 +14975,7 @@ if [ "$1" = "xo" ]; then
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
     dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
-    prompt ####################################################################
+    prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
 !
