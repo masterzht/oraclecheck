@@ -637,17 +637,20 @@ if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
 
     connect $DBUSER
 
-set linesize 300 pagesize 100
+set linesize 300 pagesize 0
 set timing off
 col owner head OWNER for a15
-col db_link head DB_LINK for a30
+col db_link head DB_LINK for a25
 col username head USERNAME for a20
-col host head HOST for a40
+col host head HOST for a50
 col show_dblink_ddl_command for a110
-prompt show the dblinks information
+prompt
+prompt Show the DBLINK information
+prompt =======================
 select owner,db_link,username,host,to_char(created,'yyyy-mm-dd hh24:mi:ss') as created from dba_db_links;
 
-prompt show the DDL of dblink creation
+prompt Show the DDL of DBLINK creation
+prompt =======================
 select q'[create public database link ]' || DB_LINK || q'[ connect to ]' || USERNAME || q'[ identified by ]' || 'password using ' || q'[']'||HOST||q'[';]' as show_dblink_ddl_command
 from dba_db_links;
 
@@ -658,7 +661,8 @@ from dba_db_links;
 -- the local transaction
 -- the GTXID will match for those sessions
 -- just run the script on both databases
-
+col GTXID for a38
+col username for a28
 select /*+ ORDERED */
 substr(s.ksusemnm,1,10)||'-'|| substr(s.ksusepid,1,10)      "ORIGIN",
 substr(g.K2GTITID_ORA,1,35) "GTXID",
@@ -672,21 +676,19 @@ substr(
       3,'SNIPED',
       'KILLED'
    ),1,1
-) "S",
-substr(w.event,1,10) "WAITING"
+) "STATUS",
+substr(w.event,1,18) "WAITING"
 from  x\$k2gte g, x\$ktcxb t, x\$ksuse s, v\$session_wait w, v\$session s2
 where  g.K2GTDXCB =t.ktcxbxba
 and   g.K2GTDSES=t.ktcxbses
 and  s.addr=g.K2GTDSES
 and  w.sid=s.indx
-and s2.sid = w.sid
-/
+and s2.sid = w.sid;
 
 $ECHO
 !
 exit 0
 fi
-
 
 ################################################################################
 if [ "$1" = "awr_baseline" ]; then
@@ -872,8 +874,6 @@ if [ "$1" = "toppid" ]; then
 exit 0
 fi
 
-
-
 ################################################################################
 if [ "$1" = "process_dump" ]; then
  
@@ -912,7 +912,6 @@ sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows se
 
 exit 0
 fi
-
 
 #####################################################################################################
 
@@ -2812,33 +2811,7 @@ if [ "$1" = "tbs_frag" ]; then
     set linesize 200
     col tablespace_name format a30 
 spool ora_tbsfrag_$filedate.log
-Pro "datafile usage info:"
-select a.file_id "FileNo",a.tablespace_name "Tablespace_name", 
-round(a.bytes/1024/1024) "size_M",
-round((a.bytes-sum(nvl(b.bytes,0)))/1024/1024) "Used_M", 
-round(sum(nvl(b.bytes,0))/1024/1024) "Free_M", 
-round(sum(nvl(b.bytes,0))/a.bytes*100) "%free" 
-from dba_data_files a, dba_free_space b 
-where a.file_id=b.file_id(+) 
-group by a.tablespace_name , a.file_id,a.bytes 
-order by a.tablespace_name;
-$ECHO
 
-Pro "tablespace fragment info:"
- select tablespace_name,--file_id,
- size_type,count(*) as cnt
- ,round(sum(bytes)/1024/1024) as total_m
- ,round(avg(bytes)/1024/1024) as avg_size_M 
- from
- (
- select tablespace_name,file_id,bytes,
-        case when bytes <= 1*1024*1024 then '00_01M' 
-             when bytes >  1*1024*1024 and bytes <=5*1024*1024 then '01_05M' 
-             else '05_99M' end as size_type
- from dba_free_space 
- ) group by  tablespace_name --,file_id
-             ,size_type
-order by 1,2,3;
 $ECHO
 spool off
 !
