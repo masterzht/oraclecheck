@@ -955,7 +955,6 @@ if [ "$1" = "tophis_byplan" ]; then
      else
       topn=$5
    fi
-  
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -1022,9 +1021,7 @@ if [ "$1" = "tophis_byplan" ]; then
       ) v where rownum<=$topn
     )
     select a.*,ltrim(nvl(replace(replace(to_nchar(SUBSTR(b.sql_text,1,100)),chr(10),''),chr(13),'') , (' ** SQL Text Not Available ** '))) SqlText
-    from sql_stat a,dba_hist_sqltext b 
-    where a.min_sql_id=b.sql_id 
-    order by rn;
+    from sql_stat a,dba_hist_sqltext b where a.min_sql_id=b.sql_id order by rn;
     $ECHO
     
    --Pro Current Max snap_id is :
@@ -1181,7 +1178,6 @@ echo "ora repeat 10 20 mon_index_create"
 exit 0
 
 fi
-
 ################################################################################
 if [ "$1" = "expdash" ]; then
 
@@ -1194,7 +1190,6 @@ if [ "$1" = "expdash" ]; then
          exit 1
        fi   
 
-    
       expdp \"/ as sysdba\" views_as_tables=sys.DBA_HIST_active_sess_history \
            query=\"where sample_time between to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\) and to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\)+$3/24\" \
            file=expdash_$filedate.dmp version=12.1
@@ -1207,8 +1202,6 @@ echo "impdp fred/fred remap_schema=sys:fred"
 exit 0
 
 fi
-#"
-
 
 ################################################################################
 if [ "$1" = "batch_sqlhc" ]; then
@@ -13409,7 +13402,6 @@ fi
 
 
 #####################################################################################################
-
 if [ "$1" = "table" -o "$1" = "tab" ]; then
 
   if [ "$2" = ""  ]; then
@@ -13443,10 +13435,8 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     else
       ver2=''
     fi
-    
 #    owner=$2
 #    tablename=$3
-   
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -13476,34 +13466,26 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col created format a20
     col last_analyzed format a20
     col TABLESPACE_NAME format a15
-    select a.owner,table_name,
-           num_rows,
-           blocks,
-           trim(degree) as degree,
-           a.temporary,
-           a.logging,--a.segment_created,
-           a.partitioned,a.compression,TABLESPACE_NAME,
-           to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
+    select a.owner,table_name, num_rows, blocks, trim(degree) as degree, a.temporary, a.logging,--a.segment_created,
+           a.partitioned,a.compression,TABLESPACE_NAME, to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
            to_char(b.created,'yyyy-mm-dd hh24:mi:ss') as created
     from dba_tables a,dba_objects b
-    where table_name=upper('$tablename') and a.owner=upper('$owner')
-          and a.owner=b.owner and b.object_name=a.table_name and b.object_type='TABLE';
+    where table_name=upper('$tablename') and a.owner=upper('$owner') and a.owner=b.owner and b.object_name=a.table_name and b.object_type='TABLE';
     $ECHO
 
-set timing off
-set serveroutput on
-set feedback off
-set verify off
-set linesize 500
-undefine table_name
-undefine owner
-var table_name varchar2(100);
-var owner varchar2(100);
-
-alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    set linesize 500
+    undefine table_name
+    undefine owner
+    var table_name varchar2(100);
+    var owner varchar2(100);
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 begin
-  :owner :=upper('$owner');
-  :table_name := upper('$tablename');
+    :owner :=upper('$owner');
+    :table_name := upper('$tablename');
 end;
 /
 declare
@@ -13522,70 +13504,38 @@ declare
     v_seg c_seg%rowtype;
 
     cursor c_stats is SELECT
- A.COLUMN_NAME,
-     decode(t.DATA_TYPE,
-           'NUMBER',t.DATA_TYPE||'('||
-           decode(t.DATA_PRECISION,
-                  null,t.DATA_LENGTH||')',
-                  t.DATA_PRECISION||','||t.DATA_SCALE||')'),
-                  'DATE',t.DATA_TYPE,
-                  'LONG',t.DATA_TYPE,
-                  'LONG RAW',t.DATA_TYPE,
-                  'ROWID',t.DATA_TYPE,
-                  'MLSLABEL',t.DATA_TYPE,
-                  t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
-    decode(t.nullable,
-              'N','NOT NULL',
-              'n','NOT NULL',
-              NULL) col1,
- B.NUM_ROWS,
- T.NUM_NULLS,
- round(100 * T.DENSITY,2) as DENSITY,
- A.NUM_DISTINCT CARDINALITY,
- ROUND(A.NUM_DISTINCT / decode(B.NUM_ROWS,0,1,B.NUM_ROWS) * 100, 2) SELECTIVITY,
- A.HISTOGRAM,
- A.NUM_BUCKETS,
- decode(T.SAMPLE_SIZE,null,0,T.SAMPLE_SIZE) as SAMPLE_SIZE,
- T.GLOBAL_STATS,
- T.USER_STATS,
- decode(to_char(T.last_analyzed,'YYYYMMDD HH24:MI'),null,'None',to_char(T.last_analyzed,'YYYYMMDD HH24:MI')) as last1
-  FROM DBA_TAB_COL_STATISTICS A, DBA_TABLES B,dba_tab_columns T
- WHERE A.OWNER = B.OWNER and A.OWNER = T.OWNER
-   and A.TABLE_NAME = T.TABLE_NAME
-   AND A.TABLE_NAME = B.TABLE_NAME
-   AND T.COLUMN_NAME = A.COLUMN_NAME
-   AND A.TABLE_NAME = upper(:table_name) and a.owner = upper(:owner) order by A.OWNER,A.COLUMN_NAME;
-   v_stats c_stats%rowtype;
+     A.COLUMN_NAME,
+     decode(t.DATA_TYPE, 'NUMBER',t.DATA_TYPE||'('|| decode(t.DATA_PRECISION, null,t.DATA_LENGTH||')', t.DATA_PRECISION||','||t.DATA_SCALE||')'), 'DATE',t.DATA_TYPE, 'LONG',t.DATA_TYPE, 'LONG RAW',t.DATA_TYPE,'ROWID',t.DATA_TYPE, 'MLSLABEL',t.DATA_TYPE, t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
+     decode(t.nullable, 'N','NOT NULL', 'n','NOT NULL', NULL) col1,
+              B.NUM_ROWS,
+              T.NUM_NULLS,
+              round(100 * T.DENSITY,2) as DENSITY,
+              A.NUM_DISTINCT CARDINALITY,
+              ROUND(A.NUM_DISTINCT / decode(B.NUM_ROWS,0,1,B.NUM_ROWS) * 100, 2) SELECTIVITY,
+              A.HISTOGRAM,
+              A.NUM_BUCKETS,
+              decode(T.SAMPLE_SIZE,null,0,T.SAMPLE_SIZE) as SAMPLE_SIZE,
+              T.GLOBAL_STATS,
+              T.USER_STATS,
+              decode(to_char(T.last_analyzed,'YYYYMMDD HH24:MI'),null,'None',to_char(T.last_analyzed,'YYYYMMDD HH24:MI')) as last1
+        FROM DBA_TAB_COL_STATISTICS A, DBA_TABLES B,dba_tab_columns T
+    WHERE A.OWNER = B.OWNER AND A.OWNER = T.OWNER
+     AND A.TABLE_NAME = T.TABLE_NAME
+     AND A.TABLE_NAME = B.TABLE_NAME
+     AND T.COLUMN_NAME = A.COLUMN_NAME
+     AND A.TABLE_NAME = upper(:table_name) AND a.owner = upper(:owner) order by A.OWNER,A.COLUMN_NAME;
+     v_stats c_stats%rowtype;
 
-   cursor c_p_s is
- SELECT
- A.PARTITION_NAME,
- A.COLUMN_NAME,
-     decode(t.DATA_TYPE,
-           'NUMBER',t.DATA_TYPE||'('||
-           decode(t.DATA_PRECISION,
-                  null,t.DATA_LENGTH||')',
-                  t.DATA_PRECISION||','||t.DATA_SCALE||')'),
-                  'DATE',t.DATA_TYPE,
-                  'LONG',t.DATA_TYPE,
-                  'LONG RAW',t.DATA_TYPE,
-                  'ROWID',t.DATA_TYPE,
-                  'MLSLABEL',t.DATA_TYPE,
-                  t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
-    decode(t.nullable,
-              'N','NOT NULL',
-              'n','NOT NULL',
-              NULL) col1,
+   cursor c_p_s is SELECT A.PARTITION_NAME, A.COLUMN_NAME,
+ decode(t.DATA_TYPE,'NUMBER',t.DATA_TYPE||'('|| decode(t.DATA_PRECISION, null,t.DATA_LENGTH||')', t.DATA_PRECISION||','||t.DATA_SCALE||')'),'DATE',t.DATA_TYPE, 'LONG',t.DATA_TYPE, 'LONG RAW',t.DATA_TYPE,'ROWID',t.DATA_TYPE, 'MLSLABEL',t.DATA_TYPE, t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
+ decode(t.nullable,'N','NOT NULL','n','NOT NULL', NULL) col1,
  case when to_char(B.NUM_ROWS) is null then 'None' else to_char(B.NUM_ROWS) end as NUM_ROWS,
  case when to_char(A.NUM_NULLS) is null then 'None' else to_char(A.NUM_NULLS) end as NUM_NULLS,
  case when to_char(round(100 * A.DENSITY,2)) is null then 'None' else to_char(round(100 * A.DENSITY,2)) end as DENSITY,
  case when to_char(round(A.NUM_DISTINCT)) is null then 'None' else to_char(round(A.NUM_DISTINCT)) end as CARDINALITY,
- ROUND(A.NUM_DISTINCT / decode(B.NUM_ROWS,0,1,B.NUM_ROWS) * 100, 2) SELECTIVITY,
- A.HISTOGRAM,
+ ROUND(A.NUM_DISTINCT / decode(B.NUM_ROWS,0,1,B.NUM_ROWS) * 100, 2) SELECTIVITY, A.HISTOGRAM,
  case when to_char(A.NUM_BUCKETS) is null then 'None' else to_char(A.NUM_BUCKETS) end as NUM_BUCKETS,
- decode(A.SAMPLE_SIZE,null,0,A.SAMPLE_SIZE) as SAMPLE_SIZE,
- A.GLOBAL_STATS,
- A.USER_STATS,
+ decode(A.SAMPLE_SIZE,null,0,A.SAMPLE_SIZE) as SAMPLE_SIZE, A.GLOBAL_STATS, A.USER_STATS,
  decode(to_char(A.last_analyzed,'YYYYMMDD HH24:MI'),null,'None',to_char(A.last_analyzed,'YYYYMMDD HH24:MI')) as last1
   FROM dba_PART_COL_STATISTICS A, dba_tab_partitions B,dba_tab_columns T
  WHERE A.OWNER = B.TABLE_OWNER and A.OWNER = T.OWNER
@@ -13594,29 +13544,22 @@ declare
    AND A.PARTITION_NAME = B.PARTITION_NAME
    AND T.COLUMN_NAME = A.COLUMN_NAME
    AND A.TABLE_NAME = upper(:table_name)
-   and a.owner = upper(:owner) order by B.PARTITION_POSITION,A.PARTITION_NAME,A.OWNER,A.COLUMN_NAME;
+   AND a.owner = upper(:owner) order by B.PARTITION_POSITION,A.PARTITION_NAME,A.OWNER,A.COLUMN_NAME;
    ips c_p_s%rowtype;
-
 
    cursor c_hwm is SELECT table_name,
                           ROUND((blocks * (select value from v\$parameter where name='db_block_size'))/1024/1024, 2) "HWM",
-                          ROUND ((num_rows * avg_row_len / 1024/ 1024 ), 2) as REAL_USED,
-                          ROUND ((blocks * (select pct_free  from dba_tables where table_name = :table_name and rownum = 1) / 100) * 8 /1024, 2) "PCT_FREE",
-   ROUND ( (blocks * 8 - (num_rows * avg_row_len / 1024) - blocks * 8 * 10 / 100) /1024, 2) "WASTE_SPACE"
+                          ROUND((num_rows * avg_row_len / 1024/ 1024 ), 2) as REAL_USED,
+                          ROUND((blocks * (select pct_free  from dba_tables where table_name = :table_name and rownum = 1) / 100) * 8 /1024, 2) "PCT_FREE",
+   round((blocks * 8 - (num_rows * avg_row_len / 1024) - blocks * 8 * 10 / 100) /1024, 2) "WASTE_SPACE"
    FROM dba_tables
    WHERE temporary = 'N' and table_name = :table_name
    ORDER BY 5 DESC;
-
    v_hwm c_hwm%rowtype;
 
    cursor c_sta is select
    case when PARTITION_POSITION is null then '0' else to_char(PARTITION_POSITION) end as POSITION,
-    table_name,
-    blocks,
-    empty_blocks,
-    avg_space,
-    chain_cnt,
-    avg_row_len,
+    table_name, blocks, empty_blocks, avg_space, chain_cnt, avg_row_len,
     case when PARTITION_NAME is null then upper(:table_name) else PARTITION_NAME end as PARTITION_NAME ,
     case when stale_stats is null then 'None' else stale_stats end as stale_stats,
     case when stattype_locked is null then 'None' else stattype_locked end as stattype_locked,
@@ -13624,23 +13567,13 @@ declare
     from dba_tab_statistics where owner = upper(:owner) and table_name = upper(:table_name) order by PARTITION_POSITION;
    v_sta c_sta%rowtype;
 
-   cursor c_modi is select
-                    b.TABLE_OWNER,
-                    b.TABLE_NAME,
-                    case when b.PARTITION_NAME is null then b.TABLE_NAME else b.PARTITION_NAME end as PARTITION_NAME,
-                    b.INSERTS,
-                    b.UPDATES,
-                    b.DELETES,
-                    to_char(b.TIMESTAMP,'yyyy-mm-dd hh24:mi:ss') as flush_time,
-                    b.truncated
-   from dba_tab_modifications b
-   where b.table_name = upper(:table_name) and b.table_owner = upper(:owner) order by b.timestamp;
+   cursor c_modi is select b.TABLE_OWNER, b.TABLE_NAME,
+                    case when b.PARTITION_NAME is null then b.TABLE_NAME else b.PARTITION_NAME end as PARTITION_NAME, b.INSERTS, b.UPDATES, b.DELETES,
+                    to_char(b.TIMESTAMP,'yyyy-mm-dd hh24:mi:ss') as flush_time, b.truncated
+   from dba_tab_modifications b where b.table_name = upper(:table_name) and b.table_owner = upper(:owner) order by b.timestamp;
    v_modi c_modi%rowtype;
 
-   cursor c_tab_partitions is select
-                               T.PARTITION_POSITION,
-                               T.PARTITION_NAME,
-                               T.HIGH_VALUE as HIGH_VALUE ,
+   cursor c_tab_partitions is select T.PARTITION_POSITION, T.PARTITION_NAME, T.HIGH_VALUE as HIGH_VALUE ,
                                case when t.NUM_ROWS is null then 'None' else to_char(t.NUM_ROWS) end as NUM_ROWS,
                                case when T.SAMPLE_SIZE is null then 0 else t.SAMPLE_SIZE end as SAMPLE_SIZE,
                                case when to_char(t.last_analyzed,'YYYYMMDD hh24:mi:ss') is null then 'None' else to_char(t.last_analyzed,'YYYYMMDD hh24:mi:ss') end as last_analyzed,
@@ -13656,8 +13589,7 @@ declare
    order by t.PARTITION_POSITION;
 
    v_tab_pars c_tab_partitions%rowtype;
-   cursor c_j is
-SELECT c.name                                                   as column_name,
+   cursor c_j is SELECT c.name as column_name,
        decode(to_char(cu.timestamp,'yyyymmdd hh24:mi:ss'),null,'None',to_char(cu.timestamp,'yyyymmdd hh24:mi:ss'))            as timestamp,
        decode(cu.equality_preds,null,0,cu.equality_preds)       as where_equal_search,
        decode(cu.equijoin_preds,null,0,cu.equijoin_preds)       as equal_join,
@@ -13665,20 +13597,15 @@ SELECT c.name                                                   as column_name,
        decode(cu.range_preds,null,0,cu.range_preds)             as where_range_search,
        decode(cu.like_preds,null,0,cu.like_preds)               as where_like_search,
        decode(cu.null_preds,null,0,cu.null_preds)               as where_null_search
-FROM sys.col$ c, sys.col_usage$ cu, sys.obj$ o, sys.user$ u
-WHERE c.obj# = cu.obj# (+)
-AND c.intcol# = cu.intcol# (+)
-AND c.obj# = o.obj#
-AND o.owner# = u.user#
-AND o.name = :table_name
-AND u.name = :owner
-ORDER BY c.col#;
+   FROM sys.col$ c, sys.col_usage$ cu, sys.obj$ o, sys.user$ u WHERE c.obj# = cu.obj# (+)
+   AND c.intcol# = cu.intcol# (+)
+   AND c.obj# = o.obj#
+   AND o.owner# = u.user#
+   AND o.name = :table_name
+   AND u.name = :owner ORDER BY c.col#;
     v_j c_j%rowtype;
 
-    cursor c_his_t is
-    select
-    h.savtime,
-    h.rowcnt, h.blkcnt, h.avgrln, h.analyzetime from sys.wri\$_optstat_tab_history h,dba_objects t
+    cursor c_his_t is select h.savtime, h.rowcnt, h.blkcnt, h.avgrln, h.analyzetime from sys.wri\$_optstat_tab_history h,dba_objects t
 where t.OBJECT_ID = h.obj# and t.object_name = :table_name;
     v_his_t c_his_t%rowtype;
 
@@ -13827,7 +13754,6 @@ partition Table Sub partition by Info');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------');
   close c_sub_partition_by;
-
 
   dbms_output.put_line('
 partition Table Segment Information');
@@ -14444,8 +14370,6 @@ There is No Temporary Table That has been Gathered Statistics for Current Owner'
   dbms_output.put_line('======================');
 end if;
 
-
-
 SELECT count(*) into v_cnt_expired_index_stats
   FROM dba_ind_statistics s,
        dba_indexes t
@@ -14498,8 +14422,6 @@ end;
 fi
 
 #####################################################################################################
-
-
 if [ "$1" = "source" ]; then
 
     if [ "$2" = "" ]; then
@@ -14517,27 +14439,13 @@ if [ "$1" = "source" ]; then
     col text for a100 trunc
     col type format a15
 
-    select 
-        owner,
-        name,
-        type,
-        line, 
-        text
-    from 
-        dba_source
-    where 
-    lower(text) like lower('%$2%')
-    order by
-        owner,name,type, line ;
+    select owner, name,type, line, text from dba_source where lower(text) like lower('%$2%') order by owner,name,type, line;
     $ECHO
     
 !
   exit 0
 fi
-
-
 #####################################################################################################
-
 if [ "$1" = "x" ]; then
 
    if [ "$2" = "" ]; then
@@ -15746,8 +15654,6 @@ if [ "$1" = "seg" -o "$1" = "segment" ]; then
  echo "ora seg <seg_name>"
 exit 0
 fi
-
-
 #######################################################################################################
 
 if [ "$1" = "big" ]; then
