@@ -11285,7 +11285,6 @@ exit 0
 fi
 
 #####################################################################################################################
-
 if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
 
   if [ "$2" != "" ]; then
@@ -11305,18 +11304,16 @@ if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
     col MAX_USED_SPACE format A20
     spool ora_temp_$filedate.log
 
-    Pro Used Temp tablespace:
-    select round(used_blocks*(select max(BLOCK_SIZE)
-                              from dba_tablespaces
-                              where tablespace_name='SYSTEM')
-             /1024/1024)+1 || ' MB (used)' as used_space,
+    prompt Used Temp tablespace:
+    prompt ======================
+    select round(used_blocks*(select max(BLOCK_SIZE) from dba_tablespaces where tablespace_name='SYSTEM') /1024/1024)+1 || ' MB (used)' as used_space,
            round(max_used_blocks*8/1024)+1 ||' MB (max used)' as max_used_space
     from gv\$sort_segment where inst_id=$INST;
     $ECHO
 
-    Pro temp file total size:
-    select sum(round(BYTES/1024/1024)+1) total_size_mb
-    from dba_temp_files ;
+    prompt TEMP_TABLESPACE FILE TOTAL SIZE:
+    prompt ======================
+    select sum(round(BYTES/1024/1024)+1) total_size_mb from dba_temp_files ;
     $ECHO
 
    set linesize 500
@@ -11342,8 +11339,7 @@ declare
 order by b.blocks;
     v_tmp c_tmp%rowtype;
 
-    cursor c_pga is select /*+ ordered leading(d) */
-    c.sql_id,
+    cursor c_pga is select /*+ ordered leading(d) */ c.sql_id,
     a.username,
     a.sid||','||a.serial# as sid_and_serial,
     a.machine,
@@ -16316,7 +16312,6 @@ if [ "$1" = "monsave" -o "$1" = "savemon" ]; then
   exit 0
   echo "ora monsave sql_id text   or  ora monsave sql_id  (active is default)"
 fi
-
 ###################################################################################################
 # Run a shell command. Useful when combined with repeat...
 ###################################################################################################
