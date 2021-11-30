@@ -8988,8 +8988,7 @@ if [ "$1" = "ddl" ]; then
     spool off
 
 !
-## ^^ upper
-   #if [ "${type^^}" = "TABLE" ]; then
+
    if [ "${type}" = "table" -o "${type}" = "TABLE" ]; then
    
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -13457,8 +13456,6 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col filename new_value filename
     col filename format a30
     spool ora_table_${tablename}_${filedate}.log
-
-
     col high_value format a40 trunc
     col partition_name format a30 trunc
     col pos format 999
@@ -13467,121 +13464,23 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     set long 500000
 
     pro
-    pro
-    prompt Table partition by:
-    col column_name format a30
-
-    select column_name,column_position 
-    from dba_part_key_columns 
-    where owner=upper('$owner') and name=upper('$tablename') and object_type='TABLE' 
-    order by column_position;
-    $ECHO
-
-
-    pro
-    pro
-    prompt Table subpartition by: 
-    col column_name format a30
-    select column_name,column_position 
-    from dba_subpart_key_columns 
-    where owner=upper('$owner') and name=upper('$tablename') 
-    and object_type='TABLE' 
-    order by column_position;
-    $ECHO
-
-    pro
-    pro
-    prompt Table Statistics history:
-
-    col table_name format a20 trunc
-    col owner format a15  trunc
-    col savtime format a20
-    --col perc format a5
-    SELECT *
-      FROM 
-    (SELECT /*+ NO_MERGE LEADING(pt s t m) */
-           t.table_name ,
-           t.owner,
-           'CURRENT' version_type,
-           NULL savtime, 
-           t.last_analyzed analyzetime, 
-           t.num_rows rowcnt, 
-           t.sample_size samplesize, 
-           CASE WHEN t.num_rows > 0 THEN (ROUND(t.sample_size * 100 / t.num_rows,1)) END perc, 
-           t.blocks blkcnt, 
-           t.avg_row_len avgrln
-      FROM  dba_tables t
-     WHERE t.owner = upper('$owner') and
-           t.table_name=upper('$tablename')
-    UNION ALL
-    SELECT /*+ NO_MERGE LEADING(s t m) */
-           t.object_name,
-           t.owner,
-           'HISTORY' version_type,
-           to_char(h.savtime, 'yyyy-mm-dd hh24:mi:ss') as savetime,
-           h.analyzetime, 
-           h.rowcnt, 
-           h.samplesize, 
-           CASE WHEN h.rowcnt > 0 THEN (ROUND(h.samplesize * 100 / h.rowcnt, 1)) END perc, 
-           h.blkcnt, 
-           h.avgrln
-      FROM dba_objects t,
-           sys.WRI\$_OPTSTAT_TAB_HISTORY h  -------------------no dba_hist view?
-     WHERE t.owner = upper('$owner')
-       and t.object_name=upper('$tablename')
-       AND t.object_id = h.obj#
-       AND t.object_type = 'TABLE' 
-     )
-     ORDER BY
-           table_name,owner,savtime DESC NULLS FIRST;
-     $ECHO           
-        
-
-    PRO
-    pro
-    pro Table Columns info: 
-    col owner format a12
-    col table_name format a30
-    col table_owner format a15 trunc
-    col column_name format a25
-    col data_type format a10 trunc
-    col LAST_ANALYZED for a20
-    col low_val_25 format a25
-    col high_val_25 format a25
-    col histogram format a9 trunc
-    col NULLABLE format a5
-    col ndv format 999999999
-    col nul format a3
-
-    select --owner,table_name,
-    column_name,num_distinct as ndv,NULLABLE as nul ,NUM_NULLS,data_type,
-    substr(low_value,1,25) as low_val_25,substr(high_value,1,25) as high_val_25,
-    to_char(last_analyzed,'yyyymmdd hh24:mi:ss') as last_analyzed,
-    histogram
-    --,NUM_BUCKETS
-    from dba_tab_columns
-    where table_name=upper('$tablename') and owner=upper('$owner')
-    order by column_name;
-    $ECHO
-    
-
-
-    
-    pro
-    pro
-    Pro Table Basic Info: 
+    Pro Table Basic Info:
+    prompt ======================
     col owner format a10 trunc
     col table_name format a20 trunc
     col degree format a7
-    col temporary format a4
+    col temporary format a9
     col segment_created format a5
-    col logging format a5
+    col logging format a7
     col compression format a9
     col created format a20
     col last_analyzed format a20
     col TABLESPACE_NAME format a15
     select a.owner,table_name,
-           num_rows,blocks,trim(degree) as degree,a.temporary,
+           num_rows,
+           blocks,
+           trim(degree) as degree,
+           a.temporary,
            a.logging,--a.segment_created,
            a.partitioned,a.compression,TABLESPACE_NAME,
            to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
@@ -13590,17 +13489,6 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     where table_name=upper('$tablename') and a.owner=upper('$owner')
           and a.owner=b.owner and b.object_name=a.table_name and b.object_type='TABLE';
     $ECHO
-    
-    pro
-    pro
-    prompt Segment info: 
-    col segment_name format a30
-    col max_tbs_name format a30
-    select owner,segment_name,round(sum(bytes)/1024/1024) seg_size_M ,count(*) as segment_cnt
-           ,max(tablespace_name) as max_tbs_name
-    from dba_segments 
-    where  segment_name=upper('$tablename') and owner=upper('$owner')
-    group by owner,segment_name;
 
 set timing off
 set serveroutput on
@@ -13611,6 +13499,7 @@ undefine table_name
 undefine owner
 var table_name varchar2(100);
 var owner varchar2(100);
+
 alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 begin
   :owner :=upper('$owner');
@@ -13624,9 +13513,14 @@ declare
     v_switchover  varchar2(100) :=null;
     v_force_logging varchar2(100) :=null;
 
-    cursor c_seg is select sum(bytes/1024/1024/1024) G ,partition_name from dba_segments where segment_name = upper(:table_name) and owner = upper(:owner)
-group by partition_name order by partition_name;
+    cursor c_seg is
+    select segment_name, round(sum(bytes)/1024/1024) m ,count(*) as segment_cnt
+           ,max(tablespace_name) as max_tbs_name
+    from dba_segments
+    where  segment_name=upper(:table_name) and owner=upper(:owner)
+    group by owner,segment_name;
     v_seg c_seg%rowtype;
+
     cursor c_stats is SELECT
  A.COLUMN_NAME,
      decode(t.DATA_TYPE,
@@ -13761,8 +13655,6 @@ group by partition_name order by partition_name;
       and t.table_name = upper(:table_name)
    order by t.PARTITION_POSITION;
 
-
-
    v_tab_pars c_tab_partitions%rowtype;
    cursor c_j is
 SELECT c.name                                                   as column_name,
@@ -13790,24 +13682,41 @@ ORDER BY c.col#;
 where t.OBJECT_ID = h.obj# and t.object_name = :table_name;
     v_his_t c_his_t%rowtype;
 
+    cursor c_partition_by is
+    select column_name,column_position
+    from dba_part_key_columns
+    where owner=:owner and name=:table_name and object_type='TABLE'
+    order by column_position;
+    v_partition_by c_partition_by%rowtype;
+
+    cursor c_sub_partition_by is
+    select column_name,column_position
+    from dba_subpart_key_columns
+    where owner=:owner and name=:table_name and object_type='TABLE'
+    order by column_position;
+    v_sub_partition_by c_sub_partition_by%rowtype;
+    v_stale_stats varchar2(100);
 begin
   dbms_output.enable(buffer_size=>NULL);
   select count(*) into v_cnt from dba_segments where segment_name = upper(:table_name) and owner = upper(:owner);
 
 if v_cnt = 1 then
   dbms_output.put_line('
-Non partitioned Table Segment Information');
+Non partition Table Segment Information');
   dbms_output.put_line('======================');
+  dbms_output.put_line('-----------------------------------------------------------------------------');
+  dbms_output.put_line('| SEGMENT_NAME    |' || ' SEGMENT_SIZE(MB) ' || '| SEGMENT_CNT |' || ' MAX_TABLESPACE_NAME    ' || '|');
+  dbms_output.put_line('-----------------------------------------------------------------------------');
   open c_seg;
     loop fetch c_seg into v_seg;
     exit when c_seg%notfound;
-    dbms_output.put_line('TABLE_NAME : '|| :TABLE_NAME  || '  |  ' || 'SEGMENT_SIZE : '|| round(v_seg.g,2));
+    dbms_output.put_line('| ' || lpad(v_seg.SEGMENT_NAME,15) ||' | '|| lpad(v_seg.M,16) || ' | '|| lpad(v_seg.segment_cnt,11) || ' | '|| lpad(v_seg.max_tbs_name,22) || ' |');
     end loop;
+    dbms_output.put_line('-----------------------------------------------------------------------------');
   close c_seg;
 
-
   dbms_output.put_line('
-Non partitioned Table HWM Information basic Statistics');
+Non partition Table HWM Information basic Statistics');
   dbms_output.put_line('======================');
   dbms_output.put_line('-----------------------------------------------------------------------------------------------');
   dbms_output.put_line('| HWM(MB)            |' || ' REAL_USED(MB)      ' || '| PCT_FREE_NEED_SPACE(MB)  |' || ' WASTE_SPACE(MB)        ' || '|');
@@ -13820,12 +13729,11 @@ Non partitioned Table HWM Information basic Statistics');
     dbms_output.put_line('-----------------------------------------------------------------------------------------------');
   close c_hwm;
 
-
   dbms_output.put_line('
 SELECT% Means SELECTIVITY
 GST Means GLOBAL_STATS
 UST Means USER_STATS
-Non partitioned Table Statistics Information');
+Non partition Table Statistics Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| COLUMN_NAME          |' || ' COLUMN_DETAIL        | ' ||' NUM_ROWS   |' || ' NUM_NULLS   |'|| ' DENSITY ' || '| CARDINALITY |' || ' SELECT% ' || '| HISTOGRAM |' || ' NUM_BUCKETS' || ' | SAMPLE_SIZE |'|| ' GST ' || '| UST ' ||'|');
@@ -13838,9 +13746,8 @@ Non partitioned Table Statistics Information');
     dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_stats;
 
-
   dbms_output.put_line('
-Non partitioned Table Statistics STALE_STATS, Yes Means Expired');
+Non partition Table Statistics STALE_STATS, Yes Means Expired');
   dbms_output.put_line('======================');
   dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| TABLE_NAME           |' || ' STALE_STATS |' || ' LAST_ANALYZED       ' || '| BLOCKS     |' || ' EMPTY_BLOCKS ' || '| AVG_SPACE  |' || ' CHAIN_CNT    ' || '| AVG_ROW_LEN  ' || '|');
@@ -13853,21 +13760,29 @@ Non partitioned Table Statistics STALE_STATS, Yes Means Expired');
     dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------');
   close c_sta;
 
+select case when stale_stats is null then 'None' else stale_stats end as stale_stats into v_stale_stats
+ from dba_tab_statistics
+ where owner = upper(:owner)
+ and table_name = upper(:table_name)
+ order by PARTITION_POSITION;
+
+ if v_stale_stats <> 'NO' then
+
   dbms_output.put_line('
-Non partitioned Table Modification,Stats Expired Reason Information(dba_tab_modifications)');
+Non partition Table Modification,Stats Expired Reason Information(dba_tab_modifications)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------');
   dbms_output.put_line('|'  || ' INSERTS          |' || ' UPDATES      ' || '| DELETES      |' || ' FLUSH_TIME          ' || '| TRUNCATED ' || '|');
-  dbms_output.put_line('----------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------');
   open c_modi;
     dbms_stats.flush_database_monitoring_info;
     loop fetch c_modi into v_modi;
     exit when c_modi%notfound;
     dbms_output.put_line('| ' || lpad(v_modi.INSERTS,16) ||' | '|| lpad(v_modi.UPDATES,12) || ' | '|| lpad(v_modi.DELETES,12) || ' | '|| lpad(v_modi.flush_time,19) || ' | ' || lpad(v_modi.truncated,9) || ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------------------------------------------');
   close c_modi;
-
+ end if;
 
   dbms_output.put_line('
 Count the number of occurrences for Join or Where');
@@ -13885,6 +13800,49 @@ Count the number of occurrences for Join or Where');
   close c_j;
 
   else
+  dbms_output.put_line('
+partition Table partition by Info');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------');
+  dbms_output.put_line('| COLUMN_NAME      |' || ' COLUMN_POSITION ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------');
+  open c_partition_by;
+    loop fetch c_partition_by into v_partition_by;
+    exit when c_partition_by%notfound;
+    dbms_output.put_line('| ' || lpad(v_partition_by.COLUMN_NAME,15) ||' | '|| lpad(v_partition_by.COLUMN_POSITION,14) || ' |');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------');
+  close c_partition_by;
+
+  dbms_output.put_line('
+partition Table Sub partition by Info');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------');
+  dbms_output.put_line('| COLUMN_NAME      |' || ' COLUMN_POSITION ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------');
+  open c_sub_partition_by;
+    loop fetch c_sub_partition_by into v_sub_partition_by;
+    exit when c_sub_partition_by%notfound;
+    dbms_output.put_line('| ' || lpad(v_sub_partition_by.COLUMN_NAME,15) ||' | '|| lpad(v_sub_partition_by.COLUMN_POSITION,14) || ' |');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------');
+  close c_sub_partition_by;
+
+
+  dbms_output.put_line('
+partition Table Segment Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-----------------------------------------------------------------------------');
+  dbms_output.put_line('| SEGMENT_NAME    |' || ' SEGMENT_SIZE(MB) ' || '| SEGMENT_CNT |' || ' MAX_TABLESPACE_NAME    ' || '|');
+  dbms_output.put_line('-----------------------------------------------------------------------------');
+  open c_seg;
+    loop fetch c_seg into v_seg;
+    exit when c_seg%notfound;
+    dbms_output.put_line('| ' || lpad(v_seg.SEGMENT_NAME,15) ||' | '|| lpad(v_seg.M,16) || ' | '|| lpad(v_seg.segment_cnt,11) || ' | '|| lpad(v_seg.max_tbs_name,22) || ' |');
+    end loop;
+    dbms_output.put_line('-----------------------------------------------------------------------------');
+  close c_seg;
+
   dbms_output.put_line('
 Partition Table Segment Information
 None Means Havent Gather Partition Statistics
