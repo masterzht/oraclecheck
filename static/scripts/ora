@@ -1800,9 +1800,8 @@ if [ "$1" = "index" -o "$1" = "ind" ]; then
    else 
     owner=$3   
   fi
-   
-#   ora print_table "select * from dba_indexes where index_name=''$2''"
-   
+
+
    ver2=`get_ver 2`
    if [ $ver2 -lt 11 ];then
      ver="--"
@@ -2087,8 +2086,7 @@ declare
     v_valid c_valid%rowtype;
 begin
 
-  sql_analyze:='analyze index '|| :owner || '.'|| :index_name ||' validate structure';
-  execute immediate sql_analyze;
+  dbms_output.put_line('analyze index '|| :owner || '.'|| 'index_name' ||' validate structure;');
 
   dbms_output.put_line('
 Index Fragment Information(analyze index to get the index frag Information)');
@@ -2191,19 +2189,13 @@ and co.constraint_name    = cc.constraint_name
 and co.constraint_type    = 'R'
 and co.table_name = :table_name
 AND co.owner = :owner
-order by
-     co.owner,
-     co.table_name,
-     co.constraint_type,
-     co.constraint_name
-/
+order by co.owner,co.table_name,co.constraint_type,co.constraint_name;
 
 $ECHO
   spool off  
 !
 exit 0
 fi
-
 
 ################################################################################
 if [ "$1" = "idxinfo" ]; then
