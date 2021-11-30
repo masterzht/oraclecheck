@@ -2038,15 +2038,15 @@ if v_foreign_key_cnt > 0 then
   dbms_output.put_line('
 Foreign Key Without Index Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| CONSTRAINT_NAME         |' || ' COLUMNS                                                                                        ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| CONSTRAINT_NAME         |' || ' COLUMNS                                                                              ' || '|');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_foreign_key_without_index;
     loop fetch c_foreign_key_without_index into v_f;
     exit when c_foreign_key_without_index%notfound;
-    dbms_output.put_line('| ' || rpad(v_f.OWNER,20) ||' | '|| rpad(v_f.TABLE_NAME,21) || ' | '|| rpad(v_f.CONSTRAINT_NAME,23) || ' | ' || rpad(v_f.cols,95) || '|');
+    dbms_output.put_line('| ' || rpad(v_f.OWNER,20) ||' | '|| rpad(v_f.TABLE_NAME,21) || ' | '|| rpad(v_f.CONSTRAINT_NAME,23) || ' | ' || rpad(v_f.cols,85) || '|');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_foreign_key_without_index;
 end if;
 
