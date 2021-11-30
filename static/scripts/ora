@@ -1971,6 +1971,9 @@ Index Information(contains Global and Local index See the Last Column)');
     end loop;
     dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_i;
+  dbms_output.put_line('If US? status Is NO!!!');
+  dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||'index_name' ||' rebuild online;');
+  dbms_output.put_line('======================');
 
    select count(*) into v_part_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES') order by index_name, partition_position;
 if v_part_cnt > 0 then
@@ -2063,74 +2066,6 @@ Show The Table Constraints');
 
 end;
 /
-
-undefine index_name
-undefine owner
-var index_name varchar2(100);
-var owner varchar2(100);
-
-begin
-  :owner :=upper('$owner');
-  :index_name := upper('$index');
-end;
-/
-
-alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
-declare
-    sql_analyze varchar2(500);
-    cursor c_valid is select name as index_name,
-       del_lf_rows,
-       lf_rows,
-       round(del_lf_rows / decode(lf_rows, 0, 1, lf_rows) * 100, 0) frag_pct
-  from index_stats;
-    v_valid c_valid%rowtype;
-begin
-
-  dbms_output.put_line('analyze index '|| :owner || '.'|| 'index_name' ||' validate structure;');
-
-  dbms_output.put_line('
-Index Fragment Information(analyze index to get the index frag Information)');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME             |' || ' TOTAL_LEAF_ROWS ' || '| DELETE_LEAF_ROWS |' || ' FRAG_PCT% ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------');
-  open c_valid;
-    loop fetch c_valid into v_valid;
-    exit when c_valid%notfound;
-    dbms_output.put_line('| ' || rpad(v_valid.index_name,22) ||' | '|| rpad(v_valid.lf_rows,15) || ' | '|| rpad(v_valid.del_lf_rows,16) || ' | '|| lpad(v_valid.frag_pct || '%',9) || ' |');
-    end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------');
-  close c_valid;
-  if v_valid.frag_pct > 20 then
-    dbms_output.put_line('
-Current Index: ' || :owner ||'.' ||:index_name || ' Index Frag is '|| v_valid.frag_pct || '%');
-    dbms_output.put_line('======================');
-    dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||:index_name ||' rebuild online;');
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------');
-
-  end if;
-end;
-/
-
-
-
-col owner for a20
-col index_name for a30
-set head on
-set feedback on
-prompt Displays Invalid indexes
-prompt ======================
-select owner, index_name, 'N/A' partition_name, table_name
-from dba_indexes
-where status <> 'VALID' and PARTITIONED<>'YES' and owner <> 'SYSTEM'
-union all
-select a.index_owner owner,a.index_name index_name,a.partition_name partition_name,b.table_name
-from dba_ind_partitions a,dba_indexes b
-where a.index_name=b.index_name
-  and a.index_owner=b.owner
-  and b.owner<>'SYSTEM'
-  and a.status<>'USABLE'
-order by owner,index_name,partition_name;
 
 $ECHO
   spool off  
