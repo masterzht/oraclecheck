@@ -2119,7 +2119,7 @@ col index_name for a30
 set head on
 set feedback on
 prompt Displays Invalid indexes
-prompt ================================================
+prompt ======================
 select owner, index_name, 'N/A' partition_name, table_name
 from dba_indexes
 where status <> 'VALID' and PARTITIONED<>'YES' and owner <> 'SYSTEM'
@@ -2131,65 +2131,6 @@ where a.index_name=b.index_name
   and b.owner<>'SYSTEM'
   and a.status<>'USABLE'
 order by owner,index_name,partition_name;
-
-
-prompt **********************************************************************************************
-prompt show Constraint(constraint_type <> 'R') such as Primary Key/Check/Unique Key for the table ...
-prompt **********************************************************************************************
-select
-'select dbms_metadata.get_ddl(''CONSTRAINT'','''|| co.constraint_name || ''',''' || co.owner || ''') from dual;' cons_ddl
-from
-     dba_constraints co,
-     dba_cons_columns cc
-where
-    co.owner              = cc.owner
-and co.table_name         = cc.table_name
-and co.constraint_name    = cc.constraint_name
-and co.constraint_type    <> 'R'
-and co.table_name = :table_name
-AND co.owner = :owner
-order by
-     co.owner,
-     co.table_name,
-     co.constraint_type,
-     co.constraint_name
-/
-
-select
-        dbms_metadata.get_ddl('CONSTRAINT',co.constraint_name,co.owner) cons_ddl
-from
-     dba_constraints co,
-     dba_cons_columns cc
-where
-    co.owner              = cc.owner
-and co.table_name         = cc.table_name
-and co.constraint_name    = cc.constraint_name
-and co.constraint_type    <> 'R'
-and co.table_name = :table_name
-AND co.owner = :owner
-order by
-     co.owner,
-     co.table_name,
-     co.constraint_type,
-     co.constraint_name
-/
-
-prompt ******************************************************************
-prompt show Constraint(constraint_type='R') Foreign key for the table ...
-prompt ******************************************************************
-select
-        dbms_metadata.get_ddl('REF_CONSTRAINT',co.constraint_name,co.owner) cons_ddl
-from
-     dba_constraints co,
-     dba_cons_columns cc
-where
-    co.owner              = cc.owner
-and co.table_name         = cc.table_name
-and co.constraint_name    = cc.constraint_name
-and co.constraint_type    = 'R'
-and co.table_name = :table_name
-AND co.owner = :owner
-order by co.owner,co.table_name,co.constraint_type,co.constraint_name;
 
 $ECHO
   spool off  
