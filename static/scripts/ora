@@ -2941,7 +2941,14 @@ if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" 
     col filename format a120
     col inst_id format 9999
     col tsname format a20 trunc
-    col BEGIN_TIME format a20
+    col BEGIN_TIME format a16
+    col ELA_MIN for 999
+    col eid for 99999
+    col rn for 999
+    col R_P_S for 99999
+    col W_P_S for 99999
+    col WAITS for 99999
+    col STPWT for 99999
     break on BEGIN_TIME
     spool ora_batch_iostat_${INST}_$filedate.log
     
@@ -2989,7 +2996,7 @@ if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" 
     )
 select * from 
 (
-select a.*,row_number() over (partition by inst_id,eid order by reads desc)  as rn
+select a.*,row_number() over (partition by inst_id,eid order by reads desc) as rn
 from final_total a
 )where rn<=5
 order by inst_id,eid;
@@ -3096,15 +3103,15 @@ sequential Means db file sequential read
 scattered  Means db file scattered read
 IO Event Latency(ms) Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| instance_number@snap_time |' || ' LF_SYNC |'|| ' LFP_WRITE |' || ' DP_READ |' || ' DP_WRITE ' || '| CFP_WRITE |' || ' sequential |'|| ' scattered ' || '| DP_READ_TEMP ' || '| DP_WRITE_TEMP |');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------');
   open c_io;
     loop fetch c_io into v_io;
     exit when c_io%notfound;
     dbms_output.put_line('| ' || lpad(v_io.snap_time,25) ||' | '|| lpad(v_io.lfs,7) || ' | '|| lpad(v_io.lfpw,9) || ' | '|| lpad(v_io.dpr,8) || ' | ' || lpad(v_io.dpw,7) || ' | ' || lpad(v_io.cfpw,9) || ' | ' || lpad(v_io.dfsr,10) || ' | ' || lpad(v_io.dfscr,10) || '|' || lpad(v_io.dprt,13) || ' | ' || lpad(v_io.dpwt,13) || ' |');
     end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------');
   close c_io;
 end;
 /
