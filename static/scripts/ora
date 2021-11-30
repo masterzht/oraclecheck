@@ -11339,14 +11339,8 @@ declare
 order by b.blocks;
     v_tmp c_tmp%rowtype;
 
-    cursor c_pga is select /*+ ordered leading(d) */ c.sql_id,
-    a.username,
-    a.sid||','||a.serial# as sid_and_serial,
-    a.machine,
-    a.LAST_CALL_ET as elapse_time,
-    to_char(a.logon_time,'yyyymmdd hh24:mi:ss') as LOGON_TIME,
-    round(d.PGA_USED_MEM / 1024 / 1024,2) as PGA_USED_MB,
-    c.sql_text
+    cursor c_pga is select /*+ ordered leading(d) */ c.sql_id, a.username, a.sid||','||a.serial# as sid_and_serial, a.machine, a.LAST_CALL_ET as elapse_time, to_char(a.logon_time,'yyyymmdd hh24:mi:ss') as LOGON_TIME,
+    round(d.PGA_USED_MEM / 1024 / 1024,2) as PGA_USED_MB, c.sql_text
     from v\$process d,v\$session a,v\$sqlarea c
     where a.sql_id = c.sql_id
     and a.paddr = d.addr
