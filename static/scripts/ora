@@ -1850,7 +1850,6 @@ declare
     and a.table_name = :table_name;
   v_constraints c_constraints%rowtype;
 
-
     cursor c_i is SELECT
        A.INDEX_NAME,
        A.COLUMN_NAME,
@@ -1950,7 +1949,6 @@ where col_cnt > ALL
                             and partitioned = 'YES') order by index_name, partition_position;
 
          v_part c_par_ind%rowtype;
-
 
 begin
   dbms_output.enable(buffer_size => NULL);
