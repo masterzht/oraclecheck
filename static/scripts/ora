@@ -10979,7 +10979,7 @@ declare
       name,
       decode(value,null,'None',value) as value,
       case when name = 'open_cursors' and (value < 300 or value > 1000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
-           when name = 'control_file_record_keep_time' and value <= 7 then 'control_file_record_keep_time recommend to set to <15>, 30 is enough,Doc 47322.1'
+           when name = 'control_file_record_keep_time' and value <= 15 then 'control_file_record_keep_time recommend to set to <31>,Doc 47322.1'
            when name = 'cursor_sharing' and value <> 'EXACT' then 'Recommend to set to <EXACT>, <FORCE> Forcing SQL that does not use binding variables into binding variables'
            when name = 'audit_trail' and value <> 'NONE' then 'If necessary set value to <NONE> to close Audit'
            when name = 'sesssion_cached_cursors' and value > 100 then 'No need to set too large, Set the maximum number of closed cursors that can be cached in each session.'
@@ -11054,11 +11054,40 @@ Parameter Information');
     dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_para;
 
+dbms_output.put_line(' Close Audit');
+dbms_output.put_line('======================');
+dbms_output.put_line('NOAUDIT ALTER ANY PROCEDURE;');
+dbms_output.put_line('NOAUDIT ALTER ANY TABLE;');
+dbms_output.put_line('NOAUDIT ALTER DATABASE;');
+dbms_output.put_line('NOAUDIT ALTER PROFILE;');
+dbms_output.put_line('NOAUDIT ALTER SYSTEM;');
+dbms_output.put_line('NOAUDIT ALTER USER;');
+dbms_output.put_line('NOAUDIT AUDIT SYSTEM;');
+dbms_output.put_line('NOAUDIT CREATE ANY JOB;');
+dbms_output.put_line('NOAUDIT CREATE ANY LIBRARY;');
+dbms_output.put_line('NOAUDIT CREATE ANY PROCEDURE;');
+dbms_output.put_line('NOAUDIT CREATE ANY TABLE;');
+dbms_output.put_line('NOAUDIT CREATE EXTERNAL JOB;');
+dbms_output.put_line('NOAUDIT CREATE PUBLIC DATABASE LINK;');
+dbms_output.put_line('NOAUDIT CREATE SESSION;');
+dbms_output.put_line('NOAUDIT CREATE USER;');
+dbms_output.put_line('NOAUDIT DATABASE LINK;');
+dbms_output.put_line('NOAUDIT DROP ANY PROCEDURE;');
+dbms_output.put_line('NOAUDIT DROP ANY TABLE;');
+dbms_output.put_line('NOAUDIT DROP PROFILE;');
+dbms_output.put_line('NOAUDIT DROP USER;');
+dbms_output.put_line('NOAUDIT EXEMPT ACCESS POLICY;');
+dbms_output.put_line('NOAUDIT GRANT ANY OBJECT PRIVILEGE;');
+dbms_output.put_line('NOAUDIT GRANT ANY PRIVILEGE;');
+dbms_output.put_line('NOAUDIT GRANT ANY ROLE;');
+dbms_output.put_line('NOAUDIT PROFILE;');
+dbms_output.put_line('NOAUDIT PUBLIC SYNONYM;');
+dbms_output.put_line('NOAUDIT ROLE;');
+dbms_output.put_line('NOAUDIT SYSTEM AUDIT;');
+dbms_output.put_line('NOAUDIT SYSTEM GRANT;');
+
 end;
 /
-
-
-
 
     $ECHO
 !
