@@ -1846,7 +1846,8 @@ declare
   from all_constraints a,all_cons_columns b
   where a.owner = b.owner
     and a.constraint_name = b.constraint_name
-    and a.table_name = :table_name;
+    and a.table_name = :table_name
+    and a.OWNER = :owner;
   v_constraints c_constraints%rowtype;
 
     cursor c_i is SELECT
@@ -1879,11 +1880,14 @@ declare
        decode(B.GLOBAL_STATS,'YES','GLOBAL','LOCAL') as INDEX_PARTITION
   FROM DBA_IND_COLUMNS A, DBA_INDEXES B, DBA_SEGMENTS C ,DBA_TAB_COLUMNS T
  WHERE A.INDEX_NAME = B.INDEX_NAME
+   AND A.index_owner = b.owner
    AND T.TABLE_NAME = A.TABLE_NAME
+   AND T.OWNER = A.INDEX_OWNER
    AND A.COLUMN_NAME = T.COLUMN_NAME
    AND A.TABLE_NAME = :table_name
    AND a.INDEX_OWNER = :owner
    AND C.SEGMENT_NAME = A.INDEX_NAME
+   AND C.OWNER = A.INDEX_OWNER
  ORDER BY INDEX_NAME, COLUMN_POSITION;
     v_i c_i%rowtype;
 
@@ -1961,15 +1965,15 @@ UN? Means UNIQUE Index?
 G OR L? Means Global OR Local Indexes
 Index Information(contains Global and Local index See the Last Column)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME             |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE          ' || '| COL# |' || ' TABLESPACE_NAME ' || '| INDEX_TYPE |' || ' DE? ' || '| INDEX_MB |' || ' DES? ' || '| US? |'  || ' LAST_ANALYZED '|| '| VI? |'  || ' UN? ' || '| CLUSTER FACTOR '|| '| G OR L? ' ||'|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME             |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE        ' || '| C# |' || ' TABLESPACE_NAME ' || '| IND_TYPE |' || ' DE? ' || '| I_MB |' || ' DES? ' || '| US? |'  || ' LAST_ANALYZE '|| '| VI? |'  || ' UN? ' || '| CLUS_FACTOR '|| '| G OR L? ' ||'|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_i;
     loop fetch c_i into v_i;
     exit when c_i%notfound;
-    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,22) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,20) ||' | '|| lpad(v_i.COLUMN_POSITION,4) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,10) || ' | '|| lpad(v_i.DEGREE,3) ||  ' | '|| lpad(v_i.INDEX_MB,8) || ' | '|| lpad(v_i.DESCEND,4) || ' | '|| lpad(v_i.USABLE,3) || ' | '|| lpad(v_i.LAST_ANALYZED,13) || ' | '|| lpad(v_i.visibility,3) || ' | '|| lpad(v_i.UNIQUENESS,3)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,14) || ' | ' || lpad(v_i.INDEX_PARTITION,7) ||' |');
+    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,22) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,18) ||' | '|| lpad(v_i.COLUMN_POSITION,2) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,8) || ' | '|| lpad(v_i.DEGREE,3) ||  ' | '|| lpad(v_i.INDEX_MB,4) || ' | '|| lpad(v_i.DESCEND,4) || ' | '|| lpad(v_i.USABLE,3) || ' | '|| lpad(v_i.LAST_ANALYZED,12) || ' | '|| lpad(v_i.visibility,3) || ' | '|| lpad(v_i.UNIQUENESS,3)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,11) || ' | ' || lpad(v_i.INDEX_PARTITION,7) ||' |');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_i;
   dbms_output.put_line('If US? status Is NO!!!');
   dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||'index_name' ||' rebuild online;');
@@ -13317,7 +13321,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     set long 500000
 
     pro
-    Pro Table Basic Info:
+    Pro Table Basic Information
     prompt ======================
     col owner format a10 trunc
     col table_name format a20 trunc
@@ -13417,6 +13421,7 @@ declare
    round((blocks * 8 - (num_rows * avg_row_len / 1024) - blocks * 8 * 10 / 100) /1024, 2) "WASTE_SPACE"
    FROM dba_tables
    WHERE temporary = 'N' and table_name = :table_name
+   and owner = :owner
    ORDER BY 5 DESC;
    v_hwm c_hwm%rowtype;
 
