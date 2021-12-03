@@ -1956,7 +1956,7 @@ where col_cnt > ALL
 begin
   dbms_output.enable(buffer_size => NULL);
   dbms_output.put_line('
-COL# Means COLUMN_POSITION
+C# Means COLUMN_POSITION
 DE? Means DEGREE
 DES? Means DESC OR ASC
 US? Means USABLE?
