@@ -10875,7 +10875,9 @@ declare
      when ksppinm = '_optimzer_adaptive_extended_cursor_sharing' and ksppstvl <> 'UDO'
       then 'Set to <UDO>, solve the execution plan remains unchanged after binding variable peeping issue'
      when ksppinm = '_optimizer_extended_cursor_sharing_rel' and  ksppstvl <> 'SIMPLE'
-      then 'Set <SIMPLE>, solve the execution plan remains unchanged after binding variable peeping issue'
+      then 'Set default value <SIMPLE>, solve the execution plan remains unchanged after binding variable peeping issue'
+     when ksppinm = '_optimizer_extended_cursor_sharing' and  ksppstvl <> 'UDO'
+      then 'Set default value <UDO>, solve the execution plan remains unchanged after binding variable peeping issue'
      when ksppinm = 'optimizer_index_caching' and ksppstvl <> 0
       then 'optimizer_index_caching should set to <0>, default value is 0'
      when ksppinm = 'optimizer_index_cost_adj' and ksppstvl <> 100
