@@ -10974,7 +10974,10 @@ declare
       '_rollback_segment_count',
       '_highthreshold_undoretention',
       '_smm_max_size',
-      '_pga_max_size'
+      '_pga_max_size',
+      '_px_adaptive_dist_method',
+      '_optimizer_strans_adaptive_pruning',
+      '_optimizer_nlj_hj_adaptive_join'
       )
       union all
       select
