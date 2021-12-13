@@ -72,7 +72,6 @@
 # 2019-09-26 1.0.2 fix some column format; change top command to topash; pc command order by ratio; sql command add more table info
 # 2019-09-22 1.0.1 new command :tbs_usage (fast but may not accurate), tbs_last (from snapshot,fast but may not accurate)
 # 2019-09-18 1.0.0 fix few bugs
-
 usage()
 {
   echo "
@@ -372,7 +371,6 @@ if [ "$1" = "test" ]; then
 exit 0
 fi
 
-
 if [ "$1" = "batch" ]; then
 ora batch_load
 ora batch_osstat
@@ -403,7 +401,6 @@ if [ "$1" = "logon" ]; then
      #by minutes
      fgrep "$datestr" $logfile | fgrep "establish" | awk '{ print $1 " " $2 }'| awk -F: '{ print $1 ":" $2 }' | sort | uniq -c
    fi
-
 exit 0
 fi
 
@@ -413,7 +410,6 @@ if [ "$1" = "s" -o "$1" = "S" ]; then
 fi
 ################################################################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -14288,7 +14284,6 @@ if [ "$1" = "xpo" ]; then
       childno=$3
     fi
 
-
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -14298,7 +14293,6 @@ if [ "$1" = "xpo" ]; then
     set define on
     --set linesize 150 pagesize 200
     define v_xc_version = 1.2
-
 
     -- Main Xplan SQL...
     -- -----------------
@@ -14404,7 +14398,6 @@ if [ "$1" = "xpo" ]; then
     prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
-
     pro sql child numbers:
 
     select distinct child_number,PLAN_HASH_VALUE from gv\$sql_plan where sql_id='$2';
@@ -14426,7 +14419,6 @@ if [ "$1" = "xo" ]; then
    else
      phv=$3
    fi
-
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -14580,7 +14572,6 @@ if [ "$1" = "tbsinc" ]; then
   exit 0
 fi
 
-
 ########################################################################################
 if [ "$1" = "offload" ]; then
 
@@ -14652,7 +14643,6 @@ if [ "$1" = "offload" ]; then
 exit 0
 fi
 
-
 ########################################################################################
 if [ "$1" = "app" ]; then
 
@@ -14675,7 +14665,6 @@ if [ "$1" = "app" ]; then
     col name for a30
     col type for a20
     select owner,name,type,executions,pins,locks from gv\$db_object_cache where locks > 0 and pins > 0 and type='PROCEDURE';
-
 
     with t1 as( select time_dp ,
                        24*60*60*(time_dp - lag(time_dp) over (order by time_dp)) timediff,
@@ -14702,7 +14691,6 @@ if [ "$1" = "app" ]; then
 !
 exit 0
 fi
-
 ###################################################################################################
 
 if [ "$1" = "tbs" ]; then
@@ -15006,7 +14994,6 @@ FROM v\$recovery_file_dest;
                   group by owner;
     v_sys_obj c_sys_obj%rowtype;
 
-
     cursor c_big_tab is select
     OWNER,SEGMENT_NAME,SIZE_MB,PARTITION_NAME from (select owner,nvl2(PARTITION_NAME,SEGMENT_NAME||'.'||PARTITION_NAME,SEGMENT_NAME) SEGMENT_NAME ,trunc(bytes/1024/1024) as SIZE_MB,decode(PARTITION_NAME,null,'None',PARTITION_NAME) as PARTITION_NAME
     from dba_segments where segment_type like 'TABLE%' and owner  not in ('OWBSYS','FLOWS_FILES','WMSYS','XDB','QMONITOR','OUTLN',
@@ -15014,7 +15001,6 @@ FROM v\$recovery_file_dest;
                             'CTXSYS','APEX_030200','EXFSYS','OLAPSYS','SYSMAN','WH_SYNC','GSMADMIN_INTERNAL') order by bytes desc)
     where  rownum < 21;
     v_big_tab c_big_tab%rowtype;
-
 
     cursor c_big_lob is select OWNER,TABLE_NAME,COLUMN_NAME,SEGMENT_NAME,SIZE_MB from
     (select a.owner,b.table_name,b.column_name,a.SEGMENT_NAME ,trunc(a.bytes/1024/1024) as SIZE_MB from dba_segments a,dba_lobs b
@@ -15057,7 +15043,6 @@ FROM v\$recovery_file_dest;
    AND BLOCKS > 100
  ORDER BY WASTE_PER DESC) where rownum < 21;
     v_hwmall c_hwmall%rowtype;
-
 
 begin
   dbms_output.enable(buffer_size => NULL);
@@ -15133,7 +15118,6 @@ Top 20 Big Table Information in The Database');
     dbms_output.put_line('----------------------------------------------------------------------------------------------------');
   close c_big_tab;
 
-
   dbms_output.put_line('
 Top 20 Big LOB Information in The Database (When Migrating Database,<purge dba_recyclebin;> can purge unnecessary LOB)');
   dbms_output.put_line('======================');
@@ -15165,14 +15149,12 @@ HWM Information Rely on Table Statistics');
 end if;
 end;
 /
-
     spool off
 !
   exit 0
 fi
 
 ######################################active####################################
-
 if [ "$1" = "active" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -15291,9 +15273,7 @@ order by LAST_CALL_ET desc;
 !
   exit 0
 fi
-
 ##########################################################################
-
 
 if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
 
@@ -15336,7 +15316,6 @@ if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
     where sql_id='$2';
     $ECHO
 
-
     set linesize 150 pagesize 37
     col name format a20
     col DATATYPE_STRING format a30
@@ -15368,7 +15347,6 @@ if [ "$1" = "seg" -o "$1" = "segment" ]; then
   fi
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
 
     set pagesize 30
@@ -15453,7 +15431,6 @@ if [ "$1" = "big" ]; then
 !
 exit 0
 fi
-
 ####################################################################################################
 if [ "$1" = "stat" -o "$1" = "optstats" ]; then
 
@@ -15554,7 +15531,6 @@ if [ "$1" = "stat" -o "$1" = "optstats" ]; then
     select * from DBA_TAB_STAT_PREFS where rownum<=20;
     $ECHO
 
-
      Pro Dba_Autotask_task:
      col auto_collect_status format a80
      select nvl((select client_name||' '||status as auto_collect_status from Dba_Autotask_task
@@ -15639,29 +15615,20 @@ if [ "$1" = "pstack" ]; then
   if [ "$PID" = "all" ]; then
     ps -edf | egrep "ora_[a-z0-9]*_${ORACLE_SID}|oracle${ORACLE_SID}" | grep -v egrep | while read a; do
       set $a
-
       PID=$2
-
       TARGET_FILE="$DIR/pstack_${PID}_${HOST_NAME}.trc"
-
       echo >> $TARGET_FILE
       CURDATE=`date +"%T (%D)"`
       echo "######################## $CURDATE ########################" >> $TARGET_FILE
-
       pstack $PID >> $TARGET_FILE 2> /dev/null
       echo >> $TARGET_FILE
-
     done
-
     CURDATE=`date +"%T (%D)"`
     echo "pstack_all completed for all process at $CURDATE"
-
   else
-
     pstack $PID
     echo "pstack $PID complete"
   fi
-
   exit 0
 fi
 
@@ -15737,21 +15704,13 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
     column max_heap6        heading max6        format 999999999
 
     select /* ora pinned_cursors */
-           case
-             when pc = 'PAR' and lmd = '0' and pmd = '0' then
-               'Parent Freeable'
-             when pc = 'PAR' and lmd = 'N' and pmd = '0' then
-               'Parent Inuse'
-             when pc = 'CHI' and lmd = '0' and pmd = '0' then
-               'Child Freeable'
-             when pc = 'CHI' and lmd = '0' and pmd = 'S' then
-               'Pseudo Cursor '
-             when pc = 'CHI' and lmd = 'N' and pmd = '0' then
-               'Child Cached'
-             when pc = 'CHI' and lmd = 'N' and pmd = 'S' then
-               'Child Executing'
-             else
-               'Not Sure'
+           case when pc = 'PAR' and lmd = '0' and pmd = '0' then 'Parent Freeable'
+                when pc = 'PAR' and lmd = 'N' and pmd = '0' then 'Parent Inuse'
+                when pc = 'CHI' and lmd = '0' and pmd = '0' then 'Child Freeable'
+                when pc = 'CHI' and lmd = '0' and pmd = 'S' then 'Pseudo Cursor '
+                when pc = 'CHI' and lmd = 'N' and pmd = '0' then 'Child Cached'
+                when pc = 'CHI' and lmd = 'N' and pmd = 'S' then 'Child Executing'
+             else 'Not Sure'
            end cursor_type,
            pc, lmd, pmd,
            (count(*))           cnt,
@@ -15791,7 +15750,6 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
     $ECHO
 
 !
-
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
   exit 0
 fi
@@ -15938,9 +15896,7 @@ BEGIN
       DBMS_OUTPUT.PUT_LINE('PRO end -->');
       DBMS_OUTPUT.PUT_LINE('set term off');
       DBMS_OUTPUT.PUT_LINE('SELECT ''<!-- ''||TO_CHAR(SYSDATE, ''YYYY-MM-DD/HH24:MI:SS'')||'' -->'' FROM dual;');
-
       DBMS_OUTPUT.PUT_LINE('SELECT :mon_report FROM DUAL;');
-
       DBMS_OUTPUT.PUT_LINE('SELECT ''<!-- ''||TO_CHAR(SYSDATE, ''YYYY-MM-DD/HH24:MI:SS'')||'' -->'' FROM dual;');
       DBMS_OUTPUT.PUT_LINE('SPO OFF;');
     END LOOP;
