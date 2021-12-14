@@ -83,6 +83,7 @@ usage()
       [] is the default ;  <> is a must
 
     Commands list:
+      - 10046                                  gather 10046 trace
       - 4030                                   diagnositic ora-4030 problem
       - 4031                                   diagnositic ora-4031 problem
       - active                                 Show Active Session and SQL For Current Node
@@ -6617,7 +6618,6 @@ exit 0
 fi
 
 ################################################################################
-################################################################################
 if [ "$1" = "4031" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -6755,7 +6755,6 @@ if [ "$1" = "4031" ]; then
 echo "current instance only"
 exit 0
 fi
-
 #######################################4030 ####################################################
 
 if [ "$1" = "4030" ]; then
@@ -6879,7 +6878,58 @@ echo "current instance only"
 exit 0
 fi
 
+################10046 ###################
+if [ "$1" = "10046" ]; then
+  echo ""
+  echo "Run 10046 Command "
+  echo "======================"
+  echo "1.Run 10046 trace;"
+  echo "alter session set timed_statistics = true;"
+  echo "alter session set statistics_level=all;"
+  echo "alter session set max_dump_file_size = unlimited;"
+  echo "alter session set events '10046 trace name context forever, level 12'; "
+  echo "<Run your SQL here;>"
+  echo "alter session set events '10046 trace name context off';"
+  echo "2.Format your 10046 trace file:"
+  echo "\$tkprof <trace file> <output file>"
+  echo "For example:"
+  echo "\$cd /u01/OracleAPP/oracle/admin/R1020/udump"
+  echo "\$ls -ltr"
+  echo "\$tkprof r1020_ora_9638.trc 9638.output"
+  echo ""
 
+  echo """
+1. 开启10046跟踪语句
+select
+    'oradebug setospid ' || p.spid || chr(10) ||
+    'oradebug unlimit' || chr(10) ||
+    'oradebug event 10046 trace name context forever, level 12' Enable_CMD
+from
+    v\$session s,
+    v\$process p
+where
+    s.paddr = p.addr
+and
+    s.program like '%(J0%'
+/
+
+-- Close 10046
+select
+    'oradebug setospid ' ||  p.spid || chr(10) ||
+    'oradebug event 10046 trace name context off;' || chr(10) ||
+    'oradebug tracefile_name' Disable_CMD
+from
+   v\$session s,
+   v\$process p
+where
+    s.paddr = p.addr
+and
+    s.program like '%(J0%'
+/
+  """
+
+exit 1
+fi
 ################################################################################
 if [ "$1" = "pid" ]; then
 
@@ -6987,9 +7037,8 @@ if [ "$1" = "check" ]; then
 
     pro
     pro
-    prompt =========================================================================================
     Prompt "Invalid objects by owner and type:"
-    prompt =========================================================================================
+    prompt =========================
     col owner format a30
     col object_type format a30
     select owner,object_type,count(*) invalid_cnt

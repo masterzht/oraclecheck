@@ -127,32 +127,13 @@ from
 v$session s where username = 'TRADE_ZSDZ'
 /
 
-7. 跑关闭跟踪语句
-select
-    'oradebug setospid ' || p.spid || chr(10) ||
-    'oradebug unlimit' || chr(10) ||
-    'oradebug event 10046 trace name context forever, level 12' Enable_CMD
-from
-    v$session s,
-    v$process p
-where
-    s.paddr = p.addr
-and     
-    s.program like '%(J0%'    
-/
 
-select
-    'oradebug setospid ' ||  p.spid || chr(10) ||
-    'oradebug event 10046 trace name context off;' || chr(10) ||
-    'oradebug tracefile_name' Disable_CMD
-from
-   v$session s,
-   v$process p
-where
-    s.paddr = p.addr
-and     
-    s.program like '%(J0%'    
-/
+
+
+
+
+
+
 col tracefile for A120
 
 select value ||'/'||(select instance_name from v$instance) ||'_ora_'||
