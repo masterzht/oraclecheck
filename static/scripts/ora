@@ -9329,9 +9329,6 @@ spool off
 exit 0
 fi
 
-
-
-
 #CURDATE=`date +"%Y%m%d"`
 #echo $CURDATE
 
@@ -9409,7 +9406,10 @@ FROM gv\$log_history  a
 order by 1,2 ;
 $ECHO
 
-PRO redo log file info:
+pro Redo Log File Information
+pro alter database add logfile thread 1 '+DATA' size 2G;
+pro alter database add logfile thread 2 '+DATA' size 2G;
+pro ======================
 col status format a8
 col member format a60
 SELECT
@@ -9427,14 +9427,15 @@ FROM   gv\$log     a,
        gv\$logfile b
 WHERE  b.GROUP# = a.GROUP#
 AND    a.THREAD# = b.INST_ID
+AND    a.inst_id = b.inst_id
 order by 1,2;
 $ECHO
 spool off
 
 !
 exit 0
-fi
 
+fi
 
 ################################################################################
 if [ "$1" = "seq" -o "$1" = "sequence" ]; then
