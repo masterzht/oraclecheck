@@ -15290,7 +15290,7 @@ order by LAST_CALL_ET desc;
 
 prompt display all status of all sessions
 prompt =======================
-col program for 40
+col program for a50
 select inst_id, status,program,count(*) from gv\$session where type<>'BACKGROUND'
 group by inst_id,status,program order by inst_id,status;
 
