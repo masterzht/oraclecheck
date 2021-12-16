@@ -8335,7 +8335,7 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "sql_profile" -o "$1" = "coe_profile" ]; then
+if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
 
      if [ "$2" = "" ]; then
       sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
