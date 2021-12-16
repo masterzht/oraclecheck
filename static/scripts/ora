@@ -10371,8 +10371,6 @@ if [ "$1" = "repeat" ]; then
   exit 0
 fi
 
-
-
 #####################################################################################################
 
 if [ "$1" = "sessions" ]; then
@@ -15292,7 +15290,9 @@ order by LAST_CALL_ET desc;
 
 prompt display all status of all sessions
 prompt =======================
-select inst_id, status, count(*) from gv\$session group by inst_id,status order by inst_id,status;
+col program for 40
+select inst_id, status,program,count(*) from gv\$session where type<>'BACKGROUND'
+group by inst_id,status,program order by inst_id,status;
 
 prompt display the session status that not active in current node
 prompt =======================
