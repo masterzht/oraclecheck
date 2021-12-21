@@ -14111,8 +14111,6 @@ There is No Table Statistics are Locked for Current Owner');
   dbms_output.put_line('======================');
 end if;
 
-
-
 SELECT count(*) into v_temp_stat_cnt FROM dba_tab_statistics s, dba_tables t
  WHERE s.object_type = 'TABLE'
    AND s.owner = :owner
