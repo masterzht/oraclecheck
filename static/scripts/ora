@@ -775,11 +775,10 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     sqlid=$2
   fi
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
+    set trimspool on
     col comm format a300
     set long 999999999
     set timing off
@@ -800,7 +799,7 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     SET ECHO OFF
     SET FEEDBACK OFF
 
-    spool ora_sqlmon_$sqlid_$filedate.log
+    spool ora_sqlmon_'$sqlid'_$filedate.log
 /**
     SELECT DBMS_SQLTUNE.report_sql_monitor(
     sql_id       => '$sqlid',
@@ -1814,7 +1813,7 @@ if [ "$1" = "index" -o "$1" = "ind" ]; then
     set serveroutput on
     set verify off
     set timing off
-
+    set trimspool on
 spool ora_indexes_of_${owner}_${tablename}.log
 
 undefine table_name
@@ -2625,6 +2624,7 @@ if [ "$1" = "ashsql" -o "$1" = "dashsql" ]; then
     set linesize 150
     col sql_id format a15
     col event format a40
+    set trimspool on
     spool ora_ashsql_$filedate.log
 
     Pro active_session_history   :
@@ -2815,6 +2815,7 @@ if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" 
     col WAITS for 99999
     col STPWT for 99999
     break on BEGIN_TIME
+    set trimspool on
     spool ora_batch_iostat_${INST}_$filedate.log
 
     with snap_sum as
@@ -3076,6 +3077,7 @@ if [ "$1" = "topsql_by_plan" ]; then
     col phv format 99999999999
     col min_sqlid format a13
     col inst_id format 999
+    set trimspool on
     spool ora_topsql_by_plan_${INST}_${filedate}_${orderby}.log
 select rownum as rn,a.* from
 (select     inst_id,
@@ -3222,7 +3224,7 @@ if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
+set trimspool on
 spool ora_snapper_ash_$filedate.log
 
 set termout off
@@ -5283,6 +5285,7 @@ if [ "$1" = "top_event" -o "$1" = "batch_event" ]; then
     col SNAP_END_TIME format a20
     --break on eid
     break on snap_end_time
+    set trimspool on
     spool ora_batch_event_${INST}_$filedate.log
     with tmp_res as
     (select v1.instance_number as inst_id,--v1.begin_snap_id,
@@ -5474,6 +5477,7 @@ if [ "$1" = "dpr_risk" ]; then
     col small_value format a30
     col owner format a20 trunc
     col table_name format a30
+    set trimspool on
     spool ora_dpr_risk_$filedate.log
     select ksppstvl  as small_value
     from sys.x\$ksppi x, sys.x\$ksppcv y
@@ -5841,7 +5845,7 @@ if [ "$1" = "sparse_index" ]; then
     column last_analyzed format a20
     column compression format a11
     col density format a8
-
+    set trimspool on
     spool ora_sparse_index_$filedate.log
 
     define density='50'
@@ -6443,7 +6447,7 @@ if [ "$1" = "load" -o "$1" = "batch_load" ]; then
     col U_CALLS format 99999
     col redo_k format 999999
     col END_TIME format a20
-
+    set trimspool on
     spool ora_batch_load_${INST}_${filedate}.log
     with tmp_stat as
     (select instance_number as inst_id,lag(snap_id) over (partition by dbid,instance_number,stat_id order by snap_id) as bid
@@ -6628,7 +6632,7 @@ if [ "$1" = "4031" ]; then
     set linesize 180
 
     col COMPONENT format a30
-
+    set trimspool on
     spool ora_4031_$filedate.log
 
     REM === -- end of standard header -- ===
@@ -6767,7 +6771,7 @@ if [ "$1" = "4030" ]; then
     set linesize 180
 
     col COMPONENT format a30
-
+    set trimspool on
     spool ora_4030_$filedate.log
     prompt 863562.1
 
@@ -7016,7 +7020,7 @@ if [ "$1" = "check" ]; then
     col index_name format a30
     col index_owner format a30
     col partition_name format a20 trunc
-
+    set trimspool on
     spool ora_check_$filedate.log
 
     Pro Unusable Index:
@@ -7270,6 +7274,7 @@ if [ "$1" = "topash" -o "$1" = "ashtop" -o "$1" = "top" ]; then
 
     set pagesize 30
     set linesize 200
+    set trimspool on
     spool ora_topash_$filedate.log
     prompt=========================
     prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per ,Execution > $execution SQL
@@ -8227,6 +8232,7 @@ if [ "$1" = "tophis" ]; then
     col clu_s format 9999
     col plsql_s format 99999
     col sorts format 999999
+    set trimspool on
     spool ora_tophis_${INST}_${bid}_${eid}_${orderby}.log
 
     with sql_stat as
@@ -8641,6 +8647,7 @@ if [ "$1" = "dbtime" -o "$1" = "db_time" ]; then
     define statname='DB time'
     set linesize 200 pagesize 1000
     set trims on
+    set trimspool on
     spool ora_dbtime_$filedate.log
 
     with stat_time as
@@ -8953,8 +8960,8 @@ if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
   set feedback off
   set verify off
   set linesize 500
+  set trimspool on
   undefine object_name
-
   spool ora_redo_$filedate.log
   var object_name varchar2(100);
   var owner varchar2(100);
@@ -9064,6 +9071,7 @@ if [ "$1" = "undo" ]; then
     col owner format a20 trunc
     col SEGMENT_NAME format a30
     col status format a10
+    set trimspool on
     spool ora_undo_$filedate.log
 
     SELECT A.INSTANCE_NUM as inst_id,
@@ -9367,6 +9375,7 @@ col h20 format 999
 col h21 format 999
 col h22 format 999
 col h23 format 999
+set trimspool on
 spool ora_redo_$filedate.log
 PRO redo log swith count by hour:
 col day format a5
@@ -9442,12 +9451,10 @@ if [ "$1" = "seq" -o "$1" = "sequence" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
-
+    set pagesize 30 linesize 200
     col sequence_owner format a30
     col sequence_name format a30
-
+    set trimspool on
     spool ora_seq_$filedate.log
 
     select sequence_owner,sequence_name,order_flag,cache_size
@@ -9491,6 +9498,7 @@ col owner format a10 trunc
 col job_name format a24 trunc
 col spid format a5
 col job_state format a8 trunc
+set trimspool on
 spool ora_job_$filedate.log
 
 SELECT --j.JOB_CREATOR,
@@ -9740,9 +9748,9 @@ if [ "$1" = "ashevent" ]; then
     set pagesize 30
     set tab      off
     set linesize 220
-
     col sample_time format a25
     col event format a50
+    set trimspool on
     spool ora_ashevent_$filedate.log
     --BREAK ON inst_id
 
@@ -13388,6 +13396,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     col TRU for a30
     col filename new_value filename
     col filename format a30
+    set trimspool on
     spool ora_table_${tablename}_${filedate}.log
     col high_value format a40 trunc
     col partition_name format a30 trunc
@@ -13731,7 +13740,6 @@ LOG? Means Is LOGGING?');
     end loop;
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_tab_partitions;
-
 
   dbms_output.put_line('
 Partition Table Statistics Information');
@@ -14740,10 +14748,9 @@ if [ "$1" = "tbs" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-  set linesize 200 pages 0
-  set serveroutput on
-  set feedback off
-  set verify off
+  set linesize 200 pages 0 serveroutput on
+  set feedback off verify off
+  set trimspool on
   spool ora_tbs_${filedate}.log
 
 declare
@@ -15215,6 +15222,7 @@ if [ "$1" = "active" ]; then
   col sql_id for a13
   col logon_time for a10
   col kill_sql for a60
+  set trimspool on
   spool ora_active_$filedate.log
 --当前数据库中的session信息与session中正在执行的SQL语句
 
@@ -15449,6 +15457,7 @@ if [ "$1" = "big" ]; then
 --  from dba_segments
 --  order by extents desc
 --)where rownum<=20;
+    set trimspool on
     spool ora_big_$filedate.log
     prompt Top single segment $topn :
 
@@ -15489,7 +15498,7 @@ if [ "$1" = "stat" -o "$1" = "optstats" ]; then
     col target format a30 trunc
     col start_time format a20
     col SAVTIME format a20
-
+    set trimspool on
     spool ora_stats_$filedate.log
 
     select * from
@@ -15969,8 +15978,7 @@ if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
   sqlplus -s /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected|successfully"
 
   connect $DBUSER
-  set linesize 200
-  set pages 30
+  set linesize 200 pages 30
 
   col sql_text format A40 trunc
   --wrap
@@ -15982,6 +15990,7 @@ if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
   col sql_exec_id format 999999999
   col px_req format 999
   col px_real format 999
+  set trimspool on
   spool ora_monlist_$filedate.log
   select * from
   (
