@@ -14245,7 +14245,7 @@ if [ "$1" = "x" ]; then
     set tab      off
     col PARSING_SCHEMA_NAME for a16
     col plan_table format a180
-    col snap_time for a17
+    col snap_time for a12
     col inst# for 99999
     Pro Display sql execution plan in AWR:
     select * from table(dbms_xplan.display_awr('$sqlid',format=>'advanced -PROJECTION'));
@@ -14254,7 +14254,7 @@ if [ "$1" = "x" ]; then
     prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yymmdd hh24:mi')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash,
     OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as parsing_schema,
@@ -14293,7 +14293,7 @@ if [ "$1" = "xp" ]; then
     col inst# for 99999
     set echo off
     repfooter off;
-    col snap_time for a17
+    col snap_time for a12
     Pro Display sql execution plan in Cursor (memory) :
     select * from table(dbms_xplan.display_cursor('$2', null, 'advanced -bytes -PROJECTION allstats last'));
 
@@ -14301,7 +14301,7 @@ if [ "$1" = "xp" ]; then
     prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yymmdd hh24:mi')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as hash_value,
     OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as PARSING_SCHEMA,
@@ -14430,10 +14430,10 @@ if [ "$1" = "xpo" ]; then
 
     prompt Display current sql dba_his_sqlstat Information
     prompt =======================
-    col snap_time for a17
+    col snap_time for a12
     col PARSING_SCHEMA for a16
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yymmdd hh24:mi')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash,
     OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as PARSING_SCHEMA,
@@ -14575,10 +14575,10 @@ if [ "$1" = "xo" ]; then
 
     prompt Display current sql dba_his_sqlstat Information
     prompt =======================
-    col snap_time for a17
+    col snap_time for a12
     col PARSING_SCHEMA for a16
     select  instance_number as inst#,
-    (select max(to_char(begin_interval_time,'yyyymmdd hh24:mi:ss')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
+    (select max(to_char(begin_interval_time,'yymmdd hh24:mi')) time from dba_hist_snapshot where snap_id = x.snap_id) snap_time,
     plan_hash_value as plan_hash,
     OPTIMIZER_COST as opti_cost,
     PARSING_SCHEMA_NAME as PARSING_SCHEMA,
