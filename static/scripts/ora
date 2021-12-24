@@ -88,12 +88,12 @@ usage()
       - 4031                                   diagnositic ora-4031 problem
       - active                                 Show Active Session and SQL For Current Node
       - alert [2]day                           alert.log ORA- info in recent 2(default) days (v\$diag_alert_ext)
-      - app                                    Displays application configuration level information such as Sequence No Cache..
+      - app                                    displays application configuration level information such as Sequence No Cache..
       - ashcnt [30]min                         active sessions count(gv_active_session_history),default recent 30min
       - ashdump  [1]min                        dump ash records into trc file,default value is 1 minutes
       - ashevent 10 2                          ora ashevent recent [10] minutes ,[def=2] ash top n events , grp by inst_id,sample_time,events
-      - ashsql \"14:15\" 20                    gv_active_session_history and dba_hist_active_sess_history ,group by sql_id and event
-      - ashtop | topash                        Displays the latest time and the specified logical read SQL( default 10000)
+      - ashsql \"14:15\" 20                      gv_active_session_history and dba_hist_active_sess_history ,group by sql_id and event
+      - ashtop | topash                        displays the latest time and the specified logical read SQL( default 10000)
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
       - awrsqrpt [bid] [eid] [sql_id]             ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
@@ -205,7 +205,7 @@ usage()
       - snap|snapshot                          dbms_workload_repository.create_snapshot
       - sparse_index
       - sparse_table
-      - sql <sqlid>                            display sql info
+      - sql <sqlid>                            display sql information
       - sql_baseline <sqlid> <sqlid> <PHV>
       - sql_check
       - sql_check_his
@@ -239,8 +239,8 @@ usage()
       - tran                                   list all gv\$transaction
       - trc                                    get trace path
 
-      - undo                                   show undo info
-      - user | users                           list all users info
+      - undo                                   show undo information
+      - user | users                           list all users information
       - version                                show database version
       - xp  <sql_id>                           display_cursor for given sql_id
       - xpo <sql_id> [child_number]            xplan.display_cursor for given sql_id(add execution order column)
@@ -2573,7 +2573,6 @@ fi
 ###################################################################################################################
 if [ "$1" = "ashsql" -o "$1" = "dashsql" ]; then
 
-#echo $(TZ=EST-7EDT date +"%Y%m%d %H%M%S") --- get prev 1 hour
    if [ "$2" = "" ]; then
     defbtime=$(TZ=EST-7EDT date +"%H:%M")
     defbtime2=$(TZ=EST-7EDT date +"%Y/%m/%d %H:%M")
@@ -2659,7 +2658,6 @@ echo "ora ashsql <begin_time> <duration> [20]"
 exit 0
 fi
 
-
 ################################################################################
 if [ "$1" = "tbs_frag" ]; then
 
@@ -2677,7 +2675,6 @@ spool off
 !
 exit 0
 fi
-
 
 ########################################################################################################
 
@@ -2784,7 +2781,6 @@ if [ "$1" = "dir" ]; then
 !
 exit 0
 fi
-
 
 ################################################################################
 if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" = "batch_io" ]; then
@@ -3220,6 +3216,18 @@ fi
 
 #########################################snapper_ash###################################################
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
+
+ if [ "$2" = "" ]; then
+   echo "ora snapper \"`date +"%Y/%m/%d %H:%M"`\" 30"
+   echo "calc average active session "
+   exit 1
+ fi
+
+  if [ "$3" = "" ]; then
+    dur=30
+  else
+    dur=$3
+  fi
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -5137,9 +5145,9 @@ set serveroutput off
 --     @dashtop.sql for accessiong the DBA_HIST_ACTIVE_SESS_HISTORY archive
 --
 --------------------------------------------------------------------------------
-
-prompt snapper_ash1hour...
+prompt Start From $2 last $dur mintutes dba_hist_active_sess_history
 prompt ON CPU User I/O Network Commit Application Concurrency Cluster Configuration Administrative System I/O Scheduler Queueing Other Others for Wait_class%
+prompt ======================
 
 set linesize 300 pages 50
 col MACHINE for a25
@@ -5180,12 +5188,14 @@ with tmp as
 	(select name from V\$ACTIVE_SERVICES s where s.NAME_HASH = a.SERVICE_HASH) SERVICE_NAME,
 (select sql_text from gv\$sql s where s.sql_id = a.sql_id and rownum = 1) sql_text
    from gv\$active_session_history a
-where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate)
+where a.SAMPLE_TIME between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss') and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60)
 select x.* from (
 SELECT
 sql_id,
-lpad(round(100.0 * COUNT(*) / (select count(*) from gv\$active_session_history a where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) || '%', 6,' ') as "Active%",
-CAST (round( 10.0 * COUNT(*) / (select count(*) from gv\$active_session_history a where a.SAMPLE_TIME between (sysdate - 1/24) and sysdate) , 2 ) AS REAL ) as "AAS",
+lpad(round(100.0 * COUNT(*) / (select count(*) from gv\$active_session_history a where a.SAMPLE_TIME between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
+                          and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60) , 2 ) || '%', 6,' ') as "Active%",
+CAST (round( 10.0 * COUNT(*) / (select count(*) from gv\$active_session_history a where a.SAMPLE_TIME between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
+                          and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60) , 2 ) AS REAL ) as "AAS",
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'ON CPU' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'User I/O' then 1 else 0 end)/count(*)) || '%',5,' ') ||
 lpad(ROUND(100.0 * sum(case when WAIT_CLASS = 'Network' then 1 else 0 end)/count(*)) || '%',5,' ') ||
