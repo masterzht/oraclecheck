@@ -140,7 +140,7 @@ usage()
       - highcost [50]                          high cost sql in gv#sql_plan
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
-      - hangdump/hanganalyze                   hanganalyze 3 + systemdump 266
+      - systemdump/hanganalyze                   hanganalyze 3 + systemdump 266
       - idx2sqlid <index_name>                 show sqls use the given index name
       - idxinfo   <index_name>                 get index info
       - index <table_name>                     get all indexes info for given table
@@ -7425,20 +7425,22 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "hangdump" -o "$1" = "hanganalyze" -o "$1" = "hang" ]; then
-
+if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" ]; then
+  echo ""
+  echo "Collect systemtemp and hanganalyze!"
+  echo "========================="
+  # sqlplus -prelim / as sysdba
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
-
     oradebug setmypid
     oradebug unlimit
     oradebug hanganalyze 3
-    oradebug dump ashdumpseconds 60
-    oradebug dump systemstate 226
+    oradebug dump systemstate 266
+    exec dbms_lock.sleep(30);
+    oradebug hanganalyze 3
+    oradebug dump systemstate 266
     oradebug tracefile_name
 !
 echo "on current instance"
