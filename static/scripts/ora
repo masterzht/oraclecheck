@@ -5212,8 +5212,8 @@ order by object_name, lock_mode_held desc
     spool off
 !
 echo "instance_number=$INST"
-echo "ash and dash group by sql_id,evnet ,from $btime, last $dur ,top 20 sql with event"
-echo "ora ashsql <begin_time> <duration> [20]"
+echo "snapper group by sql_id,evnet ,from $btime, last $dur ,top 20 sql with event"
+echo "ora snapper <begin_time> <duration> [20]"
   exit 0
 fi
 ################################################################################
