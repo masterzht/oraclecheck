@@ -11327,15 +11327,19 @@ if [ "$1" = "sga" ]; then
     $ECHO
 
     prompt SGA_RESIZE_OPS
-    SELECT substr(COMPONENT,1,25) COMPONENT,oper_type,initial_size/1024/1024 init_MB,target_size/1024/1024 target_MB,
-    final_size/1024/1024 final_MB,status, to_char(start_time,'yyyymmdd hh24miss') as start_time,
+    set pages 0 linesize 300
+    col start_time for a30
+    col end_time for a30
+    SELECT substr(COMPONENT,1,25) COMPONENT,
+    oper_type,initial_size/1024/1024 init_MB,target_size/1024/1024 target_MB,
+    final_size/1024/1024 final_MB,status,
+    to_char(start_time,'yyyymmdd hh24miss') as start_time,
     to_char(end_time,'yyyymmdd hh24miss') as end_time
     FROM gV\$SGA_RESIZE_OPS
     where PARAMETER in ('db_cache_size','shared_pool_size')
     and OPER_TYPE in ('GROW','SHRINK')
     and inst_id=$INST
     order by PARAMETER,START_TIME;
-
 
 --alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 declare
