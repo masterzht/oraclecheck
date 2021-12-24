@@ -63,7 +63,6 @@
 # 2019-10-30 1.1.0 new command : big_by_tbs ;fix sparse_table bug ;rename ashsession to ash; rename dashsession to dash;rename segment to seg
 # 2019-10-23 1.0.9 adjust output display format for : load
 # 2019-10-22 1.0.8 new command : xo (xplan_awr) / xpo (xplan_cursor) (add execution order column in execution plan);sql command: column adjust
-# 2019-10-17 1.0.7 new command :monsavehis (12c+ only); dpr_risk (11203+ only)
 # 2019-10-14 1.0.6 new command : drop  profile|patch|baseline  <name>
 # 2019-10-09 1.0.5 fix some display issue; new command  stat
 # 2019-10-04 1.0.4 new command  sparse_index , sparse_table , hintname; check command add foreign key no index
@@ -140,13 +139,12 @@ usage()
       - highcost [50]                          high cost sql in gv#sql_plan
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
-      - systemdump/hanganalyze                   hanganalyze 3 + systemdump 266
+      - systemdump/hanganalyze                 hanganalyze 3 + systemdump 266
       - idx2sqlid <index_name>                 show sqls use the given index name
       - idxinfo   <index_name>                 get index info
       - index <table_name>                     get all indexes info for given table
 
       - job                                    show all jobs
-      - kill <sid> <serial> [inst_id]          kill session immediate
       - longops                                show records in gv\$session_longops (running)
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
@@ -155,9 +153,7 @@ usage()
       - mvsnap                                 view all_snapshots (mview) status
       - montop [20]                            save top 20(def) sql monitor files, elapsed time desc
       - monlist [50]                           lists top n (def=50) the statements that have been monitored,sql_exec_start desc
-      - monsave <sqlid> [active]|text          Spool to <sql_id>_active|text.html
       - sqlmon/sqlmonitor                      <sql_id> get v#sql_monitor Information
-      - monsavehis <sqlid> [active]|text       get lastest rid sql monitor report from dba_hist_reports
       - mon_index_create
       - mon_unzip <12c sql mon html>           unzip 12c base64 sql monitor html to unzip_<file_name>
 
@@ -827,7 +823,6 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     round(buffer_gets/1024/1024)||'M' as gets,
     disk_reads as reads
     FROM gv\$sql_monitor where sql_id = '$sqlid' order by SQL_EXEC_START;
-
 
     SELECT dbms_sqltune.report_sql_monitor(
     sql_id => '$sqlid',
@@ -5476,70 +5471,6 @@ echo "full scan executions more than $execs in 1 day"
 exit 0
 fi
 
-
-################################################################################
-if [ "$1" = "monsavehis" ]; then
-
-   if [ "$2" = "" ]; then
-     echo "ora monsavehis <sqlid> active|text"
-     exit 1
-   fi
-
-    if [ "$3" = "" -o "$3" = "active" -o "$3" = "ACTIVE" ]; then
-      type=ACTIVE
-    else
-      type=TEXT
-   fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-      set echo off
-      set linesize 10000
-      set pages 6000
-      set long 20000000
-      set longchunksize 20000000
-      set trimout on
-      set trims on
-      set term off
-      set head off
-      set verify off
-
-
-    col report_id new_value report_id
-    select ltrim(report_id) as report_id from
-    (select report_id from dba_hist_reports where key1='$2' order by key3 desc)
-    where rownum<=1;
-
-
-
-    spool monhis_$2_${type}_RID_&report_id..html
-
-    SELECT DBMS_AUTO_REPORT.REPORT_REPOSITORY_DETAIL(RID => &report_id, TYPE => '$type') FROM dual;
-
-    spool off
-
-    set pagesize 30
-    set head on
-    pro sql exec his in dba_hist_reports:
-    col sql_id format a14
-    col sql_exec_id format a10
-    col sql_exec_start format a20
-    col user_name format a30
-    col elap_s format 99999999
-    select INSTANCE_NUMBER as inst_id,snap_id
-    ,key1 sql_id, key2 sql_exec_id, key3 sql_exec_start
-    ,EXTRACTVALUE(XMLType(report_summary),'/report_repository_summary/sql/user') as user_name
-    ,round(EXTRACTVALUE(XMLType(report_summary),'/report_repository_summary/sql/stats/stat[@name="elapsed_time"]')/1e6)  as elap_s
-    from dba_hist_reports where key1='$2' order by snap_id;
-    $ECHO
-!
-
-exit 0
-fi
-
-
 ################################################################################
 if [ "$1" = "drop" ]; then
 
@@ -7173,35 +7104,6 @@ if [ "$1" = "gather" ]; then
 
 !
    echo "dbms_stats.gather_table_stats('$2','$3',cascade=>true,no_invalidate=>false); command executed"
-exit 0
-fi
-
-
-################################################################################
-if [ "$1" = "kill" ]; then
-
-  if [ "$2" = "" -o "$3" = "" ]; then
-    echo "ora kill sid serial# [inst_id]"
-    exit 1
-  fi
-
-  if [ "$4" = ""  ]; then
-    inst_id=1
-  else
-    inst_id=$4
-  fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 200
-
-    alter system kill session '$2,$3,@$inst_id' immediate;
-
-!
-  echo "alter system kill session '$2,$3,@$inst_id' immediate; command executed!"
 exit 0
 fi
 
@@ -15852,56 +15754,6 @@ if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
 !
  echo "order by elapsed_time,top $topn only"
  exit 0
-fi
-
-#################################################################################
-if [ "$1" = "monsave" -o "$1" = "savemon" ]; then
-
-   if [ "$2" = "" ]; then
-     echo "ora monitor sql_id [active]|text <sql_exec_id>"
-     exit 0
-   fi
-
-    if [ "$3" = "" -o "$3" = "active" -o "$3" = "ACTIVE" ]; then
-       type=ACTIVE
-       ftype=html
-    else
-       type=TEXT
-       ftype=txt
-    fi
-
-    if [ "$4" != "" ]; then
-       execid="SQL_EXEC_ID=>$4,"
-    else
-       execid=""
-    fi
-
-  FILTER='Session altered|Connected|rows selected|successfully|MONITOR_REPORT|---------------------'
-
-  sqlplus -s /NOLOG  << ! | egrep -v "$FILTER"
-
-  connect $DBUSER
-
-  set echo off
-  set linesize 10000 pages 6000
-  set long 20000000
-  set longchunksize 20000000
-  set trimout on trims on term off head off
-
-  spool $2_$type.$ftype
-
-    select
-    DBMS_SQLTUNE.REPORT_SQL_MONITOR(
-            sql_id=>'$2',$execid
-            report_level=>'ALL',
-            type=>'$type') as report
-    from dual;
-
-  spool off
-
-!
-  exit 0
-  echo "ora monsave sql_id text   or  ora monsave sql_id  (active is default)"
 fi
 ###################################################################################################
 # Run a shell command. Useful when combined with repeat...
