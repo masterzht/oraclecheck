@@ -15041,8 +15041,8 @@ order by LAST_CALL_ET desc;
 prompt display all status of all sessions
 prompt =======================
 col program for a50
-select inst_id, status,program,count(*) from gv\$session where type<>'BACKGROUND'
-group by inst_id,status,program order by 1,3,2;
+select inst_id, status,username,count(*) from gv\$session where type<>'BACKGROUND'
+group by inst_id,status,username order by 1,2,4 desc;
 
 prompt display the session status that not active in current node
 prompt =======================
