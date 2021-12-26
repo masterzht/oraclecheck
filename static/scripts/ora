@@ -15042,7 +15042,7 @@ prompt display all status of all sessions
 prompt =======================
 col program for a50
 select inst_id, status,program,count(*) from gv\$session where type<>'BACKGROUND'
-group by inst_id,status,program order by inst_id,status;
+group by inst_id,status,program order by 1,3,2;
 
 prompt display the session status that not active in current node
 prompt =======================
