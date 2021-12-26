@@ -34,12 +34,10 @@
 # 2020-01-11 3.0.8 fix bug and enhencement
 # 2020-01-08 3.0.7 fix bug and enhencement
 # 2020-01-06 3.0.6 sql_check ; enhencement
-# 2020-01-03 3.0.5 batch_sqlhc  enhencement
 # 2020-01-02 3.0.4 fix bug
 # 2019-12-26 3.0.3 enhencement
 # 2019-12-17 3.0.2 new command [expdash]
 # 2019-12-16 3.0   ==========================add sql check=========================
-# 2019-12-16 3.0.1 new command [batch_sqlhc]
 # 2019-12-16 2.0.3 add spool to log for most operation
 # 2019-12-14 2.0.1 adjust [sql] command ,add event info from gv_active_session_history; new command [dup_index]
 # 2019-12-09 2.0   =========================add -a -s -i option====================
@@ -91,17 +89,14 @@ usage()
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
 
-      - batch_sqlhc <bid> <eid> <r1><r2><r3> y batch sqlhc for given bid eid,y for no interactive (no need to change select sqlid)
       - batch_osstat [48]|<bid> <eid>          awr osstat in batch mode(similiar with AWR osstat),fixed 48 snaps or given bid and eid
       - batch_event  [48]|<bid> <eid>          awr top 5 event in batch mode,fixed 48 snaps or given bid and eid,exe ./ora -i 2 batch_event
       - batch_load   [48]|<bid> <eid>          awr load profile in batch mode,fixed 48 snaps or given bid and eid
       - batch_iostat [48]|<bid> <eid>          awr top 5 reads tablespace in batch mode (awr: Tablespace IO Stats) 12.1 and below
 
-      - bc [10]                                view contents of buffer cache(Top 10)
       - big_by_tbs <tbs_name> [20]             top n big size objects by tablespace name
       - bind | binds <sql_id>                  display bind capture information for  specified cursor
 
-      - col <owner> <tab_name> <col_name>      column info
       - check                                  unusable indexes,etc.
       - cputime                                cputime by day / by top
       - cursor_summary                         summarize stats about (un)pinned cursors
@@ -145,7 +140,6 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
 
       - mvsnap                                 view all_snapshots (mview) status
-      - montop [20]                            save top 20(def) sql monitor files, elapsed time desc
       - sqlmon/sqlmonitor                      <sql_id> get v#sql_monitor Information
 
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
@@ -1180,147 +1174,6 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "batch_sqlhc" ]; then
-
-##########if begin
-   if [ "$2" = "" -o "$3" = "" ]; then
-     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-     connect $DBUSER
-    set linesize 150 pagesize 200
-    break on startup_time
-    select  instance_number,snap_id,
-            to_char(end_interval_time,'yyyy-mm-dd hh24:mi:ss') as end_interval_time
-            ,to_char(startup_time,'yyyy-mm-dd hh24:mi:ss') as startup_time
-            ,round((cast(end_interval_time as date)-cast(begin_interval_time as date))*24*60) as interval_min
-     from dba_hist_snapshot
-     where end_interval_time>sysdate-7
-     order by instance_number,snap_id;
-     $ECHO
-!
-   defbid=`echo "select trim(12345||max(snap_id)-1) as bid from dba_hist_snapshot;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-15`
-   let defeid=defbid+1
-   read -p "Please input begin snap_id[$defbid]:" bid
-    if [ -z "${bid}" ];then
-         bid=$defbid
-    fi
-   read -p "Please input end   snap_id[$defeid]:" eid
-    if [ -z "${eid}" ];then
-         eid=$defeid
-    fi
-
-   if [ ${bid} -ge ${eid} ];then
-      echo begin_snap_id:$bid end_snap_id:$eid  input error!
-      exit 1
-   fi
-   else
-    bid=$2
-    eid=$3
-  fi
-
-  echo "Your selecttion :begin snap_id is $bid and end snap_id is $eid"
-################## if end
-
-  if [ "$4" = "" -o "$5" = "" -o "$6" = "" ]; then
-    echo "please select/input top cpu/read/time sql count,default 10 for every dimension,total <=30"
-    defr1=10
-    read -p "Please input top cpu count[$defr1]:" r1
-    if [ -z "${r1}" ];then
-         r1=$defr1
-    fi
-
-    defr2=10
-    read -p "Please input top read count[$defr2]:" r2
-    if [ -z "${r2}" ];then
-         r2=$defr2
-    fi
-
-    defr3=10
-    read -p "Please input top elatime count[$defr3]:" r3
-    if [ -z "${r3}" ];then
-         r3=$defr3
-    fi
-    else
-        r1=$4
-        r2=$5
-        r3=$6
-  fi
-
-   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-    set linesize 250 pagesize 200
-
-    set trims on head on
-    col r_cpu format 99999
-    col r_read format 99999
-    col r_elap format 99999
-    col sql_id format a13
-    col sqltext format a100
-    spool ora_sql_detail.log
-    with tmp_sum as
-    (select sql_id
-    ,round(sum(cpu_time_delta)/1e6) sum_cpu_s
-    ,round(sum(DISK_READS_DELTA)/1e3) sum_reads_k
-    ,round(sum(elapsed_time_delta)/1e6) sum_elap_s
-    ,max(plan_hash_value) as max_phv
-      from dba_hist_sqlstat
-      where $bid < snap_id and
-            $eid >=snap_id and
-       plan_hash_value>0
-       group by sql_id
-    )
-    select sql_id,
-           max_phv,
-          r1 as r_cpu,sum_cpu_s,
-          r2 as R_read,sum_reads_k,
-          r3 as R_elap,sum_elap_s,
-          nvl(replace(replace(to_nchar(SUBSTR(sql_text,1,100)),chr(10),''),chr(13),'') , (' ** SQL Text Not Available ** ')) SqlText
-     from
-    (select a.*
-             ,row_number() over (order by sum_cpu_S desc  ) r1
-             ,row_number() over (order by sum_reads_k desc) r2
-             ,row_number() over (order by sum_elap_s desc) r3
-             ,b.sql_text
-      from tmp_sum a ,dba_hist_sqltext b
-      where a.sql_id=b.sql_id
-    )
-    where r1<=$r1 or r2<=$r2 or r3<=$r3
-    order by r1,r2,r3;
-    spool off
-!
-    #delete 1~---- and blank line: sed -n '1,/^-------------/d;/^$/d;p'
-    awk '{ print $1 }' ora_sql_detail.log|sed -n '1,/^----/d;/^$/d;p' >ora_sql_id.log
-
-    if [ "$7" = "" ]; then
-       read -p "please review or edit(in another terminal) ora_sql_id.log in current dir,ctrl+c or n to exit,Enter to continue:" cont
-       if [ "$cont" = "n" -o "$cont" = "N" ]; then
-         exit 1
-       fi
-    fi
-
-    cnt=0
-    while read sql_id
-    do
-     let cnt=cnt+1
-     if [ $cnt -ge 30 ];then
-       echo "no more than 30 sqls"
-       exit 0
-     fi
-     lensql=`echo ${sql_id}|wc -c|tr -d " "`
-     if [ "$lensql" = "14" ]; then
-         sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-         connect $DBUSER
-         prompt generate sqlhc for sql_id : ${sql_id}...........................................................$cnt
-         @ora_sqlhc T ${sql_id}
-!
-    fi
-    done <  ora_sql_id.log
-
-exit 0
-fi
-
-################################################################################
 if [ "$1" = "sql_check_his" ]; then
 #sys.WRH$_SQL_PLAN.max(snap_id) >  dba_hist_snapshot.max(snap_id) ????
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -2343,59 +2196,6 @@ PRO coe_load_sql_baseline completed.(script modified by Tiger Liu)
 !
 exit 0
 fi
-
-
-
-############################################################################################################################
-if [ "$1" = "col" ]; then
-
-  if [ "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
-    echo "ora col <owner> <tab_name> <col_name>"
-    exit 1
-  fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 180
-    pro column info:
-    col owner format a10 trunc
-    col table_name format a20 trunc
-    col column_name format a20
-    col dtype format a12 trunc
-    col low_value format a15
-    col high_value format a15
-    col bucks format 999
-    col ndv format 999999999
-    col histogram format a10 trunc
-
-    select owner,table_name,column_name,data_type||'('||data_length||')' as dtype ,num_distinct as ndv,low_value,high_value,
-    nullable,num_nulls,histogram,num_buckets as bucks,sample_size,to_char(last_analyzed,'yyyymmdd hh24mmss') as last_analyzed
-    from dba_tab_columns
-    where owner=upper('$2') and table_name=upper('$3') and column_name=upper('$4');
-    $ECHO
-
-    pro column index info:
-    col table_owner format a20
-    col idx_columns format a60
-    col index_name format a30
-    col pos format 99
-    select a.* ,b.idx_columns from
-    (select table_owner,table_name,index_name,column_name,column_position as pos from dba_ind_columns
-    where table_owner=upper('$2') and table_name=upper('$3') and column_name=upper('$4'))a,
-    (select table_owner,index_name,LISTAGG (column_name,',') WITHIN GROUP (ORDER BY column_position) AS idx_columns
-    from dba_ind_columns a where  table_owner=upper('$2') and table_name=upper('$3')
-    group by table_owner,index_name)b
-    where a.table_owner=b.table_owner and a.index_name=b.index_name;
-    $ECHO
-
-!
-ora histogram $2 $3 $4
-exit 0
-fi
-
 ################################################################################
 if [ "$1" = "tbs_frag" ]; then
 
@@ -10504,38 +10304,6 @@ end;
 exit 0
 fi
 
-####################################################################################################
-
-if [ "$1" = "bc" ]; then
-
-     if [ "$2" = "" ]; then
-      top=10
-     else
-      top=$2
-     fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 10000
-    set linesize 80
-
-    select * from (
-      select /*+ ordered use_hash(obj\$ v\$bh) */owner#, name, count(*) "Buffer Count"
-      from obj\$ o, v\$bh b
-      where o.dataobj# = b.objd
-        and b.status != 'free'
-      group by owner#,o.name
-      order by 3 desc)
-    where rownum <= $top ;
-    $ECHO
-
-!
-echo "Top $top Buffer Count."
-exit 0
-fi
-
 #######################################################################################################
 
 if [ "$1" = "session_event" ]; then
@@ -15098,125 +14866,6 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
 !
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
   exit 0
-fi
-
-#####################################################################################################
-
-if [ "$1" = "montop" -o "$1" = "topmon" ]; then
-
-   if [ "$2" = "" ]; then
-     topn=20
-   else
-     topn=$2
-   fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-set linesize 300 pagesize 0
-SET DEF ^ TERM OFF ECHO ON AUTOP OFF VER OFF SERVEROUT ON SIZE 1000000;
-SET TERM ON ECHO OFF;
-set trims on
-PRO
-PRO  generate top sql monitor html files
-PRO
-
-DEF sql_monitor_reports = '$topn';
-
-set term off
-
-SPO _sqlmon.sql;
-DECLARE
-  l_count NUMBER := 0;
-  TYPE mon_rt IS RECORD (
-    sql_id varchar2(30),
-    elapsed_time number,
-    sql_exec_start DATE,
-    sql_exec_id NUMBER,
-    sql_plan_hash_value NUMBER,
-    status varchar2(10),
-    username varchar2(30),
-    avg_time number,
-    con_cnt number );
-  mon_rec mon_rt;
-  mon_cv SYS_REFCURSOR;
-BEGIN
-
-    DBMS_OUTPUT.PUT_LINE('VAR mon_exec_start VARCHAR2(14);');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_elapsed_time NUMBER;');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_exec_id NUMBER;');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_sql_plan_hash_value NUMBER;');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_status varchar2(10);');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_username varchar2(30);');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_con_cnt number;');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_report CLOB;');
-    DBMS_OUTPUT.PUT_LINE('VAR mon_sql_id VARCHAR2(13);');
-
-    DBMS_OUTPUT.PUT_LINE('SET ECHO OFF FEED OFF VER OFF SHOW OFF HEA OFF LIN 3000 NEWP NONE PAGES 0 LONG 2000000 LONGC 2000 SQLC MIX TAB ON TRIMS ON TI OFF TIMI OFF ARRAY 100 NUMF "" SQLP SQL> SUF sql BLO . RECSEP OFF APPI OFF AUTOT OFF;');
-
-    -- cursor variable to avoid error on 10g since v\$sql_monitor didn't exist then
-    OPEN mon_cv FOR
-    select * from
-    ( select sql_id,elapsed_time,sql_exec_start,sql_exec_id, sql_plan_hash_value,status,username,round(avg_elap/1e6) as avg_time,con_cnt
-     from
-     (     SELECT sql_id, elapsed_time, sql_exec_start, sql_exec_id, sql_plan_hash_value,
-             row_number() over (partition by sql_id order by elapsed_time desc) as rn,
-             sum(elapsed_time) over (partition by sql_id) as total_elap,
-             avg(elapsed_time) over (partition by sql_id) as avg_elap,
-             count(*) over (partition by sql_id ) as con_cnt,
-             username,
-             decode(status,'EXECUTING','EXEC','DONE (ERROR)','ERROR','DONE') as status
-      FROM gv\$sql_monitor WHERE process_name = 'ora' and sql_plan_hash_value>0
-     ) where rn=1 ORDER BY total_elap desc
-    ) where rownum<=^^sql_monitor_reports.;
-    LOOP
-      FETCH mon_cv INTO mon_rec;
-      EXIT WHEN mon_cv%NOTFOUND;
-
-      --l_count := l_count + 1;
-      --IF l_count > ^^sql_monitor_reports. THEN
-      --  EXIT; -- exits loop
-      --END IF;
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_sql_id := '''||mon_rec.sql_id||''';');
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_elapsed_time := '||lpad(round(mon_rec.elapsed_time/1e6),5,'0')||';');
-
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_exec_start := '''||TO_CHAR(mon_rec.sql_exec_start, 'YYYYMMDDHH24MISS')||''';');
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_exec_id := '||TO_CHAR(mon_rec.sql_exec_id)||';');
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_sql_plan_hash_value := '||TO_CHAR(mon_rec.sql_plan_hash_value)||';');
-      DBMS_OUTPUT.PUT_LINE('EXEC :mon_status := '''||substr(mon_rec.status,1,4)||''';');
-      DBMS_OUTPUT.PUT_LINE('SPO ora_sqlmon_'||lpad(round(mon_rec.elapsed_time/1e6),5,'0')||'_'||TO_CHAR(mon_rec.sql_plan_hash_value)||'_'||mon_rec.sql_id||'_'||TO_CHAR(mon_rec.sql_exec_start, 'YYYYMMDDHH24MISS')||'_'||mon_rec.status||'_'||mon_rec.username||'_'||to_char(mon_rec.avg_time)||'_'||to_char(mon_rec.con_cnt)||'.html;');
-      DBMS_OUTPUT.PUT_LINE('SELECT ''<!-- ''||TO_CHAR(SYSDATE, ''YYYY-MM-DD/HH24:MI:SS'')||'' -->'' FROM dual;');
-      DBMS_OUTPUT.PUT_LINE('set term on');
-      DBMS_OUTPUT.PUT_LINE('PRO <!-- begin DBMS_SQLTUNE.REPORT_SQL_MONITOR: '||mon_rec.sql_id);
-      DBMS_OUTPUT.PUT_LINE('set term off');
-      DBMS_OUTPUT.PUT_LINE('BEGIN');
-      DBMS_OUTPUT.PUT_LINE('  :mon_report := DBMS_SQLTUNE.REPORT_SQL_MONITOR (');
-      DBMS_OUTPUT.PUT_LINE('    sql_id         => :mon_sql_id,');
-      DBMS_OUTPUT.PUT_LINE('    sql_exec_start => TO_DATE(:mon_exec_start, ''YYYYMMDDHH24MISS''),');
-      DBMS_OUTPUT.PUT_LINE('    sql_exec_id    => :mon_exec_id,');
-      DBMS_OUTPUT.PUT_LINE('    report_level   => ''ALL'',');
-      DBMS_OUTPUT.PUT_LINE('    type           => ''ACTIVE'' );');
-      DBMS_OUTPUT.PUT_LINE('END;');
-      DBMS_OUTPUT.PUT_LINE('/');
-      DBMS_OUTPUT.PUT_LINE('set term on');
-      DBMS_OUTPUT.PUT_LINE('PRO end -->');
-      DBMS_OUTPUT.PUT_LINE('set term off');
-      DBMS_OUTPUT.PUT_LINE('SELECT ''<!-- ''||TO_CHAR(SYSDATE, ''YYYY-MM-DD/HH24:MI:SS'')||'' -->'' FROM dual;');
-      DBMS_OUTPUT.PUT_LINE('SELECT :mon_report FROM DUAL;');
-      DBMS_OUTPUT.PUT_LINE('SELECT ''<!-- ''||TO_CHAR(SYSDATE, ''YYYY-MM-DD/HH24:MI:SS'')||'' -->'' FROM dual;');
-      DBMS_OUTPUT.PUT_LINE('SPO OFF;');
-    END LOOP;
-    CLOSE mon_cv;
-END;
-/
-
-SPO OFF;
-
-@_sqlmon
-!
-#rm _sqlmon.sql
-exit 0
 fi
 
 ###################################################################################################
