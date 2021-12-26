@@ -216,7 +216,6 @@ usage()
 
       - undo                                   show undo information
       - user | users                           list all users information
-      - version                                show database version
       - xp  <sql_id>                           display_cursor for given sql_id
       - xpo <sql_id> [child_number]            xplan.display_cursor for given sql_id(add execution order column)
       - x   <sql_id>                           display_awr for given sql_id
@@ -9475,31 +9474,6 @@ SELECT /*+ NO_MERGE */
 echo "Above is sql info for sql_id :$sqlid ,plan format is $format. for advanced plan ,use ora sql <sqlid> adv"
 exit 0
 fi
-
-##################################################################################################
-
-if [ "$1" = "version" ]; then
-
-  #version;
-
-  #
-  # Get Oracle version number
-  #
-  #echo "Oracle version:"
-  sqlplus -s /NOLOG << !  | egrep -v "Session altered|Connected|rows selected"
-
-    set echo off
-    set head off
-    connect $DBUSER
-
-    select  version
-    from PRODUCT_COMPONENT_VERSION
-    where PRODUCT like 'Oracle%';
-!
-
-  exit 0
-fi
-
 ##############################################################################################
 
 if [ "$1" = "repeat" ]; then
