@@ -18,7 +18,6 @@
 # 2020-08-12 3.6.1 new command highparse2, find top CPU SQL with same force_matching_signature (sql not using bind variables)
 # 2020-08-06 3.6   fix column display width in 11204
 # 2020-06-01 3.5.2 fix column display width in 12.2
-# 2020-06-01 3.5.1 new command dg (dg_info); old index command rename to idxinfo ; add interactive to freq commands
 # 2020-05-28 3.5   review all command ; ddl support interactive; fix bugs......
 # 2020-05-22 3.2.2 fix recover(display instance smon recover progress) bug
 # 2020-05-06 3.2.1 sep sql_check and sql_check_his
@@ -51,7 +50,6 @@
 # 2019-12-01 1.2.6 new command : [col] display column info
 # 2019-11-27 1.2.5 support sql_patch for 12.2+
 # 2019-11-22 1.2.2 new command : tbs_frag
-# 2019-11-19 1.2.1 new command : mon_unzip
 # 2019-11-14 1.2.0 adjust many column display format; new command : process ,session ; change xpo and xo to my code mode;fix awr bug(12c)
 # 2019-11-10 1.1.7 new command : dir
 # 2019-11-10 1.1.6 new command : iostat (only for 12.1 and below version)
@@ -100,7 +98,6 @@ usage()
       - batch_iostat [48]|<bid> <eid>          awr top 5 reads tablespace in batch mode (awr: Tablespace IO Stats) 12.1 and below
 
       - bc [10]                                view contents of buffer cache(Top 10)
-      - big [20]                               top n big size objects (single or partition table/index)
       - big_by_tbs <tbs_name> [20]             top n big size objects by tablespace name
       - bind | binds <sql_id>                  display bind capture information for  specified cursor
 
@@ -136,9 +133,10 @@ usage()
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
       - systemdump/hanganalyze                 hanganalyze 3 + systemdump 266
+
       - idx2sqlid <index_name>                 show sqls use the given index name
-      - idxinfo   <index_name>                 get index info
-      - index <table_name>                     get all indexes info for given table
+      - ind | index <table_name>               get all indexes info for given table
+      - index_creating                         index is creating
 
       - job                                    show all jobs
       - longops                                show records in gv\$session_longops (running)
@@ -148,10 +146,7 @@ usage()
 
       - mvsnap                                 view all_snapshots (mview) status
       - montop [20]                            save top 20(def) sql monitor files, elapsed time desc
-      - monlist [50]                           lists top n (def=50) the statements that have been monitored,sql_exec_start desc
       - sqlmon/sqlmonitor                      <sql_id> get v#sql_monitor Information
-      - mon_index_create
-      - mon_unzip <12c sql mon html>           unzip 12c base64 sql monitor html to unzip_<file_name>
 
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
       - open_cursor [100]                      top 30 ,default >100
@@ -173,7 +168,6 @@ usage()
       - purge <sql_id>                         SYS.DBMS_SHARED_POOL.PURGE
 
       - raw <date|varchar2|number> <value>     ora raw date raw_data_string
-      - realmon                                like oratop ; repeat exec: ora repeat 5 100 realmon
       - redo                                   redo info : generate frequence
       - recover_state|recover                  gv\$fast_start_transactions,recover progress
       - resize                                 show smallest size all datafile can shrink to
@@ -806,30 +800,28 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     SET FEEDBACK ON
     COL "elapsed(ms)" for 999999
     COL "cpu(ms)" for 999999
-    SELECT
-    INST_ID as "inst#",
-    to_char(SQL_EXEC_START,'MMDD HH24:MI:SS') SQL_EXEC_START,
-    STATUS,
-    sql_exec_id,
-    SQL_PLAN_HASH_VALUE as PLAN_HASH,
-    SID,
-    round(ELAPSED_TIME/1000) as "elapsed(ms)",
-    round(CPU_TIME/1000) as "cpu(ms)",
-    round(USER_IO_WAIT_TIME/1000) as "user_io(ms)",
-    round(CLUSTER_WAIT_TIME/1000) as "cluster(ms)",
-    fetches,
-    round(buffer_gets/1024/1024)||'M' as gets,
-    disk_reads as reads
-    FROM gv\$sql_monitor where sql_id = '$sqlid' order by SQL_EXEC_START;
+    SELECT INST_ID as "inst#",
+           to_char(SQL_EXEC_START, 'mmdd hh24:mi:ss') SQL_EXEC_START,
+           status,
+           sql_exec_id,
+           SQL_PLAN_HASH_VALUE as PLAN_HASH,
+           SID,
+           round(ELAPSED_TIME / 1000) as "elapsed(ms)",
+           round(CPU_TIME / 1000) as "cpu(ms)",
+           round(USER_IO_WAIT_TIME / 1000) as "user_io(ms)",
+           round(CLUSTER_WAIT_TIME / 1000) as "cluster(ms)",
+           fetches,
+           round(buffer_gets / 1024 / 1024) || 'M' as gets,
+           disk_reads as reads
+      FROM gv\$sql_monitor
+     where sql_id = '$sqlid'
+     order by SQL_EXEC_START;
 
-    SELECT dbms_sqltune.report_sql_monitor(
-    sql_id => '$sqlid',
-    report_level => 'ALL',
-    type=>'text'
-    ) comm
-    FROM dual
-    /
 
+    SELECT dbms_sqltune.report_sql_monitor(sql_id       => '$sqlid',
+                                           report_level => 'ALL',
+                                           type         => 'text') comm
+    FROM dual;
 spool off
     $ECHO
 !
@@ -1142,7 +1134,7 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "mon_index_create" ]; then
+if [ "$1" = "index_creating" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -1158,7 +1150,7 @@ if [ "$1" = "mon_index_create" ]; then
     from dba_segments a where segment_type='TEMPORARY';
     $ECHO
 !
-echo "ora repeat 10 20 mon_index_create"
+echo "ora repeat 10 20 index_creating"
 exit 0
 
 fi
@@ -2060,158 +2052,6 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "idxinfo" ]; then
-
-   ##if [ "$2" = "" ]; then
-   ##  echo "ora idxinfo idx_name"
-   ##  exit 1
-   ##fi
-
-  if [ "$2" = ""  ]; then
-   read -p "Please input index_name:" indexname
-    if [ -z "${indexname}" ];then
-         echo "no input , exit"
-         exit 1
-    fi
-  else
-    indexname=$2
-  fi
-
-   if [ "$3" = ""  ]; then
-
-    defowner=`echo "select trim(12345||LISTAGG (table_owner,',') WITHIN GROUP (ORDER BY table_owner)) AS owner from dba_indexes where index_name=upper('$indexname') and rownum<=4;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-100`
-    if [ -z "${defowner}" ];then
-       echo "Index $indexname not found,please check again!"
-       exit 1
-    fi
-   read -p "Please input index_owner,default is [$defowner]:" owner
-    if [ -z "${owner}" ];then
-         owner=$defowner
-    fi
-   else
-    owner=$3
-  fi
-
-
-   ver2=`get_ver 2`
-   if [ $ver2 -lt 11 ];then
-     ver="--"
-   else
-     ver=""
-   fi
-
-   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 200
-    col owner format a15
-    col table_owner format a15
-    col index_name format a30
-    col index_type format a21 trunc
-    col avg_lb_key format 999999999
-    col avg_db_key format 999999999
-    col COMPRESSION format a8 trunc
-    col table_name format a20 trunc
-
-    select owner,table_owner,table_name,
-       blevel,leaf_blocks,distinct_keys,
-       avg_leaf_blocks_per_key as avg_lb_key,
-       avg_data_blocks_per_key as avg_db_key,
-       clustering_factor
-       --num_rows,to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
-       --degree,partitioned,visibility
-    from dba_indexes where index_name=upper('$indexname') and TABLE_OWNER=upper('$owner');
-    $ECHO
-
-    col degree format a6
-    col tablespace_name format a10 trunc
-    col LAST_ANALYZED format a19
-    select tablespace_name, index_type,
-       --blevel,leaf_blocks,distinct_keys,avg_leaf_blocks_per_key,
-       --avg_data_blocks_per_key,clustering_factor,status,
-       num_rows,to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
-       degree,partitioned,
-       decode(uniqueness,'NONUNIQUE','N','UNIQUE') as uniq,
-       $ver decode(visibility,'VISIBLE','Y','INVISIBLE') as visible,
-       compression, status
-    from dba_indexes where index_name=upper('$indexname') and TABLE_OWNER=upper('$owner');
-    $ECHO
-
-    col column_name format a30
-    col column_position format 99
-    col table_name format a30
-    col index_owner format a30
-    select index_owner,index_name,table_name,column_name, column_position as pos,descend
-    from dba_ind_columns where index_name=upper('$indexname') and TABLE_OWNER=upper('$owner')
-    order by index_owner,column_position;
-    $ECHO
-
-column index_name  format a30
-column column_name format a20
-column func        format a30
-column pos format 99
-
-break   on index_name skip 1 on uniqueness on pref_len -
-        on t_rows on i_rows on distinct_keys
-        --on blevel on leaf_blocks
-
-select
-        --ind.index_name,
-        --ind.uniqueness,
-        tab.num_rows            t_rows,
-        ind.num_rows            i_rows,
-        ind.distinct_keys,
-        --ind.blevel,
-        --ind.leaf_blocks,
-        inc.column_name,
-        inc.column_position as pos,
-        case inc.descend  when 'DESC'  then 'D' else null end descend,
-        tbc.nullable,
-        tbc.num_distinct,
-        tbc.num_nulls,
-        ind.prefix_length       prefix,
-        inx.column_expression   func
-from
-        dba_tables          tab,
-        dba_indexes         ind,
-        dba_ind_columns     inc,
-        dba_tab_cols        tbc,
-        dba_ind_expressions inx
-where
-        --tab.owner        = upper('owner') and
-        ind.TABLE_OWNER  = upper('$owner') and
-        ind.index_name   = upper('$indexname')
-/*                  */
-and     ind.table_owner  = tab.owner
-and     ind.table_name   = tab.table_name
-/*                  */
-and     inc.table_owner  = ind.table_owner
-and     inc.table_name   = ind.table_name
-and     inc.index_owner  = ind.owner
-and     inc.index_name   = ind.index_name
-/*                  */
-and     tbc.owner        = inc.table_owner
-and     tbc.table_name   = inc.table_name
-and     tbc.column_name  = inc.column_name
-/*                  */
-and     inx.table_owner(+)     = inc.table_owner
-and     inx.table_name(+)      = inc.table_name
-and     inx.index_owner(+)     = inc.index_owner
-and     inx.index_name(+)      = inc.index_name
-and     inx.column_position(+) = inc.column_position
-order by ind.index_name, inc.column_position
-;
-$ECHO
-
-!
-echo "index info of $2"
-exit 0
-fi
-
-
-################################################################################
 if [ "$1" = "resize" ]; then
 
 #################
@@ -2573,27 +2413,6 @@ spool off
 !
 exit 0
 fi
-
-########################################################################################################
-
-if [ "$1" = "mon_unzip" -o "$1" = "monunzip" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "ora mon_unzip <sql_monitor html file> "
-    exit 1
-  fi
-
-{
-awk  '/<html>/,/<[/]report_id>/{ sub(/base64/,"");sub(/zlib/,"");print}' $2
-awk  '/<[/]report>/{tag=0}tag==1{print}/<[/]report_id>/{tag=1}' $2 | base64 -id | openssl zlib -d
-awk  '/<[/]report>/,/<[/]html>/' $2
-} > unzip_$2
-
-echo "$2 unziped to unzip_$2"
-
-exit 0;
-fi
-
 
 ################################################################################
 if [ "$1" = "event" ]; then
@@ -5078,17 +4897,11 @@ undefine _USE_DBMS_LOCK
 col snapper_ora11higher clear
 col snapper_ora11lower  clear
 col dbms_system_accessible clear
-
 set serveroutput off
-
 
 prompt Start From $2 last $dur mintutes dba_hist_active_sess_history
 prompt ON CPU User I/O Network Commit Application Concurrency Cluster Configuration Administrative System I/O Scheduler Queueing Other Others for Wait_class%
 prompt ======================
-
-
---    and instance_number=$INST
-
 set linesize 300 pages 50
 col MACHINE for a25
 col sql_text for a12
@@ -5205,8 +5018,8 @@ order by object_name, lock_mode_held desc
     spool off
 !
 echo "instance_number=$INST"
-echo "snapper group by sql_id,evnet ,from $btime, last $dur ,top 20 sql with event"
-echo "ora snapper <begin_time> <duration> [20]"
+echo "snapper group by sql_id,event ,from $btime, last $dur ,top 20 sql with event"
+echo "./ora snapper <begin_time> <duration> [30]"
   exit 0
 fi
 ################################################################################
@@ -7181,83 +6994,6 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "realmon" ]; then
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-set linesize 250 pagesize 100
-col wtime format 9999
-col inst format 9999
-col sid format 99999
-col pid format a8
-col uname format a8 truncated
-col prgm format a5 truncated
-col modl format a5 truncated
-col actn format a5 truncated
-col opn format a6 truncated
-col blses format a7 truncated
---col wc4  format a5 truncated
-col svcn format a8 truncated
-col latch_nm format a8 truncated
-col fbon format a8 truncated
-col event format a10 truncated
-col state format a5 truncated
-col sqlid format a14
-col status format a8
-col serial# format 999999
-
-SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */
---s.WAIT_TIME wtime,
- s.inst_id inst
- ,s.sid sid
- ,s.serial#
- ,p.spid pid
- ,decode(p.BACKGROUND, 1, 'B/G', decode(s.username, NULL, 'F/G', s.username)) uname
- ,decode(p.PNAME, NULL, s.program, p.PNAME) prgm
- ,s.module modl
- --,s.action actn
- ,p.PGA_USED_MEM pgau
- ,p.PGA_ALLOC_MEM pgac
- ,p.PGA_FREEABLE_MEM pgaf
- --,x.pgax pgax
- ,c.COMMAND_NAME opn
- ,DECODE(s.PLSQL_SUBPROGRAM_ID, NULL, s.SQL_ID, NULL) sqlid
- ,DECODE(s.FINAL_BLOCKING_SESSION_STATUS, 'VALID', to_char(s.FINAL_BLOCKING_INSTANCE) || ':' || to_char(s.FINAL_BLOCKING_SESSION), NULL) blses
- ,s.STATUS status
- ,decode(s.STATE, 'WAITING', decode(s.wait_class, 'UserI/O', 'I/O', s.STATE), 'CPU') state
- ,CASE WHEN s.STATE <> 'WAITING' AND s.TIME_SINCE_LAST_WAIT_MICRO < 1000000 THEN 'cpu runqueue' ELSE event END event
- --,s.wait_class wc4
- ,s.WAIT_TIME_MICRO siw
- ,s.last_call_et lcet
- --,s.SERVER sded
- --,s.SERVICE_NAME svcn
- ,DECODE(n.NAME, NULL, NULL, '*' || n.NAME) latch_nm --latch name
- ,DECODE(s.ROW_WAIT_OBJ#, - 1, NULL, substr(to_char(s.ROW_WAIT_FILE#) || ':' || to_char(s.ROW_WAIT_BLOCK#), 1, 24)) fbon--file#:block#
-FROM GV\$SESSION s
-JOIN gv\$process p
- ON (p.inst_id = s.inst_id AND p.addr = s.paddr)
-LEFT OUTER JOIN v\$sqlcommand c
- ON (s.command = c.COMMAND_TYPE)
-LEFT OUTER JOIN v\$LATCHNAME n
- ON (s.p2 = n.latch#)
-  ,(
-   SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ inst_id
-    ,MAX(PGA_MAX_MEM) pgax
-   FROM GV\$PROCESS
-   GROUP BY inst_id
-   ) x
-WHERE x.inst_id = s.inst_id AND s.wait_class <> 'Idle'
-ORDER BY siw DESC,lcet DESC;
-$ECHO
-
-!
-echo "full nodes"
-exit 0
-fi
-
-################################################################################
 if [ "$1" = "idx2sqlid" ]; then
 
   if [ "$2" = "" ]; then
@@ -7294,7 +7030,6 @@ $ECHO
 !
 exit 0
 fi
-
 
 ################################################################################
 if [ "$1" = "ashdump" ]; then
@@ -11029,7 +10764,6 @@ if [ "$1" = "event_set"  ]; then
 echo "display all events setted in the system,e.g. Alter system set events=..."
   exit 0
 fi
-
 ###############################################################################################################
 
 if [ "$1" = "longops" ]; then
@@ -11057,7 +10791,6 @@ if [ "$1" = "longops" ]; then
 !
 echo "instance_number=$INST"
 echo "above info is top 20 long runing ops from gv_session_longops"
-#ora monlist 20
 exit 0
 fi
 
@@ -15045,71 +14778,6 @@ exit 0
 fi
 #######################################################################################################
 
-if [ "$1" = "big" ]; then
-
-  echo "ora big [n def=20] "
-
-    if [ "$2" = "" ]; then
-      topn=20
-    else
-      topn=$2
-    fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-  connect $DBUSER
-
-  set linesize 240
-  set pagesize 30
-  column segment_name    format a30;
-  column owner           format a20 trunc;
-  column tablespace_name format a20 trunc;
-  column partition_name  format a20 trunc;
-  column SEGMENT_TYPE format a20
-  col rn format 99
-  column Size_MB      format 999999999;
-  --break  on segment_name skip 1
-
-  -- compute sum label Total of Size_MB on segment_name;
-
-
---prompt Top segment 10 by extents:
---select * from
---(
---  select owner,tablespace_name, segment_name,partition_name,segment_type,extents
---      , round(bytes/(1024*1024)) Size_MB
---  from dba_segments
---  order by extents desc
---)where rownum<=20;
-    set trimspool on
-    spool ora_big_$filedate.log
-    prompt Top single segment $topn :
-
-    select rownum as rn,a.* from
-    (
-      select owner,tablespace_name, segment_name,partition_name,segment_type
-          , round(bytes/(1024*1024)) Size_MB
-      from dba_segments
-      order by Size_Mb desc nulls last
-    ) a where rownum<=$topn ;
-    $ECHO
-
-
-   prompt Top total segment $topn :
-
-     select rownum as rn,a.* from
-    (
-      select owner, segment_name,segment_type
-          , round(sum(bytes/(1024*1024))) Size_MB,count(*) as segment_cnt
-      from dba_segments group by owner,segment_name,segment_type
-      order by Size_Mb desc nulls last
-    ) a where rownum<=$topn ;
-    $ECHO
-    spool off
-!
-exit 0
-fi
-####################################################################################################
 if [ "$1" = "stat" -o "$1" = "optstats" ]; then
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -15432,45 +15100,6 @@ echo "Summarizes information about pinned/locked/unpinned cursors and their size
   exit 0
 fi
 
-###########################################################################################
-
-##if [ "$1" = "rowcache" ]; then
-##  #
-##  # This query summarizes information about row cache objects
-##  #
-##
-##  sqlplus -s /NOLOG << ! | egrep -v "Connected|ADDRESS|selected"
-##
-##    connect $DBUSER
-##
-##    set echo off
-##    set lines 80
-##    set pages 200
-##
-##    column cache_name format a30 trunc
-##    column subcache_name format a30 trunc
-##
-##    select $INST_ID parameter, count
-##    from gV\$rowcache
-##    order by 1,2;
-##    $ECHO
-##
-##    select $INST_ID cache_name, lock_mode, lock_request, count(*)
-##    from gV\$rowcache_parent
-##    group by $INST_ID cache_name, lock_mode, lock_request
-##    order by $INST_ID cache_name, lock_mode, lock_request;
-##    $ECHO
-##
-##    select $INST_ID cache#, subcache_name, existent, count(*)
-##    from gV\$rowcache_subordinate rs
-##    group by $INST_ID cache#, subcache_name, existent
-##    order by $INST_ID cache#, subcache_name, existent;
-##    $ECHO
-##!
-##
-##  exit 0
-##fi
-
 #####################################################################################################
 
 if [ "$1" = "montop" -o "$1" = "topmon" ]; then
@@ -15590,50 +15219,6 @@ SPO OFF;
 exit 0
 fi
 
-########################################################################################
-if [ "$1" = "monlist" -o "$1" = "monitor_list" ]; then
-
-    if [ "$2" = "" ]; then
-      topn=50
-    else
-      topn=$2
-    fi
-
-  sqlplus -s /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected|successfully"
-
-  connect $DBUSER
-  set linesize 200 pages 30
-
-  col sql_text format A40 trunc
-  --wrap
-  col inst_id format 99
-  col username format a10 trunc
-  col sql_id format a14
-  col date_start format a20
-  col status format a6
-  col sql_exec_id format 999999999
-  col px_req format 999
-  col px_real format 999
-  set trimspool on
-  spool ora_monlist_$filedate.log
-  select * from
-  (
-  select m.inst_id,m.username,m.sql_id, to_char(sql_exec_start, 'yyyymmdd HH24:MI:SS') date_start,
-         substr(status,1,5) as status, sql_exec_id,px_servers_requested px_req,px_servers_allocated as px_real,
-         round(m.elapsed_time/1000000) "Elapsed(s)", round(m.CPU_TIME/1000000) "Cpu(s)"
-         , sql_text
-  from gv\$sql_monitor m
-  where m.process_name='ora'--m.PX_SERVER# is null
-  --order by elapsed_time desc
-  order by sql_exec_start desc
-  )
-  where rownum<=$topn;
-  $ECHO
-  spool off
-!
- echo "order by elapsed_time,top $topn only"
- exit 0
-fi
 ###################################################################################################
 # Run a shell command. Useful when combined with repeat...
 ###################################################################################################
