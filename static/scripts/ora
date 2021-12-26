@@ -211,7 +211,6 @@ usage()
       - topseg [bid] [eid]                     show awr top segment info as AWR Segments by 'logical Reads' and 'physical Reads'
       - top_level <sql_id>                     get sub sql_id by top_level sql_id from dba_hist_active_sess_history
       - text2sqlid <text_piece>                find sql_id for given piece of key sql text
-      - tran                                   list all gv\$transaction
       - trc                                    get trace path
 
       - undo                                   show undo information
@@ -12351,38 +12350,6 @@ echo "instance_number=$INST"
   exit 0
 fi
 
-
-#####################################################################################################
-
-if [ "$1" = "transaction" -o "$1" = "tran" ]; then
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set linesize 200 pagesize 20
-    col schemaname format a10
-    col program format a15 trunc
-    col sid format 999999
-
-    select a.inst_id,a.sid,a.serial#,a.sql_id,a.prev_sql_id,a.status --as session_status
-    ,a.program,schemaname
-    ,b.phy_io,b.cr_get,b.cr_change,
-    b.status as t_status,b.start_time
-    ,(sysdate-to_date(b.start_time,'mm/dd/yy hh24:mi:ss'))*86400 as active_time_s
-    from gv\$session a,gv\$transaction b
-    where a.taddr=b.addr
-    and a.inst_id=b.inst_id
-    and a.inst_id=$INST
-    order by active_time_s;
-    $ECHO
-
-!
-echo "instance_number=$INST"
-  exit 0
-fi
-
-
-
 #####################################################################################################
 
 if [ "$1" = "obj" ]; then
@@ -14363,7 +14330,6 @@ where a.paddr = b.addr(+)
   and a.status = 'ACTIVE'
   and a.type = 'USER'
   and a.sid not in (select sid from v\$mystat where rownum = 1);
-
 
 --正在执行的SQL语句的等待事件信息
 prompt display the active sessions and events in current node
