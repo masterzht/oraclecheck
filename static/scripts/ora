@@ -12181,7 +12181,7 @@ if [ "$1" = "toparea" ]; then
             --where elapsed_time > 20000　and PARSING_SCHEMA_NAME<>'SYS'
         ) a
     where rc <=5 or rr<=5 or rt<=5
-    order by inst_id,rc;
+    order by inst#,rc;
 $ECHO
 spool off
 
