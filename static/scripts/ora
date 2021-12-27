@@ -12139,7 +12139,6 @@ fi
 
 
 #####################################################################################################
-
 if [ "$1" = "toparea" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -12156,12 +12155,12 @@ if [ "$1" = "toparea" ]; then
     col rc format 999
     col rr format 999
     col rt format 999
-    col inst_id format 99
-    col sql_id format a14
+    col inst# format 99
+    col sql_id format a13
     spool ora_toparea_$filedate.log
     select a.*
     from
-      (select inst_id as inst_id,
+      (select inst_id as inst#,
             row_number() over (partition by inst_id order by cpu_time desc) as rc,
             row_number() over (partition by inst_id order by disk_reads desc) as rr,
             row_number() over (partition by inst_id order by elapsed_Time desc) as rt,
@@ -12177,7 +12176,7 @@ if [ "$1" = "toparea" ]; then
             round(buffer_gets/greatest(executions,1),1) as avg_buf,
             disk_reads as reads,
             round(USER_IO_WAIT_TIME/1e6) as IOwait_s,
-            substr(sql_text,1,25) sql_text
+            substr(sql_text,1,20) sql_text
             from gv\$sqlarea t where inst_id=$INST
             --where elapsed_time > 20000　and PARSING_SCHEMA_NAME<>'SYS'
         ) a
