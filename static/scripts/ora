@@ -13673,10 +13673,10 @@ if [ "$1" = "tbsinc" ]; then
     set tab      off
     with max_ts_by_day as
     (
-     select to_date(substr(rtime,1,10),'mm/dd/yyyy') as rday,tablespace_id
+     select to_char(to_date(substr(rtime,1,10),'mm/dd/yyyy'),'yyyy-mm-dd hh24:mi') as rday,tablespace_id
             ,max(tablespace_usedsize) as used_blocks
      from dba_hist_tbspc_space_usage
-    group by to_date(substr(rtime,1,10),'mm/dd/yyyy'),tablespace_id
+    group by to_char(to_date(substr(rtime,1,10),'mm/dd/yyyy'),'yyyy-mm-dd hh24:mi'),tablespace_id
     )
     select rday,round(sum(used_blocks)*8/1024/1024) as total_size_g from max_ts_by_day
     group by rday
