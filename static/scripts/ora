@@ -11341,7 +11341,7 @@ if [ "$1" = "cputime" ]; then
     set linesize 250 pagesize 30
     set tab      off
     set verify off
-    col total_time_day for a20
+    col total_time_day for 9999999999
     col stat_time_day for a20
     define statname='DB CPU'
     spool ora_cputime_$filedate.log
@@ -11373,7 +11373,8 @@ if [ "$1" = "cputime" ]; then
     order by stat_time_day;
     $ECHO
 
-
+    col snap_end_time for a20
+    col snap_begin_time for a20
     Pro top 20 cputime by snap:
     with stat_time as
     (
