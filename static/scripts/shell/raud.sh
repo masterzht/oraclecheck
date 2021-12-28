@@ -1,3 +1,6 @@
+#!/bin/bash
+. /home/oracle/.bash_profile
+
 alias rm='rm'
 dict=v\$parameter
 for i in `ps -ef|grep ora_smon|grep -v grep|awk '{print $8}'`
@@ -12,5 +15,5 @@ exit
 EOF`
 
 cd $val
-rm -rf *.aud
+ls *.aud | xargs -n 1000 rm -f
 done
