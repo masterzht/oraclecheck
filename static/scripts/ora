@@ -103,7 +103,6 @@ usage()
 
       - dblink/db_link/link                    show dblink Information
       - dbtime                                 dbtime by day / by top
-      - ddl  <name> [owner] [type]             DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
       - ddl/get_ddl <name>                     DDL info : dbms_metadata.get_ddl (Case Insensitive); all interactive mode
       - degree | parallel                      degree of objects (tables and indexes) ,and running parallel processes
       - dg | dg_info                           data guard :contributed by Albert Liang
@@ -7922,6 +7921,8 @@ if [ "$1" = "dbtime" -o "$1" = "db_time" ]; then
     set linesize 200 pagesize 1000
     set trims on
     set trimspool on
+    col total_dbtime_day for 9999999999
+    col stat_time_day for a20
     spool ora_dbtime_$filedate.log
 
     with stat_time as
@@ -7950,6 +7951,8 @@ order by stat_time_day desc;
 $ECHO
 
 Pro top 20 dbtime :
+col snap_begin_time for a20
+col snap_end_time for a20
 with stat_time as
 (
 select instance_number,begin_snap_id, end_snap_id,
@@ -8097,129 +8100,6 @@ $ECHO
 !
 exit 0
 fi
-
-
-
-################################################################################
-if [ "$1" = "ddl" ]; then
-
-  ##if [ "$2" = "" -o "$3" = ""  ]; then
-  ##  echo "ora ddl owner object_name object_type"
-  ##  exit 1
-  ##fi
-
-    if [ "$2" = ""  ]; then
-      read -p "Please input object_name:" name
-       if [ -z "${name}" ];then
-       echo "No input,exit!"
-       exit 1
-       fi
-    else
-        name=$2
-    fi
-
-   if [ "$3" = ""  ]; then
-    defowner=`echo "select trim(12345||LISTAGG (owner,',') WITHIN GROUP (ORDER BY owner)) AS owner from dba_objects
-     where object_name=upper('$name') and object_type not like '%PARTITION' and rownum<=4;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-100`
-    if [ -z "${defowner}" ];then
-       echo "Object_name $name not found in any schema,please check again!"
-       exit 1
-    fi
-   read -p "Please input object_owner,default is [$defowner]:" owner
-    if [ -z "${owner}" ];then
-       owner=$defowner
-    fi
-   else
-      owner=$3
-  fi
-
-  #owner=$2
-  #name=$3
-
-  ##type=$4
-
-  if [ "$4" = ""  ]; then
-
-   deftype=`echo "select trim(12345||LISTAGG (object_type,',') WITHIN GROUP (ORDER BY null)) AS obj_type from dba_objects
-          where owner=upper('$owner') and object_type not like '%PARTITION' and object_name=upper('$name') and rownum<=4;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-100`
-   if [ -z "${deftype}" ];then
-      echo "object $owner.$name not found,please check again!"
-      exit 1
-   fi
-
-   read -p "Please input object_type,default is [$deftype]:" type
-   if [ -z "${type}" ];then
-        type=$deftype
-   fi
-  else
-   type=$4
-  fi
-
-
-
-  echo DDL of $owner.$name TYPE is : $type
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-
-    set linesize 600 pagesize 0
-    set trims on
-    set long 99999999
-    set feedback off
-    col a for a600 wrapped word
-
-    spool ora_DDL_${type}_${owner}_${name}.log
-
-    begin
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'STORAGE',false);
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'TABLESPACE',false);
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'SEGMENT_ATTRIBUTES', false);
-       DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM,'PRETTY',true);
-    end;
-    /
-    select dbms_metadata.get_ddl(upper('$type'),upper('$name'),upper('$owner'))||';' a from dual;
-
-    spool off
-
-!
-
-   if [ "${type}" = "table" -o "${type}" = "TABLE" ]; then
-
-   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-
-    set linesize 600 pagesize 0
-    set trims on
-    set long 99999999
-    set feedback off
-    col a for a600 wrapped word
-
-    spool ora_DDL_${type}_${owner}_${name}.log append
-
-    begin
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'STORAGE',false);
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'TABLESPACE',false);
-       --dbms_metadata.set_transform_param (dbms_metadata.session_transform,'SEGMENT_ATTRIBUTES', false);
-       DBMS_METADATA.SET_TRANSFORM_PARAM(DBMS_METADATA.SESSION_TRANSFORM,'PRETTY',true);
-    end;
-    /
-    select dbms_metadata.get_ddl('INDEX',index_name,upper('$owner'))||';' a
-    from dba_indexes where table_name=upper('$name') and owner=upper('$owner')
-    ;
-
-    spool off
-!
-   fi
-
-
-exit 0
-fi
-
-
 
 ###############################get_ddl#################################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
