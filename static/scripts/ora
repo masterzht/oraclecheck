@@ -11341,7 +11341,8 @@ if [ "$1" = "cputime" ]; then
     set linesize 250 pagesize 30
     set tab      off
     set verify off
-
+    col total_time_day for a20
+    col stat_time_day for a20
     define statname='DB CPU'
     spool ora_cputime_$filedate.log
     Pro cputime by day:
