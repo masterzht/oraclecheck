@@ -155,8 +155,6 @@ usage()
       - pga_detail <os_pid>|-mem <size_M>      Gives details on how PGA memory is consumed by a process (given its os PID) : ora pga_detail <pid>
                                                or by the set of precesses consuming more than <size_mb> MB of PGA memory   : ora pga_detail -mem 100
       - pid  <pid>                             show detailed pid(from OS) info
-      - print_table <sql_text>                 display sql result in single column mode(note: when v\$ view used,\\is needed)
-      - process <pid>                          process detail info ,in print_table mode
       - process_dump <pid> <level>
       - processes [<min_mb>]                   display process pga memory info; similiar with pga
       - purge <sql_id>                         SYS.DBMS_SHARED_POOL.PURGE
@@ -171,7 +169,6 @@ usage()
 
       - seq                                    show sequences have bad setting (order_flag='Y' or cache_size<=20)
       - seg <object_name>                      segment info for given object
-      - session  <sid>                         session detail info ,in print_table mode,in rac ,-i maybe needed
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
       - session_event [all]|<noidle>|<px>      ora session_event | ora session_event px | ora session_event noidle
       - snapper \"12:10\" 40                   AAS
@@ -2242,40 +2239,6 @@ echo "event count in gv\$session status='ACTIVE' group by inst_id, event"
 echo "instance_number=$INST"
 exit 0
 fi
-
-
-########################################################################################################
-if [ "$1" = "session" -o "$1" = "sid" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "ora session <sid> "
-    exit 1
-  fi
-
-  ora -i $INST print_table "select a.*,lpad(''-'',60,''-'') as process_info,b.spid,b.tracefile,b.pga_used_mem \
-                            ,c.sql_id||'':''||substr(c.SQL_TEXT,1,150) as running_sql \
-                     from gv\$session a,gv\$process b,gv\$sqlarea c \
-                     where a.sid=$2 and a.paddr=b.addr and a.inst_id=$INST and b.inst_id=$INST \
-                          and a.sql_id=c.sql_id(+) and c.inst_id(+)=$INST "
-
-
-  echo "instance_number=$INST"
-exit 0;
-fi
-
-########################################################################################################
-if [ "$1" = "process" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "ora process <spid> "
-    exit 1
-  fi
-
-  ora -i $INST print_table "select * from gv\$process where spid=$2 and inst_id=$INST"
-echo "instance_number=$INST"
-exit 0;
-fi
-
 
 ################################################################################
 if [ "$1" = "dir" ]; then
@@ -5558,95 +5521,14 @@ if [ "$1" = "hintname" -o "$1" = "hint" ]; then
 exit 0
 fi
 
-
 ################################################################################
-if [ "$1" = "print_table" ]; then
 
-  if [ "$2" = "" ]; then
-    echo "ora print_table  \"select * from t1 where object_name=''T1''\""
-    exit 1
-  fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected|successfully"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
---usage :  @print_table "select * from t1 where object_name=''T1''"
-set verify off serveroutput on size unlimit
-declare
-    l_theCursor     integer default dbms_sql.open_cursor;
-    l_columnValue   varchar2(4000);
-    l_status        integer;
-    l_descTbl       dbms_sql.desc_tab;
-    l_colCnt        number;
-    l_rowCnt        number;
-
-    procedure execute_immediate( p_sql in varchar2 )
-    is
-    BEGIN
-        dbms_sql.parse(l_theCursor,p_sql,dbms_sql.native);
-        l_status := dbms_sql.execute(l_theCursor);
-    END;
-    procedure p ( p_str in varchar2 )
-    is
-        l_str   long := p_str;
-    begin
-        loop
-            exit when l_str is null;
-            dbms_output.put_line( substr( l_str, 1, 250 ) );
-            l_str := substr( l_str, 251 );
-        end loop;
-    end;
-begin
-    execute_immediate( 'alter session set nls_date_format= ''yyyy-mm-dd hh24:mi:ss'' ');
-    dbms_sql.parse(  l_theCursor,
-                     replace( '$2', '"', ''''),
-                     dbms_sql.native );
-
-    dbms_sql.describe_columns( l_theCursor,l_colCnt, l_descTbl );
-    l_rowCnt :=0;
-
-    for i in 1 .. l_colCnt loop
-        dbms_sql.define_column( l_theCursor, i, l_columnValue, 4000 );
-
-    end loop;
-
-    l_status := dbms_sql.execute(l_theCursor);
-    --tiger add:limit with 1000 rows
-    while ( dbms_sql.fetch_rows(l_theCursor) > 0 and l_rowCnt<1000) loop
-        for i in 1 .. l_colCnt loop
-            dbms_sql.column_value( l_theCursor, i, l_columnValue );
-            p( rpad( l_descTbl(i).col_name, 30 ) || ': "' || l_columnValue || '"' );
-        end loop;
-        l_rowCnt:=l_rowCnt+1;
-        dbms_output.put_line( '-----------------' );
-    end loop;
-    --execute_immediate( 'alter session set nls_date_format=''yyyy-mm-dd hh24:mi:ss'' ');
-    dbms_output.put_line( 'total rows = '||l_rowCnt );
-exception
-    when others then
-        execute_immediate( 'alter session set nls_date_format=''dd-MON-yy'' ');
-        raise;
-end;
-/
-
-!
-#echo "example:ora print_table \"select * from gv\\\$sql_shared_cursor where sql_id=''69k5bhm12sz98''\""
-exit 0
-fi
-
-
-################################################################################################################
 if [ "$1" = "sharing" ]; then
 
   if [ "$2" = "" ]; then
     echo "ora sharing <sql_id>"
     exit 1
   fi
-
- ## ora print_table "select * from gv\$sql_shared_cursor where sql_id=''$2''"
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -6743,7 +6625,7 @@ if [ "$1" = "top" ]; then
     set pagesize 30
     set linesize 200
     set trimspool on
-    spool ora_topash_$filedate.log
+    spool ora_top_$filedate.log
     prompt
     prompt Displays the latest $dur Minutes and More Than $per_buffer_gets logical_read/per ,Execution > $execution SQL
     prompt=========================
@@ -6785,8 +6667,8 @@ if [ "$1" = "top" ]; then
 
 !
 echo "instance_number=$INST"
-echo "Usage: ./ora topash [10]"
-echo "Usage: ./ora -i 2 topash 10"
+echo "Usage: ./ora top [60]"
+echo "Usage: ./ora -i 2 top 60"
 exit 0
 fi
 
