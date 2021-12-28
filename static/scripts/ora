@@ -64,7 +64,6 @@
 # 2019-10-04 1.0.4 new command  sparse_index , sparse_table , hintname; check command add foreign key no index
 # 2019-09-29 1.0.3 new command : load (awr load profile,in batch mode), top_seg (awr segment order by ,in batch mode)
 # 2019-09-22 1.0.1 new command :tbs_usage (fast but may not accurate), tbs_last (from snapshot,fast but may not accurate)
-# 2019-09-18 1.0.0 fix few bugs
 usage()
 {
   echo "
@@ -120,6 +119,7 @@ usage()
       - file | files                           list spfile/control_file/datafile/tempfile names
       - fulltext  <sql_id>                     display the entire sql_id SQL text(lob),no more than 32767(v\$.sql_text has a limit of 1000)
       - gather <owner> <table_name>            gather table stats(cascade=>true,no_invalidate=>false)
+      - gc <event_name> <minutes>              show gc event tables and blocks
 
       - histogram <owner><tab_name><col_name>  get histogram value ratio
       - highparse  [500]                       ora highparse  <500 is default> ,top 50 only (same force_matching_signature ,diff sql_id)
@@ -2690,6 +2690,74 @@ echo "instance_number=$INST"
 exit 0
 fi
 
+##################################################
+if [ "$1" = "gc" ]; then
+
+ if [ "$2" = "" ]; then
+   echo 'Usage: ./ora gc "gc cr block 2-way" 60'
+   exit 1
+ fi
+
+  if [ "$3" = "" ]; then
+    dur=30
+  else
+    dur=$3
+  fi
+
+  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
+    set trimspool on
+    set lines 160 pages 100
+    undef event
+    col object_name format A32
+    col object_type format A20
+    col event format A30
+    col owner format A20
+    col inst# for 999
+    col cnt format 999999999
+    set echo on
+    undef past_mins
+    spool ora_snapper_ash_$filedate.log
+prompt
+prompt Waiting for Event $2 last $dur mintutes Objects From dba_hist_active_sess_history
+prompt ======================
+with ash_gc as (select * from (
+   select /*+ materialize */ INSTANCE_NUMBER as inst#, event, current_obj#, count(*) cnt
+   from dba_hist_active_sess_history where event like '%'||lower('$2') ||'%'
+   and sample_time > sysdate-$dur/60/24
+   group by INSTANCE_NUMBER,event, current_obj#
+   ))
+select * from (select inst#,event, owner, object_name,object_type, cnt
+ from ash_gc a, dba_objects o
+ where (a.current_obj#=o.data_object_id or a.current_obj#=o.object_id)
+ and a.current_obj#>=1
+ union
+ select inst# as inst#, event, '','','Undo Header/Undo block' , cnt
+ from ash_gc a
+ where a.current_obj#=0
+ union
+ select inst#, event, '','','Undo Block' , cnt
+ from ash_gc a
+ where a.current_obj#=-1
+ ) order by cnt desc;
+
+with ash_gc as
+(select * from (
+select /*+ materialize */ INSTANCE_NUMBER as inst#, event, current_file#, current_block#, count(*) cnt
+from dba_hist_active_sess_history where event like '%'||lower('$2') ||'%'
+and sample_time> sysdate- $dur/60/24
+group by INSTANCE_NUMBER,event, current_file#, current_block#
+))
+select * from ash_gc order by cnt desc;
+
+    $ECHO
+    spool off
+!
+echo "instance_number=$INST"
+echo "snapper group by sql_id,event ,from $btime, last $dur ,top 20 sql with event"
+echo "./ora snapper <begin_time> <duration> [30]"
+  exit 0
+fi
 #########################################snapper_ash###################################################
 
 #   if [ "$2" = "" ]; then
@@ -2733,6 +2801,7 @@ fi
 #      starttime="to_date('$btime','yyyy/mm/dd hh24:mi')"
 #   fi
 #   #echo $starttime
+
 
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
@@ -14068,6 +14137,15 @@ select RESOURCE_NAME,
 from v\$resource_limit
 where RESOURCE_NAME in ('processes', 'sessions');
 
+prompt display all status of all sessions
+prompt =======================
+col program for a50
+select inst_id, status,username,count(*) from gv\$session where type<>'BACKGROUND'
+group by inst_id,status,username order by 1,2,4 desc;
+col service_name for a30
+select inst_id,service_name,count(*) from gv\$session where type<>'BACKGROUND'
+group by inst_id,service_name order by 1,3 desc,2;
+
 col program for a30
 col SECONDS for a7
 col KILL_SQL for a56
@@ -14119,12 +14197,6 @@ where a.type = 'USER'
   and a.wait_class <> 'Idle'
   and a.sid not in (select sid from v\$mystat where rownum = 1)
 order by LAST_CALL_ET desc;
-
-prompt display all status of all sessions
-prompt =======================
-col program for a50
-select inst_id, status,username,count(*) from gv\$session where type<>'BACKGROUND'
-group by inst_id,status,username order by 1,2,4 desc;
 
 prompt display the session status that not active in current node
 prompt =======================
