@@ -6489,7 +6489,6 @@ if [ "$1" = "gather" ]; then
     connect $DBUSER
 
     set feedback off
-
     exec dbms_stats.gather_table_stats('$2','$3',cascade=>true,no_invalidate=>false);
 
 !
