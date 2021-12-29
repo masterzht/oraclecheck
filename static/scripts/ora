@@ -37,7 +37,6 @@ usage()
       - batch_event  [48]|<bid> <eid>          awr top 5 event in batch mode,fixed 48 snaps or given bid and eid,exe ./ora -i 2 batch_event
       - batch_load   [48]|<bid> <eid>          awr load profile in batch mode,fixed 48 snaps or given bid and eid
       - batch_iostat [48]|<bid> <eid>          awr top 5 reads tablespace in batch mode (awr: Tablespace IO Stats) 12.1 and below
-
       - big_by_tbs <tbs_name> [20]             top n big size objects by tablespace name
       - bind | binds <sql_id>                  display bind capture information for  specified cursor
 
