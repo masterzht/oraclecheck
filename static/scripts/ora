@@ -9,61 +9,6 @@
 # 2021-10-13 3.7.4 add active , Show Active Session and SQL For Current Node.
 # 2021-10-13 3.7.4 add ORA/ora <ErrorNumber>
 # 2021-06-18 3.7.3 add awrsqrpt
-# 2020-11-06 3.7.2 load command enhencement
-# 2020-11-06 3.7.1 new command logon, calculate logon frequency using listener.log
-# 2020-11-03 3.7   column width adjust
-# 2020-09-17 3.6.4 merge sga_stats into sga
-# 2020-09-14 3.6.3 fix bug for ddl partitioned table
-# 2020-08-19 3.6.2 add get timestamp bind value from v#SQL_BIND_CAPTURE
-# 2020-08-12 3.6.1 new command highparse2, find top CPU SQL with same force_matching_signature (sql not using bind variables)
-# 2020-08-06 3.6   fix column display width in 11204
-# 2020-06-01 3.5.2 fix column display width in 12.2
-# 2020-05-28 3.5   review all command ; ddl support interactive; fix bugs......
-# 2020-05-22 3.2.2 fix recover(display instance smon recover progress) bug
-# 2020-05-06 3.2.1 sep sql_check and sql_check_his
-# 2020-05-06 3.2.0 sql_check add 2 charater: filter and hash join
-# 2020-03-24 3.1.7 modify default lock command not to display object/rowid info, use -a to display
-# 2020-03-24 3.1.6 new command snap or snapshot;new commang awr_baseline
-# 2020-03-23 3.1.5 fix bug for lock command :dedup for lack of inst_id condition, contributed by Albert Liang
-# 2020-03-17 3.1.4 new command mon_bind ;new command pc2 (show if current phv is the best)
-# 2020-03-16 3.1.3 rewrite new pc,rename pc to pc_old
-# 2020-03-15 3.1.2 to support sql_patch opt_param ,fix bug
-# 2020-03-13 3.1.1 session command add sql_text (running)
-# 2020-02-20 3.1.0 rename cursor_share to high_version,add get single sql_id info ;  fix if sqlhc.sql file exist bug
-# 2020-02-20 3.0.9 fix bug and enhencement(lock command)
-# 2020-01-11 3.0.8 fix bug and enhencement
-# 2020-01-08 3.0.7 fix bug and enhencement
-# 2020-01-06 3.0.6 sql_check ; enhencement
-# 2020-01-02 3.0.4 fix bug
-# 2019-12-26 3.0.3 enhencement
-# 2019-12-17 3.0.2 new command [expdash]
-# 2019-12-16 3.0   ==========================add sql check=========================
-# 2019-12-16 2.0.3 add spool to log for most operation
-# 2019-12-14 2.0.1 adjust [sql] command ,add event info from gv_active_session_history; new command [dup_index]
-# 2019-12-09 2.0   =========================add -a -s -i option====================
-# 2019-12-08 1.3.0 add [table] an interactive mode : ora table <tab_name> [owner] ; add -e mode; rename index to [tabidx]; new commmand index ;
-# 2019-12-07 1.2.9 add [awr] an interactive mode
-# 2019-12-05 1.2.8 new command : [resize] :resize datafile to shrink tablespace(just show command,no execute)
-# 2019-12-03 1.2.7 new command : [sql_baseline]
-# 2019-12-01 1.2.6 new command : [col] display column info
-# 2019-11-27 1.2.5 support sql_patch for 12.2+
-# 2019-11-22 1.2.2 new command : tbs_frag
-# 2019-11-14 1.2.0 adjust many column display format; new command : process ,session ; change xpo and xo to my code mode;fix awr bug(12c)
-# 2019-11-10 1.1.7 new command : dir
-# 2019-11-10 1.1.6 new command : iostat (only for 12.1 and below version)
-# 2019-11-08 1.1.5 new command : file/files
-# 2019-11-05 1.1.4 new command : toparea_by_sig ; topsql_by_plan
-# 2019-11-04 1.1.3 tophis command,order by cpu|read|time 3 option ;load command add db_cpu and db_time 2 column
-# 2019-11-03 1.1.2 new command events: batch display awr top 5 events
-# 2019-11-01 1.1.1 highparse add sql_id column;
-# 2019-10-30 1.1.0 new command : big_by_tbs ;fix sparse_table bug ;rename ashsession to ash; rename dashsession to dash;rename segment to seg
-# 2019-10-23 1.0.9 adjust output display format for : load
-# 2019-10-22 1.0.8 new command : xo (xplan_awr) / xpo (xplan_cursor) (add execution order column in execution plan);sql command: column adjust
-# 2019-10-14 1.0.6 new command : drop  profile|patch|baseline  <name>
-# 2019-10-09 1.0.5 fix some display issue; new command  stat
-# 2019-10-04 1.0.4 new command  sparse_index , sparse_table , hintname; check command add foreign key no index
-# 2019-09-29 1.0.3 new command : load (awr load profile,in batch mode), top_seg (awr segment order by ,in batch mode)
-# 2019-09-22 1.0.1 new command :tbs_usage (fast but may not accurate), tbs_last (from snapshot,fast but may not accurate)
 usage()
 {
   echo "
@@ -184,11 +129,10 @@ usage()
       - sql_patch <sqlid> <hint>               ora sql_patch <sqlid> <hint>
       - sql_profile <sqlid> <sqlid> <PHV>      ora sql_profile <sqlid> <sqlid> <PHV> --->fix use given plan
       - sqlhc <sqlid1> [sqlid2] [sqlid3]...    collect sqlhc for given sqlids
-      - stats                                  show infomation about stats collection
+      - stats                                  show infomation about statistic collection
       - sysmetric \"yyyy/mm/dd hh24:mi\" [30]    DBA_HIST_SYSMETRIC_HISTORY from given time last for default 30 minutes
 
       - table/tab  <tab_name> [owner]          show detail info for given table
-      - tabidx    <table_name>                 get table index info
       - tbs_last                               fast show tablespace info from dba_hist_tbspc_space_usage last snapshot
       - tbs_usage                              fast get tablespace usage
       - tbs_frag                               tablespace fragment info
@@ -6405,14 +6349,8 @@ echo "instance_number=$INST"
 exit 0
 fi
 
-
 ################################################################################
 if [ "$1" = "check" ]; then
-
- # if [ "$2" = "" ]; then
- #   echo "ora check xxx"
- #   exit 1
- # fi
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -6518,60 +6456,6 @@ ora temp
 ora undo
 exit 0
 fi
-
-
-################################################################################
-if [ "$1" = "tabidx" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "ora tabidx table_name"
-    exit 1
-  fi
-
-  ver2=`get_ver 2`
-  if [ $ver2 -lt 11 ]; then
-    ver2='--'
-  else
-    ver2=''
-  fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set linesize 150 pagesize 200
-    col column_name format a30
-    col table_owner format a20
-    col table_name format a30
-    col index_name format a30
-    col partitioned format a11
-
-    break on TABLE_OWNER skip 1
-
-
-    Pro index info :
-
-    select table_owner,table_name,index_name,status,partitioned,
-        $ver2 visibility,
-        index_type
-    from dba_indexes
-    where table_name=upper('$2')
-    order by 1,2,3;
-    $ECHO
-
-     break on index_name skip 1
-     Pro index columns :
-    select table_owner,table_name,index_name,COLUMN_POSITION,column_name
-    from dba_ind_columns
-    where  table_name=upper('$2')
-    order by 1,2,3,4;
-    $ECHO
-
-
-!
-exit 0
-fi
-
 ################################################################################
 if [ "$1" = "event2sqlid" ]; then
 
@@ -14275,144 +14159,6 @@ if [ "$1" = "seg" -o "$1" = "segment" ]; then
  echo "ora seg <seg_name>"
 exit 0
 fi
-#######################################################################################################
-
-if [ "$1" = "stat" -o "$1" = "optstats" ]; then
-
-    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    Prompt "Top 50 DBA_OPTSTAT_OPERATIONS: top 30"
-    set linesize 200 pagesize 100
-    col OPERATION format a30
-    col target format a30 trunc
-    col start_time format a20
-    col SAVTIME format a20
-    set trimspool on
-    spool ora_stats_$filedate.log
-
-    select * from
-    (
-    select operation,target,to_char(start_time,'yyyy-mm-dd hh24:mi:ss') as start_time,
-    extract( day from (end_time-start_time)) *24*60+
-    extract( hour from (end_time-start_time)) *60+
-    extract( minute from (end_time-start_time)) as duration_Min
-    from DBA_OPTSTAT_OPERATIONS
-    where (target not like 'SYS.%' or target is null)--and operation like '%auto%'
-    order by start_time desc
-    )
-    where rownum<=30;
-    $ECHO
-
-    Prompt All Stale Tables not locked ,last_analyzed range (group by owner):
-    col owner format a20 trunc
-    col table_name format a20 trunc
-    col LAST_ANALYZED format a20
-
-    select owner,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss') as cur_time,
-        sum(case when ceil(sysdate-LAST_ANALYZED)<=1 then 1 end) days_1,
-        sum(case when ceil(sysdate-LAST_ANALYZED)>1  and ceil(sysdate-LAST_ANALYZED)<=10 then 1 end) days_1_10,
-        sum(case when ceil(sysdate-LAST_ANALYZED)>10 and ceil(sysdate-LAST_ANALYZED)<=30 then 1 end) days_10_30,
-        sum(case when ceil(sysdate-LAST_ANALYZED)>30 then 1 end) days_30
-    from dba_tab_statistics
-    where STALE_STATS='YES' AND stattype_locked not IN ('ALL', 'DATA')
-    group by owner;
-    $ECHO
-
-    Prompt Table Stats locked (no sys created uses) top 50:
-    select * from
-    (
-    select owner,table_name,object_type,stattype_locked,num_rows,STALE_STATS as stale
-          ,to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed
-    from   dba_tab_statistics t
-    WHERE t.stattype_locked IN ('ALL', 'DATA')
-         and owner not in ('SQLTXPLAIN','SYS','SYSTEM','PUBLIC','XDB','WMSYS','SYSMAN','ORDSYS','CTXSYS','MDSYS','OLAPSYS','EXFSYS','RMAN','ORDDATA')
-         --and STALE_STATS
-    order by last_analyzed
-    )
-    where rownum<=50;
-    $ECHO
-
-    pro Num_rows=0 and Stale=Y / LAST_ANALYZED is null (maybe no segment /new create) (sample 50):
-    col partition_name format a15 trunc
-    select a.owner,a.table_name,object_type,a.partition_name,stattype_locked,stale_stats
-          ,to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') last_analyzed,num_rows,blocks--,bytes
-    from dba_tab_statistics a--,dba_segments b
-    where a.object_type='TABLE' and
-       (LAST_ANALYZED is null or (num_rows=0 and STALE_STATS='YES'))
-     --and (a.table_name=b.segment_name(+)  and a.owner=b.owner(+) and b.segment_type(+)='TABLE')
-     and table_name not in (select table_name from dba_tables where temporary='Y')
-     and a.owner not in ('SQLTXPLAIN','SYS','SYSTEM','PUBLIC','XDB','WMSYS','SYSMAN','ORDSYS','CTXSYS','MDSYS','OLAPSYS','EXFSYS','RMAN','ORDDATA')
-     and rownum<=50;
-     $ECHO
-    --order by 1,2;
-
-    prompt Stale tables(no sys users)  top 50:
-    col owner format a15 trunc
-    col table_name format a20 trunc
-    col partition_name format a8 trunc
-    col subpartition_name format a8 trunc
-    col RUN_TIME format a20
-    select * from
-    (
-        select a.owner,a.table_name,a.partition_name,a.SUBPARTITION_NAME,num_rows,a.blocks ,b.blocks as real_blocks,
-        to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
-        to_char(sysdate,'yyyy-mm-dd hh24:mi:ss') as run_time,round((sysdate-LAST_ANALYZED),2) as stale_days
-        ,stattype_locked
-        from dba_tab_statistics a,dba_segments b
-        where STALE_STATS='YES' --and (last_analyzed<sysdate-1)
-        and a.owner not in ('SYS','SYSTEM','PUBLIC','XDB','WMSYS','SYSMAN','ORDSYS','CTXSYS','MDSYS','OLAPSYS','EXFSYS','RMAN','ORDDATA')
-        and a.owner not like 'APEX%'
-        and (a.owner=b.owner(+) and a.table_name=b.segment_name(+) and b.segment_type(+)='TABLE')
-        and sysdate-LAST_ANALYZED>1
-        order by stale_days desc
-    ) where rownum<=50;
-    $ECHO
-
-    Pro DBA_TAB_STAT_PREFS sample 20:
-    col PREFERENCE_NAME format a30
-    col PREFERENCE_VALUE format a70 trunc
-    select * from DBA_TAB_STAT_PREFS where rownum<=20;
-    $ECHO
-
-     Pro Dba_Autotask_task:
-     col auto_collect_status format a80
-     select nvl((select client_name||' '||status as auto_collect_status from Dba_Autotask_task
-     where client_name='auto optimizer stats collection'),'Auto stats collection task not ENABLED!!!') as auto_collect_status
-     from dual;
-     $ECHO
-
-     Pro dba_autotask_client:
-     col CLIENT_NAME format a50
-    select client_name,status
-    from dba_autotask_client
-    where client_name='auto optimizer stats collection';
-    $ECHO
-
-    Pro table with long Stats colleciton top 20:
-    col object_name format a30
-    col temporary format a10
-    select * from
-     (select * from
-        (select a.owner,object_name,obj#,temporary
-               ,to_char(lag(savtime) over ( order by savtime),'yyyy-mm-dd hh24:mi:ss') as start_time
-               , to_char(savtime,'yyyy-mm-dd hh24:mi:ss') as savtime
-               ,round((cast(savtime as date) - cast(lag(savtime) over ( order by savtime) as date))*24*60,2) as dur_min
-               ,rowcnt,blkcnt
-         from dba_objects a,sys.WRI\$_OPTSTAT_TAB_HISTORY b
-        where a.object_id=b.obj#
-        and savtime >=(select max(start_time) from DBA_OPTSTAT_OPERATIONS where operation='gather_database_stats(auto)')
-        and savtime <=(select max( end_time ) from DBA_OPTSTAT_OPERATIONS where operation='gather_database_stats(auto)')
-        ) --where dur_min>1
-     order by dur_min desc
-     )where rownum<=20  ;
-     $ECHO
-     spool off
-!
-exit 0
-fi
-
 ####"ORA"####灵感来自渤海证券问题处理 ORA-00020: maximum number of processes (2000) exceeded###
 if [ "$1" = "ORA" -o "$1" = "ora" ]; then
   if [ "$2" = "00020" -o "$2" = "20" ]; then
@@ -14514,9 +14260,6 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
   # This query summarizes information about pinned/locked/unpinned cursors
   # and their sizes
   #
-
-  ##create_format_functions
-
   sqlplus -s /NOLOG << ! | egrep -v "Connected|ADDRESS|selected"
 
     connect $DBUSER
