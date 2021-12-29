@@ -1,27 +1,9 @@
 set serveroutput on size 100000
 REM --------------------------------------------------------------------------------------------------
-REM Author: Riyaj Shamsudeen @OraInternals, LLC
-REM         www.orainternals.com
-REM
-REM Functionality: This script is to print GC processing timing for the past N seconds or so
-REM **************
-REM   
-REM Source  : gv$sysstat
-REM
-REM Note : 1. Keep window 160 columns for better visibility.
-REM
-REM Exectution type: Execute from sqlplus or any other tool.  Modify sleep as needed. Default is 60 seconds
-REM
-REM Parameters: 
-REM No implied or explicit warranty
-REM
 REM Please send me an email to rshamsud@orainternals.com for any question..
 REM  NOTE   1. Querying gv$ tables when there is a GC performance issue is not exactly nice. So, don''t run this too often.
 REM         2. Until 11g, gv statistics did not include PQ traffic.
 REM         3. Of course, this does not tell any thing about root cause :-)
-REM @copyright : OraInternals, LLC. www.orainternals.com
-REM Version	Change
-REM ----------	--------------------
 REM --------------------------------------------------------------------------------------------------
 set serveroutput on size 100000
 undef event_name
@@ -73,18 +55,18 @@ declare
 	l_sleep number:=60;
 	l_cr_blks_served number :=0;
 	l_cur_blks_served number :=0;
-	
+
 	i number:=1;
 	ind varchar2(32);
 begin
-      
-	for c1 in ( 
+
+	for c1 in (
 	          select inst_id ||'-'|| event || '-' || wait_time_milli indx,
                          inst_id, event, wait_time_milli, wait_count, tot from (
-                            select inst_id, event,wait_time_milli, wait_count, 
+                            select inst_id, event,wait_time_milli, wait_count,
                             sum (wait_count) over(partition by inst_id, event order by inst_id rows between unbounded preceding and unbounded following ) tot
                             from (
-                               select * from gv$event_histogram where event like '%&&event_name%'
+                               select * from gv$event_histogram where event like '%gc%'
                                order by inst_id, event#, WAIT_TIME_MILLI
                              )
                   )
@@ -99,19 +81,19 @@ begin
 		b_tot (c1.indx) := c1.tot;
 		i := i+1;
 	end loop;
- 
-        select upper(nvl('&sleep',60)) into l_sleep from dual;
+
+        select upper(nvl('60',60)) into l_sleep from dual;
 	dbms_lock.sleep(l_sleep);
-  
+
         i:=1;
 
-	for c2 in ( 
+	for c2 in (
 	          select inst_id ||'-'|| event || '-' || wait_time_milli indx,
                          inst_id, event, wait_time_milli, wait_count, tot from (
-                            select inst_id, event,wait_time_milli, wait_count, 
+                            select inst_id, event,wait_time_milli, wait_count,
                             sum (wait_count) over(partition by inst_id, event order by inst_id rows between unbounded preceding and unbounded following ) tot
                             from (
-                               select * from gv$event_histogram where event like '%&&event_name%'
+                               select * from gv$event_histogram where event like '%gc%'
                                order by inst_id, event#, WAIT_TIME_MILLI
                              )
                   )
@@ -149,5 +131,4 @@ begin
 	 dbms_output.put_line ( ' ');
 end;
 /
-set verify on 
-
+set verify on
