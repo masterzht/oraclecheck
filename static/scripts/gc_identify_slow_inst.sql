@@ -16,7 +16,7 @@ REM Parameters:
 REM No implied or explicit warranty
 REM
 REM Please send me an email to rshamsud@orainternals.com for any question..
-REM  NOTE   1. Querying gv$ tables when there is a GC performance issue is not exactly nice. So, don't run this too often.
+REM  NOTE   1. Querying gv$ tables when there is a GC performance issue is not exactly nice. So, don t run this too often.
 REM         2. Until 11g, gv statistics did not include PQ traffic.
 REM         3. Of course, this does not tell any thing about root cause :-)
 REM @copyright : OraInternals, LLC. www.orainternals.com
