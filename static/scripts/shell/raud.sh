@@ -15,5 +15,5 @@ exit
 EOF`
 
 cd $val
-ls *.aud | xargs -n 1000 rm -f
+ls | xargs -n 1000 rm -f
 done
