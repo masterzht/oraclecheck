@@ -2709,10 +2709,10 @@ if [ "$1" = "gc" ]; then
     set trimspool on
     set lines 160 pages 100
     undef event
-    col object_name format A32
-    col object_type format A20
-    col event format A30
-    col owner format A20
+    col object_name format a32
+    col object_type format a22
+    col event format a30
+    col owner format a20
     col inst# for 999
     col cnt format 999999999
     set echo on
@@ -2754,54 +2754,10 @@ select * from ash_gc order by cnt desc;
     spool off
 !
 echo "instance_number=$INST"
-echo "snapper group by sql_id,event ,from $btime, last $dur ,top 20 sql with event"
-echo "./ora snapper <begin_time> <duration> [30]"
+echo "./ora gc [event_name] [30]"
   exit 0
 fi
-#########################################snapper_ash###################################################
-
-#   if [ "$2" = "" ]; then
-#    defbtime=$(TZ=EST-7EDT date +"%H:%M")
-#    defbtime2=$(TZ=EST-7EDT date +"%Y/%m/%d %H:%M")
-#    #defbtime=`date +'%H:%M'`
-#    read -p "Please input begin time,datetime format is [$defbtime](default) or [$defbtime2] :" btime
-#     if [ -z "${btime}" ];then
-#         btime=$defbtime
-#         #echo "No input,exit"
-#         #exit 1
-#      fi
-#    defdur=30
-#    read -p "Please input duration time ,default is [$defdur]:" dur
-#      if [ -z "${dur}" ];then
-#         dur=$defdur
-#      fi
-#   else
-#     btime=$2
-#     dur=$3
-#   fi
-
-#    strlen=`echo $btime|wc -c|tr -d " "`
-#    #echo $strlen
-#    #exit
-
-#   if [ $strlen -ne 6 -a $strlen -ne 17 ]; then
-#       echo "date parameter format error. usage: ora snapper 08:10 25 or ora snapper \"2020/01/09 22:39\" 30 "
-#       #echo "ora snapper 08:10 25"
-#       #echo "ora -i 1 snapper \"2020/01/09 22:39\" 30"
-#       exit 1
-#   fi
-
-#   #08:10  strlen=6
-#   if [ $strlen = 6 ]; then
-#      starttime="to_date(to_char(sysdate,'yyyy/mm/dd ')||'$btime','yyyy/mm/dd hh24:mi')"
-#   fi
-#
-#   #2020/01/09 22:39 strlen=17
-#  if [ $strlen = 17 ]; then
-#      starttime="to_date('$btime','yyyy/mm/dd hh24:mi')"
-#   fi
-#   #echo $starttime
-
+##############################snapper_ash##############################
 
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
