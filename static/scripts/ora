@@ -92,7 +92,6 @@ usage()
       - ORA  <Error Number>                    Display processing Ideas for Current ORA-ErrorNumber such ./ora ORA 00020
 
       - params [<pattern>]                     view all parameters, even hidden ones
-      - parameter [<pattern>] [2]              parameters in his(recent 2 snap) and current
       - pc/whats_changed/plan_changed  [8]     get plan changed in recent [def 31] days
       - pc2 [8]                                if last_active phv is the best
       - pga [50]                               top 50 pga_used_mem
@@ -539,8 +538,6 @@ $ECHO
 exit 0
 fi
 
-
-
 ##################################show dblink information ##############################################
 if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
 
@@ -654,7 +651,6 @@ if [ "$1" = "awr_baseline" ]; then
 exit 0
 fi
 
-
 ################################################################################
 if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
@@ -749,7 +745,6 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
       FROM gv\$sql_monitor
      where sql_id = '$sqlid'
      order by SQL_EXEC_START;
-
 
     SELECT dbms_sqltune.report_sql_monitor(sql_id       => '$sqlid',
                                            report_level => 'ALL',
@@ -1872,8 +1867,6 @@ $ECHO
 !
 exit 0
 fi
-
-
 
 ################################################################################
 if [ "$1" = "sql_baseline" ]; then
@@ -9622,59 +9615,6 @@ fi
 
 ##################################################################################################
 
-if [ "$1" = "parameter" ]; then
-
-  if [ "$2" = "" ]; then
-     kw=""
-     kw2=""
-  else
-     kw=" and parameter_name like '%$2%' "
-     kw2=" and name like '%$2%' "
-  fi
-
-   if [ "$3" = "" ]; then
-     snaps=2
-   else
-     snaps=$3
-   fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set linesize 200 pagesize 100
-    col parameter_name format a40
-    col name format a40
-    col value format a60 trunc
-    Prompt Display Parameters in last snapshot(dba_hist_parameter):
-
-    select instance_number,snap_id,parameter_name as name,value
-    from dba_hist_parameter
-    where snap_id>(select max(snap_id)-$snaps from dba_hist_snapshot)
-     and isdefault ='FALSE'
-     and instance_number=$INST
-     and parameter_name not like '\_\_%' escape '\' $kw
-    order by instance_number,snap_id,parameter_name;
-    $ECHO
-
-
-    Prompt Display Parameters in gv#parameter:
-
-    select inst_id,name,display_value as value from gv\$parameter
-     where  isdefault ='FALSE' and inst_id=$INST
-     and name not like '\_\_%' escape '\' $kw2
-     order by inst_id,name;
-    $ECHO
-
-!
-echo "show Parameters in his and current"
-echo inst_id=$INST
-exit 0
-fi
-
-#'
-##################################################################################################
-
 if [ "$1" = "params" ]; then
 
   if [ "$2" != "" ]; then
@@ -9698,8 +9638,8 @@ if [ "$1" = "params" ]; then
     connect $DBUSER
 
     set pagesize 10000
-    col name format A50
-    col value format A20
+    col name for a50
+    col value for a20
     col description format A70 trunc
     set timing off
     set serveroutput on
@@ -9776,57 +9716,23 @@ declare
       from x\$ksppi x, x\$ksppcv y
       where x.indx = y.indx
       and ksppinm in ('_kcfis_storageidx_diag_mode','__db_cache_size','_ksmg_granule_size',
-      '_gby_hash_aggregation_enabled','_external_scn_rejection_threshold_hours',
-      '_external_scn_logging_threshold_seconds',
-      '_ash_size',
-      '_lm_tickets',
-      '_lm_sync_timeout',
-      '_bloom_filter_enabled',
-      '_memory_imm_mode_without_autosga',
-      '_small_table_threshold',
-      '_very_large_object_threshold',
-      '_kcfis_storageidx_disabled',
-      '_serial_direct_read',
-      '_very_large_object_threshold',
-      '_adg_parselock_timeout',
-      '_max_outstanding_log_writes',
-      '_use_single_log_writer',
-      '_datafile_write_errors_crash_instance',
-      '_use_adaptive_log_file_sync',
-      '_undo_autotune',
-      '_optim_peek_user_binds',
-      '_optimizer_use_feedback',
-      '_optimizer_adaptive_cursor_sharing',
-      '_optimizer_extended_cursor_sharing',
-      '_optimizer_extended_cursor_sharing_rel',
-      'optimizer_index_caching',
-      'optimizer_index_cost_adj',
-      'db_file_multiblock_read_count',
-      'optimizer_dynamic_sampling',
-      '_cleanup_rollback_entries',
-      '_cursor_obsolete_threshold',
-      '_b_tree_bitmap_plans',
-      'optimizer_mode',
-      '_gc_policy_time',
-      '_gc_undo_affinity',
-      '_optimizer_group_by_placement',
-      'optimizer_adaptive_plans',
-      '_PX_use_large_pool',
-      'parallel_force_local',
-      '_clusterwide_global_transactions',
-      'optimizer_adaptive_features',
-      '_optimizer_inmemory_access_path',
-      '_optimizer_cbqt_or_expansion',
-      '_optimizer_unnest_scalar_sq',
-      '_sql_plan_directive_mgmt_control',
-      '_optimizer_dsdir_usage_control',
-      '_rollback_segment_count',
-      '_highthreshold_undoretention',
-      '_smm_max_size',
-      '_pga_max_size',
-      '_px_adaptive_dist_method',
-      '_optimizer_strans_adaptive_pruning',
-      '_optimizer_nlj_hj_adaptive_join'
+      '_gby_hash_aggregation_enabled','_external_scn_rejection_threshold_hours', '_external_scn_logging_threshold_seconds',
+      '_ash_size', '_lm_tickets', '_lm_sync_timeout', '_bloom_filter_enabled', '_memory_imm_mode_without_autosga',
+      '_small_table_threshold', '_very_large_object_threshold', '_kcfis_storageidx_disabled', '_serial_direct_read',
+      '_very_large_object_threshold', '_adg_parselock_timeout', '_max_outstanding_log_writes',
+      '_use_single_log_writer', '_datafile_write_errors_crash_instance', '_use_adaptive_log_file_sync',
+      '_undo_autotune', '_optim_peek_user_binds',
+      '_optimizer_use_feedback', '_optimizer_adaptive_cursor_sharing',
+      '_optimizer_extended_cursor_sharing', '_optimizer_extended_cursor_sharing_rel',
+      'optimizer_index_caching', 'optimizer_index_cost_adj',
+      'db_file_multiblock_read_count', 'optimizer_dynamic_sampling',
+      '_cleanup_rollback_entries', '_cursor_obsolete_threshold', '_b_tree_bitmap_plans',
+      'optimizer_mode', '_gc_policy_time', '_gc_undo_affinity',
+      '_optimizer_group_by_placement', 'optimizer_adaptive_plans', '_PX_use_large_pool', 'parallel_force_local',
+      '_clusterwide_global_transactions', 'optimizer_adaptive_features', '_optimizer_inmemory_access_path', '_optimizer_cbqt_or_expansion',
+      '_optimizer_unnest_scalar_sq', '_sql_plan_directive_mgmt_control', '_optimizer_dsdir_usage_control',
+      '_rollback_segment_count', '_highthreshold_undoretention', '_smm_max_size', '_pga_max_size', '_px_adaptive_dist_method',
+      '_optimizer_strans_adaptive_pruning', '_optimizer_nlj_hj_adaptive_join'
       )
       union all
       select
@@ -10132,10 +10038,8 @@ There is no Session that PGA Memory Usage > 10M for Per Session');
   dbms_output.put_line('======================');
   end if;
 
-
 end;
 /
-
 
     $ECHO
     spool off
