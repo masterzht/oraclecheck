@@ -195,6 +195,7 @@ usage()
       - tbs                                    view all tablespace detail info
       - tbsinc                                 display total tablespace size by day
       - temp                                   view detail usage of temp tablespace
+      - tfa                                    tfactl command
       - top                                    displays the latest time and the specified logical read SQL( default 10000)
       - toparea                                top sql in gv\$sqlarea : 5cpu/5reads/5elap
       - toparea_by_sig cpu|time|read <topn>    v#sqlarea group by force_matching_signature,topn
@@ -14595,6 +14596,13 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
 
 !
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
+  exit 0
+fi
+#############################tfa#########################
+if [ "$1" = "tfa" ]; then
+  echo "usage:"
+  echo "1 Jan、2 Feb、3 Mar、4 Apr、5 May、6 Jun、7 Jul、8 Aug、9 Sep、10 Oct、11 Nov、12 Dec"
+  echo 'tfactl  diagcollect -database repd -node all -from "May/22/2021 09:00:00" -to "May/22/2021 15:00:00"'
   exit 0
 fi
 
