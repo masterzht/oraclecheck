@@ -5993,8 +5993,6 @@ if [ "$1" = "4031" ]; then
     col OPER_MODE format a10 trunc
     ALTER SESSION SET nls_date_format='DD-MON-YYYY HH24:MI:SS';
 
-
-
     /* Current instance parameter values */
     SET HEADING OFF
     SELECT '**************************************************************************************************************' FROM dual
