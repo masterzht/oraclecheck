@@ -13891,8 +13891,6 @@ ORA-01306: dbms_logmnr.start_logmnr() must be invoked before selecting from v\$l
 exit 1
 fi
 
-
-
 ##################################################################################################
 
 #
@@ -13938,36 +13936,6 @@ if [ "$1" = "pstack" ]; then
     pstack $PID
     echo "pstack $PID complete"
   fi
-  exit 0
-fi
-
-############################################################################################
-#
-# Get system state dump and place result in specified directory
-#
-if [ "$1" = "system_state" ]; then
-
-  echo "may generate huge trc file , command commented!"
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 600
-    set linesize 300
-    set tab      off
-    set linesize 140
-    set echo off
-    set long     4000
-
-    --alter session set events 'immediate trace name systemstate level 266';
-
-    select '##'||VALUE || '/${ORACLE_SID}_ora_'|| spid ||'.trc' file_name
-    from v\$parameter, v\$process
-    where name = 'user_dump_dest' and pid=userenv('pid');
-!
-
-  #echo "System state file $FILE successfully produced"
   exit 0
 fi
 
