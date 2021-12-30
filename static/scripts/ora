@@ -75,6 +75,8 @@ usage()
       - index_creating                         index is creating
 
       - job                                    show all jobs
+
+      - logminer                               the usage of logminer
       - longops                                show records in gv\$session_longops (running)
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
@@ -13847,6 +13849,49 @@ if [ "$1" = "ORA" -o "$1" = "ora" ]; then
   fi
 exit 1
 fi
+
+
+
+
+####"ORA"####灵感来自渤海证券问题处理 ORA-00020: maximum number of processes (2000) exceeded###
+if [ "$1" = "logminer" ]; then
+  echo "----------------------------------------------------------------------------"
+  echo "|                      The Step Of logminer                                |"
+  echo "----------------------------------------------------------------------------"
+  echo """
+1、select FORCE_LOGGING,SUPPLEMENTAL_LOG_DATA_MIN from v\$database;
+alter database force logging;
+alter database add SUPPLEMENTAL log data;
+
+2、alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+@$ORACLE_HOME/rdbms/admin/dbmslm.sql
+@$ORACLE_HOME/rdbms/admin/dbmslmd.sql
+
+3、select FIRST_TIME,NEXT_TIME,name from v\$archived_log where name <> 'devsutf8'
+      and first_time > to_date('2021-11-16  18:00:00','yyyy-mm-dd hh24:mi:ss')
+      and first_time < to_date('2021-11-16  20:00:00','yyyy-mm-dd hh24:mi:ss')
+order by FIRST_TIME;
+
+4、exec dbms_logmnr.add_logfile('/oracle/oradata/arch/1_49658_999713109.dbf',dbms_logmnr.new);
+5、exec dbms_logmnr.add_logfile('/oracle/oradata/arch/1_49659_999713109.dbf',dbms_logmnr.addfile);
+6、exec dbms_logmnr.start_logmnr(options=>dbms_logmnr.dict_from_online_catalog+dbms_logmnr.committed_data_only);
+
+7、select to_char(TIMESTAMP,'yyyy-mm-dd hh24:mi:ss'),sql_redo,sql_undo,USERNAME from v\$logmnr_contents
+     where SEG_NAME='ACC_ACCOUNT'
+       and TIMESTAMP > to_date('2021-11-16  18:00:00','yyyy-mm-dd hh24:mi:ss')
+       and TIMESTAMP < to_date('2021-11-16  20:00:00','yyyy-mm-dd hh24:mi:ss')
+       order by timestamp;
+--关闭 logmnr --关闭在查询就会报错
+8、exec dbms_logmnr.end_logmnr;
+
+ERROR at line 1:
+ORA-01306: dbms_logmnr.start_logmnr() must be invoked before selecting from v\$logmnr_contents
+
+  """
+exit 1
+fi
+
+
 
 ##################################################################################################
 
