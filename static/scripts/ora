@@ -111,7 +111,7 @@ usage()
       - seg <object_name>                      segment info for given object
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
       - session_event [all]|<noidle>|<px>      ora session_event | ora session_event px | ora session_event noidle
-      - snapper \"12:10\" 40                   AAS
+      - snapper \"12:10\" 40                     AAS
       - sh                                     Run a shell command. E.g.  ora repeat 2 5 sh 'ps -edf | grep DESC'
       - sharing <sql_id>                       print why cursors are not shared ; high_version diag
       - sga                                    tell how much sga memory is used and dynamically used
