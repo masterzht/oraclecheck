@@ -6128,11 +6128,13 @@ if [ "$1" = "4030" ]; then
     COL totpga HEADING "Total PGA Allocated (MB)" FORM 9999999999999999
     COL inactivepga HEADING "Inactive PGA (MB)" FORM 9999999999999999
     COL SID FORMAT 999999
-    ALTER SESSION SET nls_date_format='DD-MON-YYYY HH24:MI:SS';
     BREAK ON sid
 
     /* Database identification */
     SELECT name, platform_id, database_role FROM v\$database;
+    col BANNER for a30
+    col BANNER_FULL for a40
+    col BANNER_LEGACY for a40
     SELECT * FROM v\$version WHERE banner LIKE 'Oracle Database%';
 
     /* Current instance parameter values */
@@ -6146,12 +6148,17 @@ if [ "$1" = "4030" ]; then
     SELECT component, current_size FROM v\$sga_dynamic_components;
 
     /* Memory resizing operations */
-    SELECT start_time, end_time, component, oper_type, oper_mode, initial_size, target_size, final_size, status
+    SELECT
+    to_char(start_time,'yyyy-mm-dd hh24:mi:ss') as start_time,
+    to_char(end_time,'yyyy-mm-dd hh24:mi:ss') as end_time,
+    component, oper_type, oper_mode, initial_size, target_size, final_size, status
     FROM v\$memory_resize_ops
     ORDER BY 1, 2;
 
     /* Historical memory resizing operations */
-    SELECT start_time, end_time, component, oper_type, oper_mode, initial_size, target_size, final_size, status
+    SELECT to_char(start_time,'yyyy-mm-dd hh24:mi:ss') as start_time,
+    to_char(end_time,'yyyy-mm-dd hh24:mi:ss') as end_time,
+    component, oper_type, oper_mode, initial_size, target_size, final_size, status
     FROM dba_hist_memory_resize_ops
     ORDER BY 1, 2;
 
