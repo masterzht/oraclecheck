@@ -66,7 +66,7 @@ usage()
 
       - histogram <owner><tab_name><col_name>  get histogram value ratio
       - highparse  [500]                       ora highparse  <500 is default> ,top 50 only (same force_matching_signature ,diff sql_id)
-      - highcost [50]                          high cost sql in gv\sql_plan
+      - highcost [50]                          high cost sql in gv\$sql_plan
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
 
