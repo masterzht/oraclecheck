@@ -29,7 +29,7 @@ usage()
       - ashdump  [1]min                        dump ash records into trc file,default value is 1 minutes
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
-      - awrsqrpt [bid] [eid] [sql_id]             ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
+      - awrsqrpt [bid] [eid] <sql_id>          ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
 
@@ -66,10 +66,9 @@ usage()
 
       - histogram <owner><tab_name><col_name>  get histogram value ratio
       - highparse  [500]                       ora highparse  <500 is default> ,top 50 only (same force_matching_signature ,diff sql_id)
-      - highcost [50]                          high cost sql in gv#sql_plan
+      - highcost [50]                          high cost sql in gv\sql_plan
       - high_version [100]                     display information for reasons cursor not shared (single sqlid: ora sharing <sqlid>)
       - hintname <part of hint name>           get hint info from v\$sql_hint
-      - systemdump/hanganalyze                 hanganalyze 3 + systemdump 266
 
       - idx2sqlid <index_name>                 show sqls use the given index name
       - ind | index <table_name>               get all indexes info for given table
@@ -82,7 +81,7 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
 
       - mvsnap                                 view all_snapshots (mview) status
-      - sqlmon/sqlmonitor                      <sql_id> get v#sql_monitor Information
+      - sqlmon/sqlmonitor                      <sql_id> get v\$sql_monitor Information
 
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
       - open_cursor [100]                      top 30 ,default >100
@@ -128,6 +127,7 @@ usage()
       - sqlhc <sqlid1> [sqlid2] [sqlid3]...    collect sqlhc for given sqlids
       - stats                                  show infomation about statistic collection
       - sysmetric \"yyyy/mm/dd hh24:mi\" [30]    DBA_HIST_SYSMETRIC_HISTORY from given time last for default 30 minutes
+      - systemdump/hanganalyze                 hanganalyze 3 + systemdump 266
 
       - table/tab  <tab_name> [owner]          show detail info for given table
       - tbs_last                               fast show tablespace info from dba_hist_tbspc_space_usage last snapshot
@@ -139,8 +139,8 @@ usage()
       - tfa                                    tfactl command
       - top                                    displays the latest time and the specified logical read SQL( default 10000)
       - toparea                                top sql in gv\$sqlarea : 5cpu/5reads/5elap
-      - toparea_by_sig cpu|time|read <topn>    v#sqlarea group by force_matching_signature,topn
-      - topsql_by_plan cpu|time|read <topn>    v#sql group by phv
+      - toparea_by_sig cpu|time|read <topn>    v\$sqlarea group by force_matching_signature,topn
+      - topsql_by_plan cpu|time|read <topn>    v\$sql group by phv
 
       - tophis cpu|read|time [def max-1] [max] top sql in dba_hist_sqlstat: ora tophis <bid> <eid> (default is last snapshot)
       - tophis_byplan cpu|read|time ...
@@ -13656,7 +13656,7 @@ group by inst_id,service_name order by 1,3 desc,2;
 col program for a30
 col SECONDS for a7
 col KILL_SQL for a56
-col "P1 P2 P3" for a28
+col "P1 P2 P3" for a34
 col logon_time for a10
 col kill_sql for a60
 prompt =======================
@@ -13682,7 +13682,7 @@ where a.paddr = b.addr(+)
 prompt display the active sessions and events in current node
 col SECONDS for a7
 col KILL_SQL for a56
-col "P1 P2 P3" for a18
+col "P1 P2 P3" for a26
 col logon_time for a10
 col kill_sql for a60
 prompt =======================
