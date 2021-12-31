@@ -82,7 +82,6 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
 
       - mvsnap                                 view all_snapshots (mview) status
-      - sqlmon/sqlmonitor                      <sql_id> get v\$sql_monitor Information
 
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
       - open_cursor [100]                      top 30 ,default >100
@@ -122,6 +121,7 @@ usage()
       - sql <sqlid>                            display sql information
       - sql_baseline <sqlid> <sqlid> <PHV>
       - sql_check
+      - sqlmon/sqlmonitor                      <sql_id> get v\$sql_monitor Information
       - sql_check_his
       - sql_patch <sqlid> <hint>               ora sql_patch <sqlid> <hint>
       - sql_profile <sqlid> <sqlid> <PHV>      ora sql_profile <sqlid> <sqlid> <PHV> --->fix use given plan
