@@ -2631,7 +2631,7 @@ fi
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
  if [ "$2" = "" ]; then
-   echo "ora snapper \"`date +"%Y/%m/%d %H:%M"`\" 30"
+   echo "./ora snapper \"`date +"%Y/%m/%d %H:%M"`\" 30"
    echo "calc average active session "
    exit 1
  fi
@@ -2646,7 +2646,7 @@ if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
     connect $DBUSER
 set trimspool on
-spool ora_snapper_ash_$filedate.log
+spool ora_snapper_$filedate.log
 
 set termout off
 set tab off
@@ -2655,13 +2655,6 @@ set pages 0
 set linesize 999
 set trimspool on
 set trimout on null ""
-
-/*
-define snapper_options="&1"
-define   snapper_sleep="&2"
-define   snapper_count="&3"
-define     snapper_sid="&4"
-*/
 
 define snapper_options="ash=sid+username+machine+service_name+sql_id+event"
 define   snapper_sleep="5"
@@ -13974,14 +13967,10 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
                    decode(kglhdlmd, 0, '0', 1, 'N', 2, 'S', 3, 'X', '?') lmd,
                    decode(kglhdpmd, 0, '0', 1, 'N', 2, 'S', 3, 'X', '?') pmd,
                    case
-                      when KGLOBT09 = 65535 then
-                            '0 PAR'
-                      when KGLHDLMD = 1 and KGLHDPMD > 0 then
-                            '1 PN CHI'
-                      when KGLHDLMD = 1 then
-                            '2 LK CHI'
-                      else
-                            '3 CHI'
+                      when KGLOBT09 = 65535 then '0 PAR'
+                      when KGLHDLMD = 1 and KGLHDPMD > 0 then '1 PN CHI'
+                      when KGLHDLMD = 1 then '2 LK CHI'
+                      else '3 CHI'
                    end cursor_type
             from x\$kglcursor)
     group by pc, lmd, pmd
