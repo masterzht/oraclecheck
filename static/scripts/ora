@@ -167,8 +167,7 @@ usage()
 "
 #echo "sed -n /\"^if \[ \\\"\\\$1\"/p ora|awk '{print \$5 \"            \" \$9}'|sort"
 }
-
-##################################################################################
+################################
 
 EXEC_NAME=`basename $0`
 ORA_PROG=$0
@@ -185,7 +184,7 @@ if [ "$ORA_TMP" = "" ]; then
   ORA_TMP="/tmp"
 fi
 
-##########################################
+###################################
 #very important init parameter
 #filedate=`date +"%Y%m%d_%H%M%S"`
 filedate=`date +"%Y%m%d"`
@@ -195,7 +194,7 @@ DEFDISP=""
 INST="1"
 #DEBUG="#"
 
-#########################################################################
+###################################
 while [ 1 ]; do
   case "$1" in
     "-u")
@@ -231,10 +230,7 @@ while [ 1 ]; do
   esac
   shift
 done
-
 ##############################################################################
-#echo "instance_number=$INST"
-
 if [ $# -lt 1 ]; then
   usage
   exit 1
@@ -249,18 +245,8 @@ function get_ver
     #ver2=`echo $version|cut -c 1-2`
     #ver4=`echo $version|cut -c 1-4`
 }
-
-###############################################################################
 ##this is just a template,if you add new command ,just copy and replace with your own script:
-################################################################################
 if [ "$1" = "test" ]; then
-#  echo "instance_number=$INST"
-## if [ "$2" = "" ]; then
-##   echo "ora $1 xxx"
-##   exit 1
-## else
-##   PRED="$2"
-## fi
 
    echo ORACLE_SID=$ORACLE_SID
 
@@ -274,11 +260,8 @@ if [ "$1" = "test" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
     set head off
-
     select 'DB_version='||'$ver8' from dual;
     $ECHO
 !
@@ -295,9 +278,7 @@ ora -i 2 batch_event
 echo "over"
 exit 0
 fi
-
-
-################################################################################
+###########################################
 if [ "$1" = "logon" ]; then
    if [ "$2" = "" -o "$3" = "" ]; then
      echo "usage: ora logon \"03-NOV-2020 11:3\" sec  or ora logon \"03-NOV-2020 11\" min"
@@ -317,12 +298,11 @@ if [ "$1" = "logon" ]; then
    fi
 exit 0
 fi
-
-################################################################################
+###########################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
   $ORACLE_HOME/bin/sqlplus / as sysdba
 fi
-################################################################################
+###########################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -330,18 +310,13 @@ if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
 Pro DataGuard Config Info:
 Pro
-    set pagesize 200
-    set linesize 200
+    set pagesize 200 linesize 200
     col name for a30
     col display_value for a100
 select name, display_value
   from (select name, display_value
           from v\$parameter
-         where name in ('log_archive_config',
-                        'db_file_name_convert',
-                        'log_file_name_convert',
-                        'fal_client',
-                        'fal_server')
+         where name in ('log_archive_config','db_file_name_convert','log_file_name_convert','fal_client','fal_server')
             or name like 'log_archive_dest%'
             or name like 'log_archive_dest_state_1%'
          order by 1 desc
@@ -350,7 +325,6 @@ select name, display_value
 
 Pro DataGuard RunTime Apply Info:
 Pro
-
 set linesize 400
 set serveroutput on
 set feedback off
@@ -420,10 +394,7 @@ from
                        thread#,
                        d.current_scn,
                        MAX(sequence#) Last_Archived,
-                       max(CASE
-                             WHEN APPLIED = 'YES' THEN
-                              sequence#
-                           end) APPLIED_SEQ#
+                       max(CASE WHEN APPLIED = 'YES' THEN sequence# end) APPLIED_SEQ#
                   FROM v\$archived_log V, v\$database d
                  WHERE V.resetlogs_change# = d.RESETLOGS_CHANGE#
                  group by dest_id, thread#, d.current_scn
@@ -537,10 +508,8 @@ $ECHO
 !
 exit 0
 fi
-
 ##################################show dblink information ##############################################
 if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -562,9 +531,7 @@ prompt =======================
 select q'[create public database link ]' || DB_LINK || q'[ connect to ]' || USERNAME || q'[ identified by ]' || 'password using ' || q'[']'||HOST||q'[';]' as show_dblink_ddl_command
 from dba_db_links;
 
--- who is querying via dblink?
--- Courtesy of Tom Kyte, via Mark Bobak
--- this script can be used at both ends of the database link
+-- who is querying via dblink? this script can be used at both ends of the database link
 -- to match up which session on the remote database started
 -- the local transaction
 -- the GTXID will match for those sessions
@@ -640,17 +607,12 @@ if [ "$1" = "awr_baseline" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
-
+    set pagesize 30 linesize 150
     exec dbms_workload_repository.create_baseline($bid,$eid,'baseline_${bid}_${eid}');
     Pro awr baseline ${bid}_${eid} created!
-
 !
 exit 0
 fi
-
 ################################################################################
 if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
@@ -661,7 +623,6 @@ if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     exec dbms_workload_repository.create_snapshot();
     Pro dbms_workload_repository.create_snapshot executed!
 !
@@ -672,7 +633,7 @@ if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 exit 0
 fi
 
-################################################################################
+##############################################
 if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
 
   if [ "$2" = "" ]; then
@@ -702,13 +663,11 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     prompt ======================
     SET LONG 1000000
     SET LONGCHUNKSIZE 1000000
-    SET LINESIZE 1000
-    SET PAGESIZE 0
+    SET LINESIZE 1000 PAGESIZE 0
     SET TRIM ON
     --SET TRIMSPOOL OFF
     SET ECHO OFF
     SET FEEDBACK OFF
-
     spool ora_sqlmon_'$sqlid'_$filedate.log
 /**
     SELECT DBMS_SQLTUNE.report_sql_monitor(
@@ -720,8 +679,7 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
 **/
     col comm format a200
     set long 999999999
-    set linesize 500
-    set pages 1000
+    set linesize 500 pages 1000
     col "inst#" for 99
     col SQL_EXEC_START for a14
     col GETS for a7
@@ -745,17 +703,12 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
       FROM gv\$sql_monitor
      where sql_id = '$sqlid'
      order by SQL_EXEC_START;
-
-    SELECT dbms_sqltune.report_sql_monitor(sql_id       => '$sqlid',
-                                           report_level => 'ALL',
-                                           type         => 'text') comm
-    FROM dual;
+    SELECT dbms_sqltune.report_sql_monitor(sql_id  => '$sqlid', report_level => 'ALL', type => 'text') comm FROM dual;
 spool off
     $ECHO
 !
 exit 0
 fi
-
 ################################################################################
 if [ "$1" = "toppid" ]; then
 
@@ -780,7 +733,6 @@ fi
 
 ################################################################################
 if [ "$1" = "process_dump" ]; then
-
   if [ "$2" = "" ]; then
 
   read -p "Please input pid(v#proces.spid where v#session.paddr=v#process.addr):" pid
@@ -806,7 +758,6 @@ if [ "$1" = "process_dump" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows selected"
 
       connect $DBUSER
-
       oradebug setospid $pid
       oradebug unlimit
       oradebug dump processstate $level
@@ -815,9 +766,7 @@ sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows se
 
 exit 0
 fi
-
-#####################################################################################################
-
+######################################
 if [ "$1" = "tophis_byplan" ]; then
 
    if [ "$2" = "" -o "$2" = "cpu" -o "$2" = "CPU" ]; then
@@ -1059,7 +1008,6 @@ echo "usage: ora tophis_bysig [cpu]|<read>|<time> bid eid"
 echo "Get top sql ,ordered by $orderby . Begin snap_id=$bid ; End snap_id=$eid"
 exit 0
 fi
-
 ################################################################################
 if [ "$1" = "index_creating" ]; then
 
@@ -1103,9 +1051,7 @@ if [ "$1" = "expdash" ]; then
 
 echo "impdp fred/fred remap_schema=sys:fred"
 exit 0
-
 fi
-
 ################################################################################
 if [ "$1" = "sql_check_his" ]; then
 #sys.WRH$_SQL_PLAN.max(snap_id) >  dba_hist_snapshot.max(snap_id) ????
@@ -1177,7 +1123,6 @@ if [ "$1" = "sql_check_his" ]; then
      group by PLAN_HASH_VALUE, OBJECT_NAME,PLAN_OPER,COST,CARDINALITY,RATIO --dedup same force_matching_signature
      order by ratio;
     $ECHO
-
 
     --2+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     Pro High card in index,low card "index rowid"(top $rn),suboptimal index:
@@ -1482,27 +1427,17 @@ if [ "$1" = "highcost" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     col sql_id format a13
     col sql_text format a64
     spool ora_highcost_${INST}_${filedate}.log
     with tmp as
     (select rownum as rn,a.* from
-        (select inst_id,sql_id,max(cost) max_cost
-          from gv\$sql_plan
-         where id=0 and cost>=100
-               and inst_id=$INST
-         group by inst_id,sql_id
-         order by max_cost desc
+        (select inst_id,sql_id,max(cost) max_cost from gv\$sql_plan
+         where id=0 and cost>=100 and inst_id=$INST group by inst_id,sql_id order by max_cost desc
         )a where rownum<=$rn
     )
-    select a.*,b.sql_text
-    from tmp a,gv\$sqltext b
-    where a.sql_id=b.sql_id
-          and b.inst_id=$INST
-          and b.piece=0
-          order by rn;
+    select a.*,b.sql_text from tmp a,gv\$sqltext b  where a.sql_id=b.sql_id and b.inst_id=$INST and b.piece=0 order by rn;
     $ECHO
     spool off
 !
@@ -1510,8 +1445,7 @@ echo "instance_number=$INST"
 echo "get top cost sql from gv_sql_plan"
 exit 0
 fi
-
-################################################################################
+########################################
 if [ "$1" = "trc" ]; then
 
    ver2=`get_ver 2`
@@ -1524,16 +1458,14 @@ if [ "$1" = "trc" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
     set head off
     select value from v\$diag_info where name='Diag Trace';
     $ECHO
 !
 exit 0
 fi
-################################################################################
+####################################
 if [ "$1" = "index" -o "$1" = "ind" ]; then
 
   if [ "$2" = ""  ]; then
@@ -1591,7 +1523,6 @@ begin
 end;
 /
 
---alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 declare
   v_part_cnt number;
   v_foreign_key_cnt number;
