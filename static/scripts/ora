@@ -77,7 +77,6 @@ usage()
       - job                                    show all jobs
 
       - logminer                               the usage of logminer
-      - longops                                show records in gv\$session_longops (running)
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
@@ -2082,23 +2081,16 @@ if [ "$1" = "event" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
-
+    set pagesize 30 linesize 150
     col inst_id format 9999
     col event format a40 trunc
     col max_sql_id format a14
     col session_cnt format 9999
     col max_user_name format a20 trunc
 
-    select  inst_id,event,max(sql_id) as max_sql_id
-           ,max(username) as max_user_name
-           ,sum(sysdate-sql_exec_start)*86400 as sum_elap_s
-           ,count(*) as session_cnt
+    select inst_id,event,max(sql_id) as max_sql_id ,max(username) as max_user_name,sum(sysdate-sql_exec_start)*86400 as sum_elap_s,count(*) as session_cnt
     from gv\$session
-    where status='ACTIVE' and upper(event) not like '%IDLE%'
-          and inst_id=$INST
+    where status='ACTIVE' and upper(event) not like '%IDLE%' and inst_id=$INST
     group by inst_id,event
     order by count(*);
     $ECHO
@@ -2107,7 +2099,6 @@ echo "event count in gv\$session status='ACTIVE' group by inst_id, event"
 echo "instance_number=$INST"
 exit 0
 fi
-
 ################################################################################
 if [ "$1" = "dir" ]; then
 
@@ -9464,8 +9455,7 @@ declare
       '_optimizer_strans_adaptive_pruning', '_optimizer_nlj_hj_adaptive_join'
       )
       union all
-      select
-      name,
+      select name,
       decode(value,null,'None',value) as value,
       case when name = 'open_cursors' and (value < 300 or value > 1000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
            when name = 'control_file_record_keep_time' and value <= 15 then 'control_file_record_keep_time recommend to set to <31>,Doc 47322.1'
@@ -9494,41 +9484,15 @@ declare
            when name = 'optimizer_adaptive_statistics' and value <> 'FALSE' then 'set <FALSE> see Doc ID 2187449.1' end as adivce
            from v\$parameter
            where name in (
-           'open_cursors',
-           'control_file_record_keep_time',
-           'cursor_sharing',
-           'audit_trail',
-           'session_cached_cursors',
-           'deferred_segment_creation',
-           'enable_ddl_logging',
-           'undo_retention',
-           'large_pool_size',
-           'statistics_level',
-           'result_cache_mode',
-           'result_cache_max_size',
-           'job_queue_processes',
-           'processes',
-           'db_files',
-           'shared_pool_size',
-           'db_cache_size',
-           'pga_aggregate_target',
-           'sga_target',
-           'sga_max_size',
-           'memory_target',
-           'memory_max_target',
-           'event',
-           'archive_lag_target',
-           'fast_start_parallel_rollback',
-           'optimizer_adaptive_statistics',
-           'open_links'
+           'open_cursors', 'control_file_record_keep_time', 'cursor_sharing', 'audit_trail', 'session_cached_cursors', 'deferred_segment_creation',
+           'enable_ddl_logging', 'undo_retention', 'large_pool_size', 'statistics_level', 'result_cache_mode', 'result_cache_max_size', 'job_queue_processes',
+           'processes', 'db_files', 'shared_pool_size', 'db_cache_size', 'pga_aggregate_target', 'sga_target', 'sga_max_size', 'memory_target',
+           'memory_max_target', 'event', 'archive_lag_target', 'fast_start_parallel_rollback', 'optimizer_adaptive_statistics', 'open_links'
           )
            order by name;
     v_para c_para%rowtype;
 
-
 begin
-
-
   dbms_output.put_line('
 Parameter Information');
   dbms_output.put_line('======================');
@@ -9574,7 +9538,6 @@ dbms_output.put_line('NOAUDIT PUBLIC SYNONYM;');
 dbms_output.put_line('NOAUDIT ROLE;');
 dbms_output.put_line('NOAUDIT SYSTEM AUDIT;');
 dbms_output.put_line('NOAUDIT SYSTEM GRANT;');
-
 end;
 /
 
@@ -9583,7 +9546,7 @@ end;
 exit 0
 fi
 
-#######################################################################################################
+##################################################
 
 if [ "$1" = "session_event" ]; then
 
@@ -9593,9 +9556,7 @@ if [ "$1" = "session_event" ]; then
 
       connect $DBUSER
 
-      set pagesize 6000
-      set linesize 150
-
+      set pagesize 6000 linesize 150
       col SID format 99999
       col QCSID format 99999
       col PID format 9999
@@ -9646,8 +9607,7 @@ if [ "$1" = "session_event" ]; then
 echo "instance_number=$INST"
 exit 0
 fi
-
-#####################################################################################################################
+###################################################################
 if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
 
   if [ "$2" != "" ]; then
@@ -9660,8 +9620,7 @@ if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
 
     connect $DBUSER
 
-    set pagesize 10000
-    set linesize 80
+    set pagesize 10000 linesize 80
     col file_name format A40
     col USED_SPACE format A20
     col MAX_USED_SPACE format A20
@@ -9769,17 +9728,13 @@ There is no Session that PGA Memory Usage > 10M for Per Session');
 
 end;
 /
-
     $ECHO
     spool off
-
 !
 echo "instance_number=$INST"
   exit 0
 fi
-
-######################################################################################################
-
+##################################################
 if [ "$1" = "event_set"  ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected|PL/SQL procedure"
@@ -9809,49 +9764,17 @@ if [ "$1" = "event_set"  ]; then
 echo "display all events setted in the system,e.g. Alter system set events=..."
   exit 0
 fi
-###############################################################################################################
-
-if [ "$1" = "longops" ]; then
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set linesize 150 pagesize 40
-    column opname format a30 wrap
-    select * from
-    (
-     select inst_id,sid,sql_id, opname, sofar, totalwork,
-           round(sofar*100/totalwork) percent,
-           round(elapsed_seconds/60) "Elapsed (min)",
-           decode(sofar,0,0,round(elapsed_seconds*(totalwork-sofar)/(sofar*60))) as "To go (min)",
-           context dfo
-    from gv\$session_longops
-    where sofar != totalwork
-    and inst_id=$INST
-    order by elapsed_seconds desc
-    )
-    where rownum<=20;
-  $ECHO
-!
-echo "instance_number=$INST"
-echo "above info is top 20 long runing ops from gv_session_longops"
-exit 0
-fi
-
-###################################################################################################
+###############################################
 
 if [ "$1" = "sga" ]; then
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
-
     connect $DBUSER
     set serveroutput on
     set verify off
     set timing off
-    set linesize 300
-    set pages 1000
+    set linesize 300 pages 1000
     set tab off
     set echo off
     repfooter off;
