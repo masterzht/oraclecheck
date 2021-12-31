@@ -8169,6 +8169,18 @@ fi
 ################################################################################
 if [ "$1" = "redo" ]; then
 
+ if [ "$2" = "" ]; then
+   echo "./ora redo \"`date +"%Y/%m/%d %H:%M"`\" 30"
+   echo "How to identify the causes of High Redo Generation (文档 ID 2265722.1) "
+   exit 1
+ fi
+
+  if [ "$3" = "" ]; then
+    dur=30
+  else
+    dur=$3
+  fi
+
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -8264,6 +8276,30 @@ WHERE  b.GROUP# = a.GROUP#
 AND    a.THREAD# = b.INST_ID
 AND    a.inst_id = b.inst_id
 order by 1,2;
+
+pro the causes of High Redo Generation
+pro ======================
+col OBJECT_NAME for a40
+col OWNER for a32
+SELECT TO_CHAR(BEGIN_INTERVAL_TIME, 'YYYY-MM-DD HH24') SNAP_TIME,
+       DHSO.OWNER,
+       DHSO.OBJECT_NAME,
+       SUM(DB_BLOCK_CHANGES_DELTA)                     BLOCK_CHANGED
+FROM   DBA_HIST_SEG_STAT DHSS,
+       DBA_HIST_SEG_STAT_OBJ DHSO,
+       DBA_HIST_SNAPSHOT DHS
+WHERE  DHS.SNAP_ID = DHSS.SNAP_ID
+       AND DHS.INSTANCE_NUMBER = DHSS.INSTANCE_NUMBER
+       AND DHSS.OBJ# = DHSO.OBJ#
+       AND DHSS.DATAOBJ# = DHSO.DATAOBJ#
+       AND BEGIN_INTERVAL_TIME BETWEEN
+       to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
+       and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60
+GROUP BY TO_CHAR(BEGIN_INTERVAL_TIME, 'YYYY-MM-DD HH24'),
+          DHSO.OWNER,DHSO.OBJECT_NAME
+HAVING SUM(DB_BLOCK_CHANGES_DELTA) > 0
+ORDER  BY SUM(DB_BLOCK_CHANGES_DELTA) DESC;
+
 $ECHO
 spool off
 
