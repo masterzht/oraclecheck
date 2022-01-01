@@ -8530,8 +8530,7 @@ if [ "$1" = "degree" -o "$1" = "parallel" ]; then
 
     connect $DBUSER
 
-    set pagesize 6000
-    set linesize 200
+    set pagesize 6000 linesize 200
     col degree format A6
     col instances format A13
     col table_name format A30
@@ -8608,16 +8607,12 @@ if [ "$1" = "histogram" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
-
-    COL endpoint_value FORMAT A40
+    set pagesize 30 linesize 200
+    col endpoint_value FORMAT A40
     col owner format a10 trunc
     col table_name format a20 trunc
     col column_name format a20 trunc
-
-    select owner,table_name,column_name,endpoint_value, pct_total
-        from
+    select owner,table_name,column_name,endpoint_value, pct_total from
         (
         select a.owner,a.table_name,a.column_name,nvl(endpoint_actual_VALUE,endpoint_value) as endpoint_value,endpoint_number curr_ep,
                lag(endpoint_number,1,0) over(order by endpoint_number) prev_ep,
@@ -8639,7 +8634,7 @@ if [ "$1" = "histogram" ]; then
 exit 0
 fi
 
-###################################################################################################
+######################################################
 
 if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 
@@ -13397,8 +13392,7 @@ if [ "$1" = "pstack" ]; then
   exit 0
 fi
 
-##########################################################################################
-
+###########################################
 if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
   #
   # This query summarizes information about pinned/locked/unpinned cursors
