@@ -7537,11 +7537,8 @@ If RAC System Node Count > 3 be carefull!!! Oracle Max Rollback Segments is 3276
   dbms_output.put_line('_rollback_segment_count             ' || ' : ' || v_value);
   dbms_output.put_line('Current Node rollback segments Count' || ' : ' || v_cnt );
 
-
-  select count(*) into v_roll_cnt from
-  v\$transaction vt,
-  v\$session vs,
-  v\$rollname rn
+  select count(*) into v_roll_cnt
+  from v\$transaction vt, v\$session vs, v\$rollname rn
   where vt.addr = vs.taddr
   and vt.xidusn = rn.usn;
   if v_roll_cnt > 0 then
@@ -9347,52 +9344,8 @@ if [ "$1" = "sga" ]; then
     set echo off
     repfooter off;
     set timing off veri off space 1 flush on pause off termout on numwidth 10;
+    set trimspool on
     spool ora_sga_$filedate.log
-
-    Pro v#sgastat:
-    select nvl(pool, 'Total') pool,
-           decode(name, NULL, decode(pool, NULL, NULL, '(total)'), name) name,
-           round(sum(bytes)/1024) as size_kb
-    from gv\$sgastat
-    where pool is not null
-          and name in ('free memory', 'PX msg pool', 'sql area','library cache')
-          and inst_id=$INST
-    group by rollup(pool, name)
-    order by 3;
-    $ECHO
-
-    Pro v#sga_dynamic_components:
-    col component format a40
-    select substr(COMPONENT,1,25) COMPONENT,
-          CURRENT_SIZE/1024/1024 CURRENT_SIZE_mb,
-          MIN_SIZE/1024/1024 MIN_SIZE_MB, MAX_SIZE/1024/1024 MAX_SIZE_MB,
-          LAST_OPER_TYPE, LAST_OPER_MODE
-    from gv\$sga_dynamic_components
-    where inst_id=$INST;
-    $ECHO
-
-    prompt
-    prompt CURRENT SGA RESIZE OPERATIONS
-    select COMPONENT, OPER_TYPE, OPER_MODE, PARAMETER
-    from   gv\$sga_current_resize_ops
-    where inst_id=$INST;
-    $ECHO
-
-    prompt SGA_RESIZE_OPS
-    set pages 0 linesize 300
-    col start_time for a30
-    col end_time for a30
-    SELECT substr(COMPONENT,1,25) COMPONENT,
-    oper_type,initial_size/1024/1024 init_MB,target_size/1024/1024 target_MB,
-    final_size/1024/1024 final_MB,status,
-    to_char(start_time,'yyyymmdd hh24miss') as start_time,
-    to_char(end_time,'yyyymmdd hh24miss') as end_time
-    FROM gV\$SGA_RESIZE_OPS
-    where PARAMETER in ('db_cache_size','shared_pool_size')
-    and OPER_TYPE in ('GROW','SHRINK')
-    and inst_id=$INST
-    order by PARAMETER,START_TIME;
-
 --alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 declare
     cursor c_sga is SELECT NAME, ROUND(TOTAL,2) TOTAL_MB, ROUND(TOTAL - FREE, 2) USED_MB, ROUND(FREE, 2) FREE_MB, ROUND((TOTAL - FREE) / TOTAL * 100, 2) pct_used
