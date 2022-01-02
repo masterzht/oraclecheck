@@ -7470,8 +7470,7 @@ declare
   and vt.xidusn = rn.usn order by used_urec desc;
   v_roll c_roll%rowtype;
 
-  cursor c_seg is select
-  dba_segments.owner,
+  cursor c_seg is select dba_segments.owner,
   dba_segments.tablespace_name,
   dba_rollback_segs.file_id,
   dba_rollback_segs.segment_id,
