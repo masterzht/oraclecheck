@@ -7478,11 +7478,9 @@ declare
   dba_segments.segment_name,
   round(dba_segments.bytes/1024/1024,2) as mb,
   dba_segments.extents,
-  dba_rollback_segs.status
-from
-  sys.dba_segments,
-  sys.dba_rollback_segs
-where
+  dba_rollback_segs.status from sys.dba_segments,
+                                sys.dba_rollback_segs
+                                where
   dba_segments.bytes/1024/1024 > 10 and -- only show > 10M
   dba_segments.segment_name = dba_rollback_segs.segment_name
 order by sys.dba_rollback_segs.segment_id;
