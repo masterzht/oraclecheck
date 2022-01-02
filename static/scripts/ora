@@ -7610,7 +7610,6 @@ The ktuxecfl column means the Flag of Status, such as DEAD transaction');
     dbms_output.put_line('------------------------------------------');
   close c_t_stat;
 
-
    dbms_output.put_line('
 Dead Transaction Information(x$ktuxe)
 USN means Rollback Segments number
@@ -7658,12 +7657,12 @@ fi
 #CURDATE=`date +"%Y%m%d"`
 #echo $CURDATE
 
-################################################################################
+#######################################
 if [ "$1" = "redo" ]; then
 
  if [ "$2" = "" ]; then
    echo "./ora redo \"`date +"%Y/%m/%d %H:%M"`\" 30"
-   echo "How to identify the causes of High Redo Generation (文档 ID 2265722.1) "
+   echo "How to identify the causes of High Redo Generation (DOC ID 2265722.1) "
    exit 1
  fi
 
@@ -13303,10 +13302,7 @@ if [ "$1" = "ORA" -o "$1" = "ora" ]; then
 exit 1
 fi
 
-
-
-
-####"ORA"####灵感来自渤海证券问题处理 ORA-00020: maximum number of processes (2000) exceeded###
+############################
 if [ "$1" = "logminer" ]; then
   echo "----------------------------------------------------------------------------"
   echo "|                      The Step Of logminer                                |"
