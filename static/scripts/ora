@@ -4486,6 +4486,23 @@ if [ "$1" = "top_event" -o "$1" = "batch_event" ]; then
     --    5 as R5) --the other columns must have same content; gen 3 * 5 = 15 columns
     --)
     order by inst_id,bid,rn;
+prompt Display Event by Minutes
+prompt ======================
+with tmp as
+         (select event,
+                 to_char(sample_time, 'yyyy-mm-dd hh24:mi') as sample_time,
+                 count(*)                                   as cnt
+          from dba_hist_active_sess_history
+          where snap_id >= $bid and sp.snap_id <=$eid
+          --SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
+          --  and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
+            and INSTANCE_NUMBER = $INST
+          group by event, to_char(sample_time, 'yyyy-mm-dd hh24:mi')
+         )
+select * from (
+    select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
+from tmp
+    ) where rn < 5;
 
     $ECHO
     spool off
