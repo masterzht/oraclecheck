@@ -34,7 +34,7 @@ usage()
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
 
       - batch_osstat [48]|<bid> <eid>          awr osstat in batch mode(similiar with AWR osstat),fixed 48 snaps or given bid and eid
-      - batch_event  [48]|<bid> <eid>          awr top 5 event in batch mode,fixed 48 snaps or given bid and eid,exe ./ora -i 2 batch_event
+      - batch_event  [48]|<bid> <eid>          awr top 5 event in batch mode,fixed 48 snaps or given bid and eid,exe ./ora -i 2 batch_event  222 223
       - batch_load   [48]|<bid> <eid>          awr load profile in batch mode,fixed 48 snaps or given bid and eid
       - batch_iostat [48]|<bid> <eid>          awr top 5 reads tablespace in batch mode (awr: Tablespace IO Stats) 12.1 and below
       - big_by_tbs <tbs_name> [20]             top n big size objects by tablespace name
@@ -4355,8 +4355,9 @@ echo "./ora snapper <begin_time> <duration> [30]"
   exit 0
 fi
 ################################################################################
-if [ "$1" = "top_event" -o "$1" = "batch_event" ]; then
-
+if [ "$1" = "batch_event" ]; then
+echo ""
+echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
     if [ "$2" = ""  -o  "$3" = "" ]; then
       #echo "ora iostat <bid> <eid> "
       #exit 1
@@ -4486,34 +4487,34 @@ if [ "$1" = "top_event" -o "$1" = "batch_event" ]; then
     --    5 as R5) --the other columns must have same content; gen 3 * 5 = 15 columns
     --)
     order by inst_id,bid,rn;
-prompt Display Event by Minutes
+prompt Display Event by Minutes Top 3
 prompt ======================
+set pages 100
 with tmp as
          (select event,
                  to_char(sample_time, 'yyyy-mm-dd hh24:mi') as sample_time,
                  count(*)                                   as cnt
           from dba_hist_active_sess_history
-          where snap_id >= $bid and sp.snap_id <=$eid
-          --SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
-          --  and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
+          where snap_id >= $bid and snap_id <=$eid
+          -- SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
+          -- and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
             and INSTANCE_NUMBER = $INST
           group by event, to_char(sample_time, 'yyyy-mm-dd hh24:mi')
          )
 select * from (
     select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
 from tmp
-    ) where rn < 5;
+    ) where rn < 4;
 
     $ECHO
     spool off
 !
 echo "instance_number=$INST"
 echo "get batch awr top event for recent $snaps snapshots"
+echo "./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
 exit 0
 fi
-
-
-################################################################################
+###############################################
 if [ "$1" = "big_by_tbs" ]; then
 
  if [ "$2" = "" ]; then
