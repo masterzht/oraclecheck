@@ -6175,7 +6175,7 @@ if [ "$1" = "errorstack" ]; then
   """
   exit 0
 fi
-###################################################
+###############################################
 if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd" ]; then
   echo ""
   echo "http://orafun.info/stack"
