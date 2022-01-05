@@ -13070,6 +13070,7 @@ col KILL_SQL for a56
 col "P1 P2 P3" for a34
 col logon_time for a10
 col kill_sql for a60
+prompt display the active sessions and sql in current node
 prompt =======================
 select /*+use_nl(a,b,c)*/         distinct a.sid || ',' || a.serial# as sid_and_serial#,
                                   a.username,
@@ -13090,13 +13091,13 @@ where a.paddr = b.addr(+)
   and a.sid not in (select sid from v\$mystat where rownum = 1);
 
 --正在执行的SQL语句的等待事件信息
-prompt display the active sessions and events in current node
 col SECONDS for a7
 col KILL_SQL for a56
 col "P1 P2 P3" for a26
 col logon_time for a10
 col kill_sql for a60
 prompt =======================
+prompt display the active sessions and events in current node
 select /*+ ordered use_nl(a,b) */
     trim(to_char(a.sql_id))                                                              as sql_id,
     b.spid                                                                               as spid,
