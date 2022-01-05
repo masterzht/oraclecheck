@@ -6145,8 +6145,7 @@ echo "instance_number=$INST"
 echo "dump ash records for recent $dur minutes."
 exit 0
 fi
-
-################################################################################
+###################################################
 if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd" ]; then
   echo ""
   echo "http://orafun.info/stack"
@@ -6170,8 +6169,7 @@ echo "on current instance"
 echo "risk operation,commented! If need , uncomment"
 exit 0
 fi
-
-################################################################################
+##############################################
 if [ "$1" = "outline" ]; then
 
   if [ "$2" = "" -o "$3" = ""  ]; then
@@ -6188,14 +6186,10 @@ if [ "$1" = "outline" ]; then
     type=3
   fi
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 200
-
+    set pagesize 30 linesize 200
     col name format a30
     col outline_hints format a80
 
@@ -6243,9 +6237,7 @@ if [ "$1" = "outline" ]; then
 echo "show outline hint for given sql profile or sql patch name".
 exit 0
 fi
-
-
-################################################################################
+############################################
 if [ "$1" = "top_level" ]; then
 
   if [ "$2" = "" ]; then
@@ -6290,9 +6282,6 @@ if [ "$1" = "top_level" ]; then
 !
 exit 0
 fi
-
-
-
 ################################################################################
 if [ "$1" = "high_version" ]; then
 #usage ora high_version 100
@@ -6737,10 +6726,7 @@ echo "Get top sql ,ordered by $orderby . Begin snap_id=$bid ; End snap_id=$eid "
 echo "instance_number=$INST"
 exit 0
 fi
-
-
-
-################################################################################################################
+#########################################
 if [ "$1" = "purge" ]; then
 
   if [ "$2" = "" ]; then
@@ -6787,8 +6773,7 @@ if [ "$1" = "purge" ]; then
 echo "instance_number=$INST"
 exit 0
 fi
-
-################################################################################
+############################################################
 if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
 
      if [ "$2" = "" ]; then
@@ -6796,15 +6781,13 @@ if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     col name format a30
     col created format a20
     col description format a40
     col sql_text format a50 trunc
     select * from
-    (select NAME,to_char(CREATED,'yyyy-mm-dd hh24:mi:ss') as created
-            ,STATUS,FORCE_MATCHING, DESCRIPTION,SQL_TEXT
+    (select NAME,to_char(CREATED,'yyyy-mm-dd hh24:mi:ss') as created ,STATUS,FORCE_MATCHING, DESCRIPTION,SQL_TEXT
            from dba_sql_profiles order by created desc
      ) where rownum<=20;
 !
@@ -6820,7 +6803,6 @@ if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
 
 SET DEF ON TERM OFF ECHO ON FEED OFF VER OFF HEA ON LIN 2000 PAGES 100
 set LONG 8000000 LONGC 800000 TRIMS ON TI OFF TIMI OFF SERVEROUT ON SIZE 1000000 NUM 20 SQLP SQL>;
@@ -13446,9 +13428,9 @@ if [ "$1" = "tfa" ]; then
   exit 0
 fi
 
-###################################################################################
+############################################################
 # Run a shell command. Useful when combined with repeat...
-###################################################################################
+############################################################
 if [ "$1" = "sh" ]; then
 
   shift 1
