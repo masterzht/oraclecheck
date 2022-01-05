@@ -1044,8 +1044,13 @@ if [ "$1" = "expdash" ]; then
      echo "only support version 12.2+,current version is $ver4"
      exit 1
    fi
-
-echo "impdp fred/fred remap_schema=sys:fred"
+  echo "impdp scripts as follows"
+  echo "======================"
+  echo """
+  export ORACLE_SID=orcl1
+  export NLS_LANG=American_America.AL32UTF8
+  impdp \'/ as sysdba\' directory=EXPDP_DATA dumpfile=expdash_XXXXXX.dmp logfile=expdash_XXXXXX.log remap_schema=sys:tpch table_exists_action=replace
+  """
 exit 0
 fi
 
@@ -1787,6 +1792,11 @@ fi
 ################################################################################
 if [ "$1" = "dir" ]; then
 
+  echo """
+  export ORACLE_SID=orcl1
+  export NLS_LANG=American_America.AL32UTF8
+  impdp \'/ as sysdba\' directory=EXPDP_DATA dumpfile=expdash_XXXXXX.dmp logfile=expdash_XXXXXX.log remap_schema=sys:tpch table_exists_action=replace
+  """
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -6137,8 +6147,9 @@ exit 0
 fi
 
 ################################################################################
-if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" ]; then
+if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd" ]; then
   echo ""
+  echo "http://orafun.info/stack"
   echo "Collect systemtemp and hanganalyze!"
   echo "========================="
   # sqlplus -prelim / as sysdba
@@ -9943,9 +9954,7 @@ if [ "$1" = "pga_detail" ]; then
 echo "instance_number=$INST"
 exit 0
 fi
-
-#######################################################################################################
-
+#####################################################################
 if [ "$1" = "alert" ]; then
 #find all log.xml in $ORACLE_BASE/diag , include listener log.xml
 
@@ -13427,6 +13436,13 @@ if [ "$1" = "tfa" ]; then
   echo "usage:"
   echo "1 Jan、2 Feb、3 Mar、4 Apr、5 May、6 Jun、7 Jul、8 Aug、9 Sep、10 Oct、11 Nov、12 Dec"
   echo 'tfactl diagcollect -all -from "May/22/2021 09:00:00" -to "May/22/2021 10:00:00"'
+  echo'''
+  请用root在一个节点运行以下命令，并上传产生的日志。
+(1) cd \$GRID_HOME/tfa/bin  (or <\$GRID_HOME>/bin )
+(2) ./tfactl diagcollect -from "2022-01-04 10:00:00" -to "2022-01-04 11:00:00"
+建议收集时间段跨度4小时以上
+'''
+
   exit 0
 fi
 
