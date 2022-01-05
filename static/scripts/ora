@@ -6164,14 +6164,15 @@ echo "instance_number=$INST"
 echo "dump ash records for recent $dur minutes."
 exit 0
 fi
-###################################################
+###############################################
 if [ "$1" = "errorstack" ]; then
   echo "usage:"
-  echo '''
-  ALTER SESSION SET EVENTS '6502 TRACE NAME ERRORSTACK LEVEL 3';
+  echo """
+  alter session set events '6502 trace name errorstack level 3';
   --<run your sql>
-  ALTER SESSION SET EVENTS '6502 TRACE NAME CONTEXT OFF';
-  '''
+  alter session set events '6502 trace name context off';
+  --<SEE alert log >
+  """
   exit 0
 fi
 ###################################################
