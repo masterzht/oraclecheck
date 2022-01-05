@@ -6168,9 +6168,9 @@ fi
 if [ "$1" = "errorstack" ]; then
   echo "usage:"
   echo """
-  alter session set events '6502 trace name errorstack level 3';
+  alter session set events '<error code> trace name errorstack level 3';
   --<run your sql>
-  alter session set events '6502 trace name context off';
+  alter session set events '<error code> trace name context off';
   --<SEE alert log >
   """
   exit 0
