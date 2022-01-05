@@ -57,6 +57,7 @@ usage()
       - event2sqlid <event_name> <bid> <eid>   dba_hist_active_sess_history, such as ./ora event2sqlid \"db file sequential read\" 560 561
       - event_set                              list all event for alter system set events or set event=
       - expdash \"2020/05/27 10:33:40\" 30     12.2+ only ; to default DIR ; listed in term
+      - errorstack                             Show errorstack Usage
 
       - file | files                           list spfile/control_file/datafile/tempfile names
       - fulltext  <sql_id>                     display the entire sql_id SQL text(lob),no more than 32767(v\$.sql_text has a limit of 1000)
@@ -6162,6 +6163,16 @@ if [ "$1" = "ashdump" ]; then
 echo "instance_number=$INST"
 echo "dump ash records for recent $dur minutes."
 exit 0
+fi
+###################################################
+if [ "$1" = "errorstack" ]; then
+  echo "usage:"
+  echo '''
+  ALTER SESSION SET EVENTS '6502 TRACE NAME ERRORSTACK LEVEL 3';
+  --<run your sql>
+  ALTER SESSION SET EVENTS '6502 TRACE NAME CONTEXT OFF';
+  '''
+  exit 0
 fi
 ###################################################
 if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd" ]; then
