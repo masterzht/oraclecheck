@@ -80,7 +80,7 @@ usage()
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
-
+      - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - mvsnap                                 view all_snapshots (mview) status
 
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
@@ -266,26 +266,39 @@ if [ "$1" = "test" ]; then
 exit 0
 fi
 
-if [ "$1" = "batch" ]; then
-ora batch_load
-ora batch_osstat
-ora batch_event
-ora -i 2 batch_load
-ora -i 2 batch_osstat
-ora -i 2 batch_event
-echo "over"
-exit 0
-fi
 ###########################################
 if [ "$1" = "logon" ]; then
    if [ "$2" = "" -o "$3" = "" ]; then
-     echo "usage: ora logon \"03-NOV-2020 11:3\" sec  or ora logon \"03-NOV-2020 11\" min"
+     echo ""
+     echo "Run the script as GI user of Oracle Grid Infrastructure"
+     echo "1 JAN、2 FEB、3 MAR、4 APR、5 MAY、6 JUN、7 JUL、8 AUG、9 SEP、10 OCT、11 NOV、12 DEC"
+     echo "usage: ./ora logon \"03-NOV-2022 11:3\" sec LISTENER_SCAN1 or ./ora logon \"03-NOV-2022 09\" min LISTENER_SCAN1"
      exit 1
   else
     datestr=$2
   fi
 
-   logfile=`lsnrctl status|grep "Listener Log File"|awk '{ print $4 }'|sed -e 's/alert\/log.xml/trace\/listener.log/g'`
+  if [ "$4" = "" ]; then
+    typeset -l l_name
+    l_name=LISTENER
+    echo ""
+    echo "Statistics of $l_name Listener login "
+  else
+    typeset -l l_name
+    l_name=$4
+    echo ""
+    echo "Statistics of $l_name Listener login "
+  fi
+
+   sed_str='s/alert\/log.xml/trace\/'$l_name'.log/g'
+   # echo $sed_str
+   logfile=`lsnrctl status $l_name |grep "Listener Log File"|awk '{ print $4 }'|sed -e $sed_str`
+
+   if [ "$logfile" = "" ]; then
+     echo "The Current $l_name or Listener log does not exist!!!"
+     echo "Execute: ps -ef | grep tns for check"
+     exit 0
+   fi
 
    if [ "$3" = "sec" ]; then
      #by seconds
