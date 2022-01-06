@@ -13165,8 +13165,7 @@ order by LAST_CALL_ET desc;
 !
   exit 0
 fi
-##########################################################################
-
+#############################################
 if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
 
   if [ "$2" = "" ]; then
@@ -13443,19 +13442,35 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
   exit 0
 fi
-#############################tfa#########################
+####################################################
 if [ "$1" = "tfa" ]; then
-  echo "usage:"
+  echo ""
+  echo "Display How to Collect Tfa Log"
+  echo "================"
   echo "1 Jan、2 Feb、3 Mar、4 Apr、5 May、6 Jun、7 Jul、8 Aug、9 Sep、10 Oct、11 Nov、12 Dec"
   echo 'tfactl diagcollect -all -from "May/22/2021 09:00:00" -to "May/22/2021 10:00:00"'
-  echo'''
-  请用root在一个节点运行以下命令，并上传产生的日志。
-(1) cd \$GRID_HOME/tfa/bin  (or <\$GRID_HOME>/bin )
-(2) ./tfactl diagcollect -from "2022-01-04 10:00:00" -to "2022-01-04 11:00:00"
-建议收集时间段跨度4小时以上
-'''
-
-  exit 0
+  echo "or 请用root在一个节点运行以下命令，并上传产生的日志。"
+  echo "(1) cd \$GRID_HOME/tfa/bin  (or <\$GRID_HOME>/bin )"
+  echo '(2) ./tfactl diagcollect -from "2022-01-04 10:00:00" -to "2022-01-04 11:00:00" '
+  echo ""
+  exit 1
+fi
+####################################################
+if [ "$1" = "sqlnet" ]; then
+  echo ""
+  echo """
+Display sqlnet trace usage for Client Site
+================
+usage: vim $ORACLE_HOME/network/admin/sqlnet.ora
+Trace_level_client=16
+Trace_directory_client=C:\instantclient_11_2\network\admin
+Trace_unique_client=on
+Trace_timestamp_client=on
+Diag_adr_enabled=off
+tnsping.trace_directory=C:\instantclient_11_2\network\admin
+tnsping.trace_level=admin
+"""
+  exit 1
 fi
 
 ############################################################
