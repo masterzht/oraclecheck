@@ -282,17 +282,15 @@ if [ "$1" = "logon" ]; then
     typeset -l l_name
     l_name=LISTENER
     echo ""
-    echo "Statistics of $l_name Listener login "
+    echo "Statistics of ${l_name} Listener login "
   else
     typeset -l l_name
     l_name=$4
     echo ""
-    echo "Statistics of $l_name Listener login "
+    echo "Statistics of ${l_name} Listener login "
   fi
 
-   sed_str='s/alert\/log.xml/trace\/'$l_name'.log/g'
-   # echo $sed_str
-   logfile=`lsnrctl status $l_name |grep "Listener Log File"|awk '{ print $4 }'|sed -e $sed_str`
+   logfile=`lsnrctl status $l_name |grep "Listener Log File"|awk '{ print $4 }'|sed -e 's/alert\/log.xml/trace\/'${l_name}'.log/g'`
 
    if [ "$logfile" = "" ]; then
      echo "The Current $l_name or Listener log does not exist!!!"
@@ -4387,16 +4385,39 @@ echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
 
     connect $DBUSER
 
+prompt Display Event by Minutes Top 3
+prompt ======================
+    set linesize 300 pages 6
+    col sample_time for a16
+    col event for a45
+with tmp as
+         (select case when event is null then 'ON CPU' else event end as event,
+                 to_char(sample_time, 'yyyy-mm-dd hh24:mi') as sample_time,
+                 count(*)                                   as cnt
+          from dba_hist_active_sess_history
+          where snap_id >= $bid
+            and snap_id <=$eid
+          -- SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
+          -- and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
+            and INSTANCE_NUMBER = $INST
+          group by event, to_char(sample_time, 'yyyy-mm-dd hh24:mi')
+         )
+select * from (
+    select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
+from tmp
+    ) where rn < 4;
+
     set linesize 300 pagesize 8
+    col event format a30 trunc
+    col inst_id format 9999
+    col wait_class format a15
+    col SNAP_END_TIME format a20
     col r1_event format a15 trunc
     col r2_event format a15 trunc
     col r3_event format a15 trunc
     col r4_event format a15 trunc
     col r5_event format a15 trunc
-    col event format a30 trunc
-    col inst_id format 9999
-    col wait_class format a15
-    col SNAP_END_TIME format a20
+
     --break on eid
     break on snap_end_time
     set trimspool on
@@ -4502,24 +4523,7 @@ echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
     --    5 as R5) --the other columns must have same content; gen 3 * 5 = 15 columns
     --)
     order by inst_id,bid,rn;
-prompt Display Event by Minutes Top 3
-prompt ======================
-set pages 100
-with tmp as
-         (select event,
-                 to_char(sample_time, 'yyyy-mm-dd hh24:mi') as sample_time,
-                 count(*)                                   as cnt
-          from dba_hist_active_sess_history
-          where snap_id >= $bid and snap_id <=$eid
-          -- SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
-          -- and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
-            and INSTANCE_NUMBER = $INST
-          group by event, to_char(sample_time, 'yyyy-mm-dd hh24:mi')
-         )
-select * from (
-    select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
-from tmp
-    ) where rn < 4;
+
 
     $ECHO
     spool off
