@@ -119,6 +119,7 @@ usage()
       - sparse_index
       - sparse_table
       - sql <sqlid>                            display sql information
+      - sqlnet                                 display How to collect sqlnet trace for Client Site
       - sql_baseline <sqlid> <sqlid> <PHV>
       - sqlmon/sqlmonitor                      <sql_id> get v\$sql_monitor Information
       - sql_patch <sqlid> <hint>               ora sql_patch <sqlid> <hint>
