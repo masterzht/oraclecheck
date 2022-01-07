@@ -13487,6 +13487,9 @@ Trace_timestamp_client=on
 Diag_adr_enabled=off
 tnsping.trace_directory=C:\instantclient_11_2\network\admin
 tnsping.trace_level=admin
+trcasst:
+trcasst -odt -e0 -s cli_8696.trc > cli_8696.log
+search [Error found] for the keyword
 """
   exit 1
 fi
