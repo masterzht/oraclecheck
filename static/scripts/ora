@@ -4524,13 +4524,12 @@ from tmp
     --)
     order by inst_id,bid,rn;
 
-
     $ECHO
     spool off
 !
 echo "instance_number=$INST"
 echo "get batch awr top event for recent $snaps snapshots"
-echo "./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
+echo "./ora -i 2 batch_event <begin_snap_id> <end_snap_id>"
 exit 0
 fi
 ###############################################
@@ -4585,7 +4584,6 @@ if [ "$1" = "big_by_tbs" ]; then
 !
 exit 0
 fi
-
 
 ################################################################################
 if [ "$1" = "dpr_risk" ]; then
