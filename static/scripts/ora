@@ -4550,9 +4550,7 @@ if [ "$1" = "big_by_tbs" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 150
-
+    set pagesize 30 linesize 150
     col tablespace_name format a20 trunc
     col owner format a20 trunc
     col segment_name format a30
@@ -4565,8 +4563,7 @@ if [ "$1" = "big_by_tbs" ]; then
                      segment_type,
                      size_MB,partitions, round((RATIO_TO_REPORT (size_MB) OVER ()) *100,2)||'%' pct
     from
-    (  select
-                     tablespace_name,
+    (  select        tablespace_name,
                      owner ,
                      segment_name ,
                      segment_type,
