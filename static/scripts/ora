@@ -175,7 +175,7 @@ T_TRC="/tmp"
 if [ "$DBUSER" = "" ]; then
   DBUSER="/ as SYSDBA"
   #DBUSER="user/password@xxx"
-  #sys/oracle@localhost:1521/pdb_tiger as sysdba
+  #sys/oracle@localhost:1521/pdb_name as sysdba
 fi
 
 if [ "$ORA_TMP" = "" ]; then
@@ -709,16 +709,14 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
            fetches,
            round(buffer_gets / 1024 / 1024) || 'M' as gets,
            disk_reads as reads
-      FROM gv\$sql_monitor
-     where sql_id = '$sqlid'
-     order by SQL_EXEC_START;
+      FROM gv\$sql_monitor where sql_id = '$sqlid' order by SQL_EXEC_START;
     SELECT dbms_sqltune.report_sql_monitor(sql_id  => '$sqlid', report_level => 'ALL', type => 'text') comm FROM dual;
 spool off
     $ECHO
 !
 exit 0
 fi
-################################################################################
+###########################################
 if [ "$1" = "toppid" ]; then
 
   if [ "$2" = "" ]; then
@@ -855,8 +853,6 @@ if [ "$1" = "tophis_byplan" ]; then
                else  1  end as avg_elap_ms,
           min(PARSING_SCHEMA_NAME) as min_schema,
           sum(executions_delta) as execs,
-          --count(distinct plan_hash_value) as  plans,
-          --max(plan_hash_value) as phv,
           round(sum(BUFFER_GETS_DELTA)/greatest(sum(executions_delta),1))  as avg_BUF,
           round(sum(ROWS_PROCESSED_DELTA)/greatest(sum(executions_delta),1),1)  as avg_ROW
           --substr(min(MODULE),1,10) as module,
@@ -1024,14 +1020,12 @@ if [ "$1" = "index_creating" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
     col owner format a20
     col segment_name format a30
     col segment_type format a20
     col tablespace_name format a20
-    select owner,segment_name,segment_type,round(bytes/1024/1024) size_M,tablespace_name
-    from dba_segments a where segment_type='TEMPORARY';
+    select owner,segment_name,segment_type,round(bytes/1024/1024) size_M,tablespace_name from dba_segments a where segment_type='TEMPORARY';
     $ECHO
 !
 echo "ora repeat 10 20 index_creating"
@@ -1071,7 +1065,7 @@ fi
 if [ "$1" = "dup_index" ]; then
 
    if [ "$2" = "" ]; then
-       ora user
+       ./ora user
        read -p "Please input a owner:" owner
         if [ -z "${owner}" ];then
              echo "table owner needed!"
@@ -1093,38 +1087,23 @@ if [ "$1" = "dup_index" ]; then
     col dup_col_lists format a30
     col dup_index_name format a30
     spool ora_dup_index_$filedate.log
-    with tmp as
-    (
-    select table_owner,table_name,index_name,
-           listagg(column_name,chr(10)||',') within group (order by column_position) as col_lists
-    from dba_ind_columns where table_owner=upper('$owner')
-    group by table_owner,table_name,index_name
-    )
-    select table_name,index_name,index_col_lists,dup_col_lists,dup_index_name
-    from
-    (select table_owner,
-          table_name,index_name,col_lists as index_col_lists
-         ,lag(col_lists) over (partition by table_owner,table_name order by col_lists) as dup_col_lists
-         ,lag(index_name) over (partition by table_owner,table_name order by col_lists) as dup_index_name
-    from tmp a
-    )where table_owner=upper('$owner') and
-           index_col_lists like dup_col_lists||chr(10)||',%';
+    with tmp as ( select table_owner,table_name,index_name, listagg(column_name,chr(10)||',') within group (order by column_position) as col_lists from dba_ind_columns where table_owner=upper('$owner') group by table_owner,table_name,index_name )
+    select table_name,index_name,index_col_lists,dup_col_lists,dup_index_name from
+    ( select table_owner, table_name,index_name,col_lists as index_col_lists ,lag(col_lists) over (partition by table_owner,table_name order by col_lists) as dup_col_lists ,lag(index_name) over (partition by table_owner,table_name order by col_lists) as dup_index_name from tmp a )
+    where table_owner=upper('$owner') and index_col_lists like dup_col_lists||chr(10)||',%';
     $ECHO
     spool off
 !
 echo "get duplicate index by table owner for $owner"
 exit 0
 fi
-
-################################################################################
+#########################################
 if [ "$1" = "highcost" ]; then
-
    if [ "$2" = "" ]; then
      rn=50
    else
      rn=$2
    fi
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -1135,9 +1114,7 @@ if [ "$1" = "highcost" ]; then
     spool ora_highcost_${INST}_${filedate}.log
     with tmp as
     (select rownum as rn,a.* from
-        (select inst_id,sql_id,max(cost) max_cost from gv\$sql_plan
-         where id=0 and cost>=100 and inst_id=$INST group by inst_id,sql_id order by max_cost desc
-        )a where rownum<=$rn
+        (select inst_id,sql_id,max(cost) max_cost from gv\$sql_plan where id=0 and cost>=100 and inst_id=$INST group by inst_id,sql_id order by max_cost desc ) a where rownum<=$rn
     )
     select a.*,b.sql_text from tmp a,gv\$sqltext b  where a.sql_id=b.sql_id and b.inst_id=$INST and b.piece=0 order by rn;
     $ECHO
@@ -1149,14 +1126,11 @@ exit 0
 fi
 ########################################
 if [ "$1" = "trc" ]; then
-
    ver2=`get_ver 2`
-
    if [ "$ver2" = "10" ]; then
       echo "$ORACLE_BASE/admin/$ORACLE_SID/bdump/"
       exit 0
    fi
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -1195,7 +1169,6 @@ if [ "$1" = "index" -o "$1" = "ind" ]; then
     owner=$3
   fi
 
-
    ver2=`get_ver 2`
    if [ $ver2 -lt 11 ];then
      ver="--"
@@ -1206,14 +1179,12 @@ if [ "$1" = "index" -o "$1" = "ind" ]; then
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set linesize 250 pages 0
     set serveroutput on
     set verify off
     set timing off
     set trimspool on
 spool ora_indexes_of_${owner}_${tablename}.log
-
 undefine table_name
 undefine owner
 var table_name varchar2(100);
@@ -1243,24 +1214,8 @@ declare
     and a.OWNER = :owner;
   v_constraints c_constraints%rowtype;
 
-    cursor c_i is SELECT
-       A.INDEX_NAME,
-       A.COLUMN_NAME,
-           decode(t.DATA_TYPE,
-           'NUMBER',t.DATA_TYPE||'('||
-           decode(t.DATA_PRECISION,
-                  null,t.DATA_LENGTH||')',
-                  t.DATA_PRECISION||','||t.DATA_SCALE||')'),
-                  'DATE',t.DATA_TYPE,
-                  'LONG',t.DATA_TYPE,
-                  'LONG RAW',t.DATA_TYPE,
-                  'ROWID',t.DATA_TYPE,
-                  'MLSLABEL',t.DATA_TYPE,
-                  t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
-           decode(t.nullable,
-                  'N','NOT NULL',
-                  'n','NOT NULL',
-                  NULL) col_type,
+    cursor c_i is SELECT A.INDEX_NAME, A.COLUMN_NAME, decode(t.DATA_TYPE, 'NUMBER',t.DATA_TYPE||'('||
+           decode(t.DATA_PRECISION, null,t.DATA_LENGTH||')', t.DATA_PRECISION||','||t.DATA_SCALE||')'), 'DATE',t.DATA_TYPE, 'LONG',t.DATA_TYPE, 'LONG RAW',t.DATA_TYPE, 'ROWID',t.DATA_TYPE, 'MLSLABEL',t.DATA_TYPE, t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '|| decode(t.nullable, 'N','NOT NULL', 'n','NOT NULL', NULL) col_type,
        A.COLUMN_POSITION,decode(b.TABLESPACE_NAME,null,'None',B.TABLESPACE_NAME) as TABLESPACE_NAME,B.INDEX_TYPE,B.DEGREE,
        round(C.BYTES / 1024 / 1024) AS INDEX_MB,
        A.DESCEND,
@@ -1284,16 +1239,9 @@ declare
  ORDER BY INDEX_NAME, COLUMN_POSITION;
     v_i c_i%rowtype;
 
-    cursor c_foreign_key_without_index is select owner,
-       table_name,
-       constraint_name,
-       substr(cname1 || nvl2(cname2, ',' || cname2, null) || nvl2(cname3, ',' || cname3, null) ||
-              nvl2(cname4, ',' || cname4, null) || nvl2(cname5, ',' || cname5, null) ||
-              nvl2(cname6, ',' || cname6, null) || nvl2(cname7, ',' || cname7, null) ||
-              nvl2(cname8, ',' || cname8, null), 0, 400) as cols
-from (select b.owner,
-             b.table_name,
-             b.constraint_name,
+    cursor c_foreign_key_without_index is select owner, table_name, constraint_name,
+    substr(cname1 || nvl2(cname2, ',' || cname2, null) || nvl2(cname3, ',' || cname3, null) || nvl2(cname4, ',' || cname4, null) || nvl2(cname5, ',' || cname5, null) || nvl2(cname6, ',' || cname6, null) || nvl2(cname7, ',' || cname7, null) || nvl2(cname8, ',' || cname8, null), 0, 400) as cols
+from (select b.owner, b.table_name, b.constraint_name,
              max(decode(position, 1, column_name, null)) cname1,
              max(decode(position, 2, column_name, null)) cname2,
              max(decode(position, 3, column_name, null)) cname3,
@@ -1303,19 +1251,10 @@ from (select b.owner,
              max(decode(position, 7, column_name, null)) cname7,
              max(decode(position, 8, column_name, null)) cname8,
              count(*)                                    col_cnt
-      from (select owner,
-                   constraint_name,
-                   column_name,
-                   position
-            from dba_cons_columns
-            where owner not in
-                  ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR',
-                   'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
-                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS',
-                   'DBSNMP', 'APEX_PUBLIC_USER',
-                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS',
-                   'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT',
-                   'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
+      from (select owner, constraint_name, column_name, position
+            from dba_cons_columns where owner not in ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR', 'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
+                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS', 'DBSNMP', 'APEX_PUBLIC_USER',
+                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS', 'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT', 'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
            dba_constraints b
       where a.constraint_name = b.constraint_name
         and b.constraint_type = 'R'
@@ -1334,18 +1273,9 @@ where col_cnt > ALL
       );
          v_f c_foreign_key_without_index%rowtype;
          cursor c_par_ind is select index_name, PARTITION_POSITION as PART_POSITION, PARTITION_NAME, BLEVEL, LEAF_BLOCKS, NUM_ROWS, DISTINCT_KEYS,
-                             CLUSTERING_FACTOR,
-                             case when STATUS = 'UNUSABLE' then 'NO' else 'YES' end USABLE,
-                             high_value
-                             from dba_ind_partitions
-                             where index_name in
-                            (
-                            select index_name from dba_indexes where table_name = UPPER(:table_name)
-                            and INDEX_OWNER = upper(:owner)
-                            and partitioned = 'YES') order by index_name, partition_position;
-
+                             CLUSTERING_FACTOR, case when STATUS = 'UNUSABLE' then 'NO' else 'YES' end USABLE, high_value from dba_ind_partitions where index_name in
+                            ( select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES') order by index_name, partition_position;
          v_part c_par_ind%rowtype;
-
 begin
   dbms_output.enable(buffer_size => NULL);
   dbms_output.put_line('
@@ -1470,10 +1400,8 @@ $ECHO
 exit 0
 fi
 
-################################################################################
+###########################################
 if [ "$1" = "resize" ]; then
-
-#################
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
 connect $DBUSER
@@ -1500,17 +1428,14 @@ $ECHO
 !
 exit 0
 fi
-
-################################################################################
+####################################################
 if [ "$1" = "sql_baseline" ]; then
 
      if [ "$2" = "" ]; then
       sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     col plan_name format a30
     col signature format 99999999999999999999
     col created format a20
@@ -1531,7 +1456,6 @@ if [ "$1" = "sql_baseline" ]; then
   fi
 
   if [ "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
-
     echo "ora sql_baseline <ori_sqlid> <modi_sqlid> <modi_phv>"
     exit 1
   fi
@@ -1539,12 +1463,8 @@ if [ "$1" = "sql_baseline" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
+    set pagesize 30 linesize 150
 
-    set pagesize 30
-    set linesize 150
-
-
---SPO coe_load_sql_baseline.log;
 SET DEF ON TERM OFF ECHO ON FEED OFF VER OFF HEA ON LIN 2000 PAGES 100 LONG 8000000 LONGC 800000 TRIMS ON TI OFF TIMI OFF SERVEROUT ON SIZE 1000000 NUM 20 SQLP SQL>;
 SET SERVEROUT ON SIZE UNL;
 SET TERM ON ECHO OFF;
@@ -1689,32 +1609,7 @@ BEGIN
     attribute_name  => 'plan_name',
     attribute_value => :plan_name );
   DBMS_OUTPUT.PUT_LINE(plans||' plan(s) modified plan_name: "'||:plan_name||'"');
-/*
---tiger liu comment:  -- drop baseline staging table for original sql (if one exists)
---tiger liu comment:  BEGIN
---tiger liu comment:    DBMS_OUTPUT.PUT_LINE('dropping staging table "STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.'))||'"');
---tiger liu comment:    EXECUTE IMMEDIATE 'DROP TABLE STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.'));
---tiger liu comment:  EXCEPTION
---tiger liu comment:    WHEN OTHERS THEN
---tiger liu comment:      DBMS_OUTPUT.PUT_LINE('staging table "STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.'))||'" did not exist');
---tiger liu comment:  END;
---tiger liu comment:
---tiger liu comment:  -- create baseline staging table for original sql
---tiger liu comment:  DBMS_OUTPUT.PUT_LINE('creating staging table "STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.'))||'"');
---tiger liu comment:  DBMS_SPM.CREATE_STGTAB_BASELINE (
---tiger liu comment:    table_name  => 'STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.')),
---tiger liu comment:    table_owner => '&&connected_user.' );
---tiger liu comment:
---tiger liu comment:  -- packs new baseline for original sql
---tiger liu comment:  DBMS_OUTPUT.PUT_LINE('packaging new sql baseline into staging table "STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.'))||'"');
---tiger liu comment:  plans :=
---tiger liu comment:  DBMS_SPM.PACK_STGTAB_BASELINE (
---tiger liu comment:     table_name  => 'STGTAB_BASELINE_'||UPPER(TRIM('&&original_sql_id.')),
---tiger liu comment:     table_owner => '&&connected_user.',
---tiger liu comment:     sql_handle  => sys_sql_handle,
---tiger liu comment:     plan_name   => :plan_name );
---tiger liu comment:  DBMS_OUTPUT.PUT_LINE(plans||' pla(s) packaged');
-*/
+
 END;
 /
 
@@ -1726,36 +1621,8 @@ col plan_name format a30
 SELECT signature, sql_handle, plan_name, enabled, accepted, fixed--, reproduced (avail on 11.2.0.2)
   FROM dba_sql_plan_baselines WHERE plan_name = :plan_name;
 col description format a100
-SELECT description
-  FROM dba_sql_plan_baselines WHERE plan_name = :plan_name;
+SELECT description FROM dba_sql_plan_baselines WHERE plan_name = :plan_name;
 SET ECHO OFF;
-/*
---tiger liu comment:PRO
---tiger liu comment:PRO ****************************************************************************
---tiger liu comment:PRO * Enter &&connected_user. password to export staging table STGTAB_BASELINE_&&original_sql_id.
---tiger liu comment:PRO ****************************************************************************
---tiger liu comment:HOS exp &&connected_user. tables=&&connected_user..STGTAB_BASELINE_&&original_sql_id. file=STGTAB_BASELINE_&&original_sql_id..dmp statistics=NONE indexes=N constraints=N grants=N triggers=N
---tiger liu comment:PRO
---tiger liu comment:PRO If you need to implement this SQL Plan Baseline on a similar system,
---tiger liu comment:PRO import and unpack using these commands:
---tiger liu comment:PRO
---tiger liu comment:PRO imp &&connected_user. file=STGTAB_BASELINE_&&original_sql_id..dmp tables=STGTAB_BASELINE_&&original_sql_id. ignore=Y
---tiger liu comment:PRO
---tiger liu comment:PRO SET SERVEROUT ON;;
---tiger liu comment:PRO DECLARE
---tiger liu comment:PRO   plans NUMBER;;
---tiger liu comment:PRO BEGIN
---tiger liu comment:PRO   plans := DBMS_SPM.UNPACK_STGTAB_BASELINE('STGTAB_BASELINE_&&original_sql_id.', '&&connected_user.');;
---tiger liu comment:PRO   DBMS_OUTPUT.PUT_LINE(plans||' plan(s) unpackaged');;
---tiger liu comment:PRO END;;
---tiger liu comment:PRO /
---tiger liu comment:PRO
---tiger liu comment:SPO OFF;
---tiger liu comment:HOS zip -m coe_load_sql_baseline_&&original_sql_id. coe_load_sql_baseline_&&original_sql_id..log STGTAB_BASELINE_&&original_sql_id..dmp coe_load_sql_baseline.log
---tiger liu comment:HOS zip -d coe_load_sql_baseline_&&original_sql_id. coe_load_sql_baseline.log
-*/
-
-PRO coe_load_sql_baseline completed.(script modified by Tiger Liu)
 
 !
 exit 0
@@ -1819,14 +1686,12 @@ if [ "$1" = "dir" ]; then
     col owner format a12 trunc
     col DIRECTORY_NAME format a25 trunc
     col DIRECTORY_path format a100
-
     select owner,DIRECTORY_NAME,DIRECTORY_path from dba_directories order by 1,2,3;
     $ECHO
 !
 exit 0
 fi
-
-################################################################################
+########################################
 if [ "$1" = "iostat" -o "$1" = "batch_iostat" -o "$1" = "batch_iostats" -o "$1" = "batch_io" ]; then
     if [ "$2" = ""  -o  "$3" = "" ]; then
       #echo "ora iostat <bid> <eid> "
@@ -2074,9 +1939,7 @@ if [ "$1" = "file" -o "$1" = "files" ]; then
 !
 exit 0
 fi
-
-
-################################################################################
+###############################################
 if [ "$1" = "topsql_by_plan" ]; then
   echo "ora topsql_by_plan cpu|read|time"
   if [ "$2" = "" -o "$2" = "cpu" ]; then
@@ -2150,8 +2013,6 @@ echo "instance_number=$INST"
 echo "top sql group by plan hash value,orderby $orderby , top $topn"
 exit 0
 fi
-
-
 ################################################################################
 if [ "$1" = "toparea_by_sig" ]; then
     echo "ora toparea_by_sig cpu|read|time"
@@ -3225,13 +3086,10 @@ declare
    procedure extract_ash is
        ash_i varchar2(30);
        s gv\$session%rowtype;
-
    begin
        g_ash_samples_taken := g_ash_samples_taken + 1;
        ash_i := g_sessions.first;
-
        while ash_i is not null loop
-
           s := g_sessions(ash_i);
           if -- active, on cpu
               (s.status = 'ACTIVE' and s.state != 'WAITING' and s.sid != g_mysid)
@@ -3248,10 +3106,7 @@ declare
                  s.p2:=NULL;
                  s.p3:=NULL;
              end if;
-
              g_ash.extend;
-
-             -- max length 1000 bytes (due to dbms_debug_vc2coll)
              g_ash(g_ash.count) := substr(
                             sitem(s.inst_id)                   --  1
                           ||sitem(s.sid)                       --  2
@@ -3289,38 +3144,24 @@ declare
                           ||sitem(s.client_identifier)         -- 29  -- 64 bytes
                           ||sitem(s.service_name)              -- 30  -- 64 bytes, 10g+
                     , 1, 1000);
-
           end if; -- sample is of an active session
-
           ash_i := g_sessions.next(ash_i);
-
        end loop;
-
    exception
        when no_data_found then output('error in extract_ash(): no_data_found for item '||i);
    end; -- extract_ash
 
-
-   /*---------------------------------------------------
-    -- proc for querying performance data into collections
-    ---------------------------------------------------*/
    procedure snap( p_snapdate out timestamp, p_stats out stab, l_stats out ltab, p_stats_string out sys.dbms_debug_vc2coll) is
-
         lv_include_stat  varchar2(1000) := nvl( lower(getopt('&snapper_options', 'sinclude=' )), '%');
         lv_include_latch varchar2(1000) := nvl( lower(getopt('&snapper_options', 'linclude=' )), '%');
         lv_include_time  varchar2(1000) := nvl( lower(getopt('&snapper_options', 'tinclude=' )), '%');
         lv_include_wait  varchar2(1000) := nvl( lower(getopt('&snapper_options', 'winclude=' )), '%');
-
         lstr             varchar2(1000);
-
    begin
-
         p_snapdate := systimestamp;
-
         select /* get_session_stats */ p_snapdate ts, snapper_stats.*
         bulk collect into p_stats
-        from (
-                                         select 'STAT' stype, s.inst_id, s.sid, ss.statistic# - pls_adjust statistic#, ss.value, null event_count
+        from ( select 'STAT' stype, s.inst_id, s.sid, ss.statistic# - pls_adjust statistic#, ss.value, null event_count
                                          from gv\$session s, gv\$sesstat ss
                                          where &sid_filter --(inst_id,sid) in (&snapper_sid)
                                          and s.inst_id = ss.inst_id
@@ -3330,10 +3171,8 @@ declare
                                                             where lower(name) like '%'||lv_include_stat||'%'
                                                             or regexp_like (name, lv_include_stat, 'i')
                                                            )
-                                         --
                                          union all
-                                         select
-                                                'WAIT', s.inst_id, s.sid,
+                                         select 'WAIT', s.inst_id, s.sid,
                                                 en.event# + (select count(*) from v\$statname) + 1 - pls_adjust,
                                                 nvl(se.time_waited_micro,0) + ( decode(se.event||s.state, s.event||'WAITING', s.seconds_in_wait, 0) * 1000000 ) value, total_waits event_count
                                          from gv\$session s, gv\$session_event se, v\$event_name en
@@ -3341,13 +3180,11 @@ declare
                                          and   s.sid = se.sid
                                          and   s.inst_id = se.inst_id
                                          and   se.event = en.name
-                                         --and   (se.inst_id, se.sid) in (&snapper_sid)
                                          and   (lv_gather like '%w%' or lv_gather like '%a%')
                                          and   en.event#  in (select event# from v\$event_name
                                                             where lower(name) like '%'||lv_include_wait||'%'
                                                             or    regexp_like (name, lv_include_wait, 'i')
                                                            )
-                                         --
                                          union all
                                          select 'TIME' stype, s.inst_id, s.sid, st.stat_id - pls_adjust statistic#, st.value, null event_count
                                          from gv\$session s, gv\$sess_time_model st
@@ -3437,18 +3274,12 @@ declare
         end if;  -- p.stats.COUNT > 0
    end snap;
 
-
-   /*---------------------------------------------------
-    -- proc for reversing the string-normalized
-    -- stats array into lookup tables/collections
-    ---------------------------------------------------*/
    procedure snap_from_stats_string (p_string_stats in sys.dbms_debug_vc2coll, p_snapdate out timestamp, p_stats out stab, l_stats out ltab)
    is
      lstr varchar2(1000);
      lv_rec srec;
    begin
        p_snapdate := NULL;
-       --type srec is record (stype varchar2(4), sid number, statistic# number, value number, event_count number );
        for s in p_string_stats.first .. p_string_stats.last loop
            lv_rec.ts          := TO_TIMESTAMP(replace(regexp_substr(p_string_stats(s)||',', '(.*?),', 1, 1),',',''), 'YYYY-MM-DD HH24:MI:SS.FF');
            lv_rec.stype       :=              replace(regexp_substr(p_string_stats(s)||',', '(.*?),', 1, 2),',','');
@@ -3457,23 +3288,13 @@ declare
            lv_rec.statistic#  :=    TO_NUMBER(replace(regexp_substr(p_string_stats(s)||',', '(.*?),', 1, 5),',',''));
            lv_rec.value       :=    TO_NUMBER(replace(regexp_substr(p_string_stats(s)||',', '(.*?),', 1, 6),',',''));
            lv_rec.event_count :=    TO_NUMBER(replace(regexp_substr(p_string_stats(s)||',', '(.*?),', 1, 7),',',''));
-           --output('snap_from_stats_string.event_count = '||to_char(lv_rec.event_count));
-
            p_stats(s) := lv_rec;
            lstr := p_stats(s).stype||','||trim(to_char(p_stats(s).inst_id))||','||trim(to_char(p_stats(s).sid))||','||trim(to_char(p_stats(s).statistic#,'999999999999999999999999'));
            l_stats(lstr) := p_stats(s);
        end loop;
-
        p_snapdate := lv_rec.ts;
    end snap_from_stats_string;
-
-   /*---------------------------------------------------
-    -- proc for dumping ASH data out in grouped
-    -- and ordered fashion
-    ---------------------------------------------------*/
     procedure out_ash( p_ash_columns in varchar2, p_topn in number := 10 ) as
-
-        -- whether to print given column or not
         p_inst_id                     number := 0;
         p_sid                         number := 0;
         p_username                    number := 0;
@@ -3504,8 +3325,6 @@ declare
         p_action                      number := 0;
         p_client_identifier           number := 0;
         p_service_name                number := 0;
-
-        -- temporary variables for holding session details (for later formatting)
         o_inst_id                     varchar2(100);
         o_sid                         varchar2(100);
         o_username                    varchar2(100);
@@ -3536,45 +3355,18 @@ declare
         o_action                      varchar2(100);
         o_client_identifier           varchar2(100);
         o_service_name                varchar2(100);
-
-        -- helper local vars
         l_ash_grouping                number := 0;
         l_output_line                 varchar2(4000);
         l_ash_header_line             varchar2(4000);
-
     begin
-
-      -- bail out if no ASH samples recorded
       if g_ash.count = 0 then
           output('    <No active sessions captured during the sampling period>');
           return;
       end if;
-
-
       l_ash_header_line := 'Active%';
-
-      -- ash,ash1,ash2,ash3 parameter column group tokenizer
-      for s in (
-          SELECT LEVEL
-                 , SUBSTR
-                   ( TOKEN
-                    , DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)
-                    , INSTR(TOKEN, DELIMITER, 1, LEVEL) -
-                   DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)
-                   ) TOKEN
-          FROM ( SELECT REPLACE(  LOWER(p_ash_columns)  ,' ','')||'+' AS TOKEN
-                 , '+'                        AS DELIMITER
-                 FROM DUAL
-          )
-          CONNECT BY
-              INSTR(TOKEN, DELIMITER, 1, LEVEL)>0
-          ORDER BY
-              LEVEL ASC
-      ) loop
-
-          case s.token
-              -- actual column names in gv\$session
-              when 'inst_id'                      then l_ash_grouping := l_ash_grouping + c_inst_id                  ; l_ash_header_line := l_ash_header_line || ' | ' || lpad('INST_ID'                   , w_inst_id                  , ' ');
+      for s in ( SELECT LEVEL, SUBSTR (TOKEN , DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1), INSTR(TOKEN, DELIMITER, 1, LEVEL) - DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)) TOKEN
+          FROM ( SELECT REPLACE(  LOWER(p_ash_columns)  ,' ','')||'+' AS TOKEN, '+' AS DELIMITER FROM DUAL) CONNECT BY INSTR(TOKEN, DELIMITER, 1, LEVEL)>0 ORDER BY LEVEL ASC) loop
+          case s.token when 'inst_id' then l_ash_grouping := l_ash_grouping + c_inst_id ; l_ash_header_line := l_ash_header_line || ' | ' || lpad('INST_ID'                   , w_inst_id                  , ' ');
               when 'sid'                          then l_ash_grouping := l_ash_grouping + c_sid                      ; l_ash_header_line := l_ash_header_line || ' | ' || lpad('SID'                       , w_sid                      , ' ');
               when 'username'                     then l_ash_grouping := l_ash_grouping + c_username                 ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('USERNAME'                  , w_username                 , ' ');
               when 'machine'                      then l_ash_grouping := l_ash_grouping + c_machine                  ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('MACHINE'                   , w_machine                  , ' ');
@@ -3628,24 +3420,15 @@ declare
               when 'wait_state'                   then l_ash_grouping := l_ash_grouping + c_state                    ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('STATE'                     , w_state                    , ' ');
           else
               null;
-              -- raise_application_error(-20000, 'Invalid ASH column name');
           end case; -- case s.token
-
       end loop; -- tokenizer
-
       output(' ');
       output(lpad('-',length(l_ash_header_line),'-'));
       output(l_ash_header_line);
       output(lpad('-',length(l_ash_header_line),'-'));
-
-      -- this is needed for "easy" sorting and group by ops (without any custom stored object types!)
       for i in (
-          with /* get_aggregates_from_ash */ raw_records as (
-             select column_value rec from table(cast(g_ash as sys.dbms_debug_vc2coll))
-          ),
-          ash_records as (
-             select
-                 substr(r.rec, instr(r.rec, '<', 1,  1)+1, instr (substr(r.rec, instr(r.rec, '<', 1,  1)+1), '>')-1) inst_id
+          with /* get_aggregates_from_ash */ raw_records as ( select column_value rec from table(cast(g_ash as sys.dbms_debug_vc2coll))),
+          ash_records as ( select substr(r.rec, instr(r.rec, '<', 1,  1)+1, instr (substr(r.rec, instr(r.rec, '<', 1,  1)+1), '>')-1) inst_id
                , substr(r.rec, instr(r.rec, '<', 1,  2)+1, instr (substr(r.rec, instr(r.rec, '<', 1,  2)+1), '>')-1) sid
                , substr(r.rec, instr(r.rec, '<', 1,  3)+1, instr (substr(r.rec, instr(r.rec, '<', 1,  3)+1), '>')-1) username
                , substr(r.rec, instr(r.rec, '<', 1,  4)+1, instr (substr(r.rec, instr(r.rec, '<', 1,  4)+1), '>')-1) machine
@@ -3675,12 +3458,9 @@ declare
                , substr(r.rec, instr(r.rec, '<', 1, 28)+1, instr (substr(r.rec, instr(r.rec, '<', 1, 28)+1), '>')-1) action
                , substr(r.rec, instr(r.rec, '<', 1, 29)+1, instr (substr(r.rec, instr(r.rec, '<', 1, 29)+1), '>')-1) client_identifier
                , substr(r.rec, instr(r.rec, '<', 1, 30)+1, instr (substr(r.rec, instr(r.rec, '<', 1, 30)+1), '>')-1) service_name
-             from
-                raw_records r
+             from raw_records r
           )
-          select * from (
-            select
-               decode(bitand(l_ash_grouping, power(2, s_inst_id                       )), 0, chr(0), inst_id                       ) as inst_id
+          select * from ( select decode(bitand(l_ash_grouping, power(2, s_inst_id                       )), 0, chr(0), inst_id                       ) as inst_id
              , decode(bitand(l_ash_grouping, power(2, s_sid                           )), 0, chr(0), sid                           ) as sid
              , decode(bitand(l_ash_grouping, power(2, s_username                      )), 0, chr(0), username                      ) as username
              , decode(bitand(l_ash_grouping, power(2, s_machine                       )), 0, chr(0), machine                       ) as machine
@@ -3711,9 +3491,7 @@ declare
              , decode(bitand(l_ash_grouping, power(2, s_client_identifier             )), 0, chr(0), client_identifier             ) as client_identifier
              , decode(bitand(l_ash_grouping, power(2, s_service_name                  )), 0, chr(0), service_name                  ) as service_name
              , count(*)/g_ash_samples_taken average_active_samples
-            from
-               ash_records a
-            group by
+            from ash_records a group by
                decode(bitand(l_ash_grouping, power(2, s_inst_id                       )), 0, chr(0), inst_id                       ) -- inst_id
              , decode(bitand(l_ash_grouping, power(2, s_sid                           )), 0, chr(0), sid                           ) -- sid
              , decode(bitand(l_ash_grouping, power(2, s_username                      )), 0, chr(0), username                      ) -- username
@@ -3744,14 +3522,12 @@ declare
              , decode(bitand(l_ash_grouping, power(2, s_action                        )), 0, chr(0), action                        ) -- action
              , decode(bitand(l_ash_grouping, power(2, s_client_identifier             )), 0, chr(0), client_identifier             ) -- client_identifier
              , decode(bitand(l_ash_grouping, power(2, s_service_name                  )), 0, chr(0), service_name                  ) -- service_name
-           order by
-              count(*)/g_ash_samples_taken desc
+           order by count(*)/g_ash_samples_taken desc
           )
           where rownum <= p_topn
       ) loop
 
           l_output_line := '';
-
           o_inst_id                     := CASE WHEN i.inst_id                        = chr(0) THEN null ELSE nvl(i.inst_id                       , ' ') END;
           o_sid                         := CASE WHEN i.sid                            = chr(0) THEN null ELSE nvl(i.sid                           , ' ') END;
           o_username                    := CASE WHEN i.username                       = chr(0) THEN null ELSE nvl(i.username                      , ' ') END;
@@ -3782,40 +3558,17 @@ declare
           o_action                      := CASE WHEN i.action                         = chr(0) THEN null ELSE nvl(i.action                        , ' ') END;
           o_client_identifier           := CASE WHEN i.client_identifier              = chr(0) THEN null ELSE nvl(i.client_identifier             , ' ') END;
           o_service_name                := CASE WHEN i.service_name                   = chr(0) THEN null ELSE nvl(i.service_name                  , ' ') END;
-
-
-          -- print the activity % as the first column
           l_output_line := lpad(to_char(round(i.average_active_samples*100))||'%', w_activity_pct, ' ');
-
-          -- loop through ash columns to find what to print and in which order
-          for s in (
-              SELECT LEVEL
-                     , SUBSTR
-                       ( TOKEN
-                        , DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)
-                        , INSTR(TOKEN, DELIMITER, 1, LEVEL) -
-                       DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)
-                       ) TOKEN
-              FROM ( SELECT REPLACE(  LOWER(p_ash_columns)  ,' ','')||'+' AS TOKEN
-                     , '+'                        AS DELIMITER
-                     FROM DUAL
-              )
-              CONNECT BY
-                  INSTR(TOKEN, DELIMITER, 1, LEVEL)>0
-              ORDER BY
-                  LEVEL ASC
+          for s in (SELECT LEVEL, SUBSTR (TOKEN  , DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1), INSTR(TOKEN, DELIMITER, 1, LEVEL) - DECODE(LEVEL, 1, 1, INSTR(TOKEN, DELIMITER, 1, LEVEL-1)+1)) TOKEN
+              FROM (SELECT REPLACE(  LOWER(p_ash_columns)  ,' ','')||'+' AS TOKEN, '+' AS DELIMITER FROM DUAL )
+              CONNECT BY INSTR(TOKEN, DELIMITER, 1, LEVEL)>0 ORDER BY LEVEL ASC
           ) loop
               l_output_line := l_output_line || ' | ' ||
-                  case s.token
-                      -- actual column names in gv\$session
-                      when 'inst_id'                      then lpad(o_inst_id                   , w_inst_id                  , ' ')
-                      when 'sid'                          then lpad(o_sid                       , w_sid                      , ' ')
-                      when 'username'                     then rpad(o_username                  , w_username                 , ' ')
-                      when 'machine'                      then rpad(o_machine                   , w_machine                  , ' ')
-                      when 'terminal'                     then rpad(o_terminal                  , w_terminal                 , ' ')
-                      when 'program'                      then rpad(o_program                   , w_program                  , ' ')
-                      when 'event'                        then rpad(o_event                     , w_event                    , ' ')
-                      when 'wait_class'                   then rpad(o_wait_class                , w_wait_class               , ' ')
+                  case s.token when 'inst_id' then lpad(o_inst_id, w_inst_id, ' ')
+                      when 'sid' then lpad(o_sid, w_sid, ' ')  when 'username' then rpad(o_username, w_username, ' ')
+                      when 'machine' then rpad(o_machine, w_machine, ' ') when 'terminal' then rpad(o_terminal, w_terminal, ' ')
+                      when 'program' then rpad(o_program , w_program , ' ') when 'event' then rpad(o_event, w_event, ' ')
+                      when 'wait_class' then rpad(o_wait_class, w_wait_class, ' ')
                       when 'state'                        then rpad(o_state                     , w_state                    , ' ')
                       when 'p1'                           then rpad(o_p1                        , w_p1                       , ' ')
                       when 'p2'                           then rpad(o_p2                        , w_p2                       , ' ')
@@ -3863,33 +3616,18 @@ declare
                   else
                       ''
                   end; -- case s.token
-
           end loop; -- ash parameter tokenizer
-
           output(l_output_line);
-
       end loop; -- grouped ash samples
-
   end out_ash;
 
-
--- and it begins!!!
 begin
-
-    -- get snappers own sid into g_mysid
     select sid into g_mysid from v\$mystat where rownum = 1;
-
     pagesize := nvl( getopt('&snapper_options', 'pagesize=' ), pagesize);
-    --output ( 'Pagesize='||pagesize );
-
     lv_ash   := getopt('&snapper_options', 'ash');
     lv_stats := getopt('&snapper_options', 'stat');
-
     if lv_ash is not null then gather_ash := 1; end if;
     if lv_stats is not null then gather_stats := 1; end if;
-
-    --output('all='||case when getopt('&snapper_options', 'all') = chr(0) then 'chr(0)' when getopt('&snapper_options', 'all') is null then 'null' else (getopt('&snapper_options','all')) end);
-    -- some additional default value logic
     if getopt('&snapper_options', 'all') is not null then
         --output('setting stats to all due to option = all');
         gather_stats := 1;
@@ -3900,56 +3638,34 @@ begin
             gather_ash   := 1;
         end if;
     end if;
-
-    -- determine which performance counters and stats to collect
     lv_gather := case nvl( lower(getopt ('&snapper_options', 'gather=')), 'stw')
                     when 'all'  then 'stw'
                     else nvl( lower(getopt ('&snapper_options', 'gather=')), 'stw')
                  end;
-
-    --lv_gather:=getopt ('&snapper_options', 'gather=');
-    --output('lv_gather='||lv_gather);
-
     g_snap_begin := lower(getopt('&snapper_options', 'begin' ));
     g_snap_end   := lower(getopt('&snapper_options', 'end' ));
-    --output('g_snap_begin = '||g_snap_begin);
-    --output('g_snap_end = '||g_snap_end);
 
     if pagesize > 0 then
         output(' ');
         output(' ');
     end if;
-
-    -- initialize statistic and event name array
-    -- fetch statistic names with their adjusted IDs
     select /* get_stat_names */ *
     bulk collect into sn_tmp
-    from (
-                                 select 'STAT' stype, statistic# - pls_adjust statistic#, name
-                                 from v\$statname
+    from ( select 'STAT' stype, statistic# - pls_adjust statistic#, name from v\$statname
                                  where (lv_gather like '%s%' or lv_gather like '%a%')
-                                 --
                                  union all
-                                 select 'WAIT',
-                                        event# + (select count(*) from v\$statname) + 1 - pls_adjust, name
+                                 select 'WAIT', event# + (select count(*) from v\$statname) + 1 - pls_adjust, name
                                  from v\$event_name
                                  where (lv_gather like '%w%' or lv_gather like '%a%')
-                                 --
                                  union all
                                  select 'TIME' stype, stat_id - pls_adjust statistic#, stat_name name
                                  from gv\$sys_time_model
                                  where (lv_gather like '%t%' or lv_gather like '%a%')
                                  --
                                  union all
-                                 select 'LATG',
-                                       l.latch# +
-                                           (select count(*) from v\$statname) +
-                                           (select count(*) from v\$event_name) +
-                                           1 - pls_adjust statistic#,
-                                       name
+                                 select 'LATG',l.latch# + (select count(*) from v\$statname) + (select count(*) from v\$event_name) + 1 - pls_adjust statistic#, name
                                  from gv\$latch l
                                  where (lv_gather like '%l%' or lv_gather like '%a%')
-                                 --
             &_IF_X_ACCESSIBLE    union all
             &_IF_X_ACCESSIBLE    select 'BUFG',
             &_IF_X_ACCESSIBLE          indx +
@@ -3962,42 +3678,23 @@ begin
             &_IF_X_ACCESSIBLE    where   (lv_gather like '%b%' or lv_gather like '%a%')
                                  --
                                  union all
-                                 select 'ENQG',
-                                       ascii(substr(e.eq_type,1,1))*256 + ascii(substr(e.eq_type,2,1)) +
+                                 select 'ENQG', ascii(substr(e.eq_type,1,1))*256 + ascii(substr(e.eq_type,2,1)) +
                                            (select count(*) from v\$statname) +
                                            (select count(*) from v\$event_name) +
                                            (select count(*) from gv\$latch) +
             &_IF_X_ACCESSIBLE              (select count(*) from x\$kcbwh) +
                                            1 - pls_adjust statistic#,
                                            eq_type
-                                 from (
-                                       select es.eq_type
-                                              ||' - '||lt.name
-                                              eq_type,
-                                              total_req#
-                                       from
-                                              gv\$enqueue_stat es
-                                            , gv\$lock_type lt
-                                       where es.eq_type = lt.type
-                                 ) e
-                                 where (lv_gather like '%e%' or lv_gather like '%a%')
+                                 from ( select es.eq_type ||' - '||lt.name eq_type, total_req# from gv\$enqueue_stat es, gv\$lock_type lt where es.eq_type = lt.type
+                                 ) e where (lv_gather like '%e%' or lv_gather like '%a%')
     ) snapper_statnames
     order by stype, statistic#;
-
-    -- store these into an index_by array organized by statistic# for fast lookup
     for i in 1..sn_tmp.count loop
         sn(sn_tmp(i).statistic#) := sn_tmp(i);
         sn_reverse(sn_tmp(i).stype||','||sn_tmp(i).name) := sn_tmp(i);
     end loop;
-
-
-    -- main sampling loop
     for c in 1..&snapper_count loop
-
-        -- sesstat and other performance counter sampling
         if gather_stats = 1 then
-
-            -- print header if required
             gv_header_string :=
                       CASE WHEN output_header      = 1 THEN 'HEAD,'                        END
                    || CASE WHEN output_inst        = 1 THEN ' INST,'                       END
@@ -4018,8 +3715,6 @@ begin
                    || CASE WHEN output_eventcnt_s  = 1 THEN '  WAITS/SEC,'                 END
                    || CASE WHEN output_eventavg    = 1 THEN '   AVERAGES                                    ' END
             ;
-
-
             if g_snap_begin is null then
                 if pagesize > 0 and mod(c-1, pagesize) = 0 then
                     output(rpad('-',length(gv_header_string),'-'));
@@ -4033,11 +3728,6 @@ begin
             else
                 output('Taking BEGIN sample ...');
             end if;
-
-            -- TODO raise an error if both begin and end are used together
-            -- TODO conditionally comment out the refcursor use unless begin and end is used
-
-            -- manual before/after snapshots (snapper v4)
             if g_snap_begin is not null or g_snap_end is not null then
                 if g_snap_begin is not null then
                     get_sessions;
@@ -4045,7 +3735,6 @@ begin
 &_MANUAL_SNAPSHOT   open :snapper for select column_value rec from table(g_snap1); -- if you see this error then run: "VAR SNAPPER REFCURSOR" first!
                     exit;
                 end if;
-
                 if g_snap_end is not null then
 &_MANUAL_SNAPSHOT   fetch :snapper bulk collect into g_snap1; -- You should run snapper with BEGIN option first!
                     -- procedure snap_from_stats_string (p_string_stats in sys.dbms_debug_vc2coll, p_snapdate out date, p_stats out stab, l_stats out ltab)
@@ -4062,12 +3751,7 @@ begin
                     g_snap1 := g_snap2;
                 end if; -- c = 1
             end if;
-
         end if; -- gather_stats = 1
-
-
-
-        -- ASH style sampling
 &_USE_DBMS_LOCK ash_date1 := sysdate;
 &_USE_DBMS_LOCK if gather_ash = 1 then
 &_USE_DBMS_LOCK     while sysdate < (ash_date1 + (&snapper_sleep/86400)) loop
@@ -4084,146 +3768,91 @@ begin
 &_USE_DBMS_LOCK     null;
 &_USE_DBMS_LOCK end if;
 &_USE_DBMS_LOCK ash_date2 := sysdate;
-
-        -- sesstat new sample and delta calculation
         if gather_stats = 1 then
-
             get_sessions;
             snap(d2,s2,l2,g_snap2);
             changed_values := 0;
             missing_values_s1 := 0;
             missing_values_s2 := 0;
-
             disappeared_sid := 0;
-
             i :=1; -- iteration counter (for debugging)
             a :=1; -- s1 array index
             b :=1; -- s2 array index
-
             if s2.count > 0 then lv_curr_sid := s2(b).sid; end if;
-
             while ( a <= s1.count and b <= s2.count ) loop
-
                 if lv_curr_sid != 0 and lv_curr_sid != s2(b).sid then
                     if pagesize > 0 and mod(c-1, pagesize) = 0 then
-                        -- if filtering specific stats, assuming that it's better to not leave spaces between every session data
-
                         if getopt('&snapper_options', 'sinclude=')||getopt('&snapper_options', 'tinclude=' )||getopt('&snapper_options', 'winclude=' ) is null then
                             output(' ');
                         end if;
                     end if;
                     lv_curr_sid := s2(b).sid;
                 end if;
-
                 delta := 0; -- don't print
-
-                case
-                    when s1(a).sid = s2(b).sid then
-
-                        case
-                            when s1(a).statistic# = s2(b).statistic# then
-
+                case when s1(a).sid = s2(b).sid then
+                      case when s1(a).statistic# = s2(b).statistic# then
                                 delta := s2(b).value - s1(a).value;
                                 evcnt := s2(b).event_count - s1(a).event_count;
-
                                 if delta != 0 then fout(); end if;
-
                                 a := a + 1;
                                 b := b + 1;
-
                             when s1(a).statistic# > s2(b).statistic# then
-
                                 delta := s2(b).value;
                                 evcnt := s2(b).event_count;
                                 if delta != 0 then fout(); end if;
-
                                 b := b + 1;
-
                             when s1(a).statistic# < s2(b).statistic# then
-
                                 output('ERROR, s1(a).statistic# < s2(b).statistic#, a='||to_char(a)||' b='||to_char(b)||' s1.count='||s1.count||' s2.count='||s2.count||' s2.count='||s2.count);
                                 a := a + 1;
                                 b := b + 1;
-
                         else
                                 output('ERROR, s1(a).statistic# ? s2(b).statistic#, a='||to_char(a)||' b='||to_char(b)||' s1.count='||s1.count||' s2.count='||s2.count||' s2.count='||s2.count);
                                 a := a + 1;
                                 b := b + 1;
-
                         end case; -- s1(a).statistic# ... s2(b).statistic#
-
                     when s1(a).sid > s2(b).sid then
-
                         delta := s2(b).value;
                         evcnt := s2(b).event_count;
                         if delta != 0 then fout(); end if;
-
                         b := b + 1;
-
                     when s1(a).sid < s2(b).sid then
-
                         if disappeared_sid != s1(a).sid then
                             output('WARN, Session has disappeared since previous snapshot, ignoring SID='||to_char(s1(a).sid)||' debug(a='||to_char(a)||' b='||to_char(b)||' s1.count='||s1.count||' s2.count='||s2.count||' s2.count='||s2.count||')');
                         end if;
                         disappeared_sid := s1(a).sid;
                         a := a + 1;
-
                     else
                         output('ERROR, Should not be here, SID='||to_char(s2(b).sid)||' a='||to_char(a)||' b='||to_char(b)||' s1.count='||s1.count||' s2.count='||s2.count||' s2.count='||s2.count);
-
                 end case; -- s1(a).sid ... s2(b).sid
-
                 i:=i+1;
-
                 if  delta != 0 then
-
                     changed_values := changed_values + 1;
-
                 end if; -- delta != 0
-
             end loop; -- while ( a <= s1.count and b <= s2.count )
-
             if pagesize > 0 and changed_values > 0 then
                 output(' ');
                 output('--  End of Stats snap '||to_char(c)||', end='||to_char(d2, 'YYYY-MM-DD HH24:MI:SS')||', seconds='||round(get_seconds(d2-d1), 1));
             end if;
-
             output(' ');
-
         end if; -- gather_stats = 1
-
         if gather_ash = 1 then
-
-            -- get ASH sample grouping details
             g_ash_columns  := nvl( getopt('&snapper_options', 'ash='  ), g_ash_columns  );
-
-            -- optional additional ASH groupings
             g_ash_columns1 := case when getopt('&snapper_options', 'ash1' ) is null then null when getopt('&snapper_options', 'ash1' ) = chr(0) then g_ash_columns1 else getopt('&snapper_options', 'ash1=' ) end;
             g_ash_columns2 := case when getopt('&snapper_options', 'ash2' ) is null then null when getopt('&snapper_options', 'ash2' ) = chr(0) then g_ash_columns2 else getopt('&snapper_options', 'ash2=' ) end;
             g_ash_columns3 := case when getopt('&snapper_options', 'ash3' ) is null then null when getopt('&snapper_options', 'ash3' ) = chr(0) then g_ash_columns3 else getopt('&snapper_options', 'ash3=' ) end;
-
-            -- group ASH records and print report
             out_ash( g_ash_columns, 50 );
-            -- group and print optional ASH reports
             if g_ash_columns1 is not null then out_ash( g_ash_columns1, 10 ); end if;
             if g_ash_columns2 is not null then out_ash( g_ash_columns2, 10 ); end if;
             if g_ash_columns3 is not null then out_ash( g_ash_columns3, 10 ); end if;
-
-
             if pagesize > 0 then
                 output('--------------------------------------------------------------------------------------------------------------------------------------------------');
                 output(' ');
             end if;
-
             reset_ash();
-
         end if; -- gather_ash = 1
-
     end loop; -- for c in 1..snapper_count
-
 end;
 /
-
 undefine snapper_oraversion
 undefine snapper_sleep
 undefine snapper_count
@@ -4266,15 +3895,14 @@ with tmp as
 	a.machine,
 	a.program,
 	--status,
-	case a.SQL_OPCODE
-	when 1 then 'CREATE TABLE'
-	when 2 then 'INSERT'
-	when 3 then 'SELECT'
-	when 6 then 'UPDATE'
-	when 7 then 'DELETE'
-	when 9 then 'CREATE INDEX'
-	when 11 then 'ALTER INDEX'
-	when 15 then 'ALTER INDEX' else 'Others' end command,
+	case a.SQL_OPCODE when 1 then 'CREATE TABLE'
+	                  when 2 then 'INSERT'
+	                  when 3 then 'SELECT'
+	                  when 6 then 'UPDATE'
+	                  when 7 then 'DELETE'
+	                  when 9 then 'CREATE INDEX'
+	                  when 11 then 'ALTER INDEX'
+	                  when 15 then 'ALTER INDEX' else 'Others' end command,
 	case when a.SQL_ID is null then 'Null' when a.SQL_ID is not null then a.sql_id end as SQL_ID,
 	a.SQL_PLAN_HASH_VALUE,
 	nvl(a.event, 'ON CPU') event,
@@ -4313,7 +3941,7 @@ as "Wait_class%",
 max(command) as command,
 max(machine) as machine,
 max(top_level_sql_id) as procedure_sql_id
-FROM tmp GROUP BY sql_id ORDER BY COUNT (*) DESC
+FROM tmp GROUP BY sql_id ORDER BY COUNT(*) DESC
 ) x where rownum < 20;
 
 prompt Which Object Caused The Library Cache Wait
@@ -4367,7 +3995,7 @@ echo "snapper group by sql_id,event ,from $btime, last $dur ,top 20 sql with eve
 echo "./ora snapper <begin_time> <duration> [30]"
   exit 0
 fi
-################################################################################
+##########################################
 if [ "$1" = "batch_event" ]; then
 echo ""
 echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
@@ -8663,7 +8291,6 @@ exit 0
 fi
 
 ######################################################
-
 if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -8673,24 +8300,21 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
     set linesize 300 pagesize 30
     col "sid and serial@inst_id" format a24
     col OBJECT_NAME format a25
-    col SQL_TEXT format a50
+    col SQL_TEXT format a42 trunc
     col event format a30
     col module format a10 trunc
     col machine format a15 trunc
+    col owner_and_object_name for a32
     spool ora_lock_$filedate.log
     pro
     pro SHOW Blocking and Blocked Session Information...
      WITH sessions AS
-        (SELECT /*+materialize*/
-                sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event
-           FROM gv\$session
-         )
+        (SELECT /*+materialize*/ sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event FROM gv\$session)
     SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id",
-    s.module, s.machine, object_name, s.sql_id, s.event, substr(sql_text,1,50) sql_text
+    s.module, s.machine, owner ||'.'||object_name as owner_and_object_name, s.sql_id, s.event, substr(sql_text,1,50) sql_text
        FROM sessions s
-       LEFT OUTER JOIN dba_objects
-            ON (object_id = row_wait_obj#)
-       LEFT OUTER JOIN gv\$sqlarea gs--in case of duplicate sql_id
+       LEFT OUTER JOIN dba_objects ON (object_id = row_wait_obj#)
+       LEFT OUTER JOIN gv\$sqlarea gs
             on (s.sql_id=gs.sql_id and s.inst_id=gs.inst_id)
       WHERE (s.sid,s.inst_id) IN (SELECT blocking_session,BLOCKING_INSTANCE FROM sessions)
             OR blocking_session IS NOT NULL
@@ -8726,10 +8350,9 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
     col object_name format a30
     col oracle_username format a20
     col os_user_name format a20
-    select do.OWNER, do.OBJECT_NAME, do.OBJECT_ID, lo.SESSION_ID, lo.ORACLE_USERNAME, lo.OS_USER_NAME, lo.PROCESS, lo.LOCKED_MODE
+    select do.OWNER||'.'||do.OBJECT_NAME as owner_and_object_name, do.OBJECT_ID, lo.SESSION_ID, lo.ORACLE_USERNAME, lo.OS_USER_NAME, lo.PROCESS, lo.LOCKED_MODE
     from dba_objects do, v\$locked_object lo
-    where do.OBJECT_ID = lo.OBJECT_ID
-    order by owner,object_name;
+    where do.OBJECT_ID = lo.OBJECT_ID order by owner,object_name;
     $ECHO
     spool off
 !
@@ -13382,8 +13005,7 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
     connect $DBUSER
 
     set echo off
-    set lines 200
-    set pages 200
+    set lines 200 pages 200
 
     column curtyp           heading curtyp      format a6 truncate
     column lmd              heading lmd         format a2
