@@ -4015,7 +4015,7 @@ echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
 
 prompt Display Event by Minutes Top 3
 prompt ======================
-    set linesize 300 pages 6
+    set linesize 300 pages 5
     col sample_time for a16
     col event for a45
 with tmp as
@@ -4033,7 +4033,7 @@ with tmp as
 select * from (
     select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
 from tmp
-    ) where rn < 4;
+    ) where rn < 3;
 
     set linesize 300 pagesize 8
     col event format a30 trunc
@@ -5498,7 +5498,6 @@ if [ "$1" = "4030" ]; then
 echo "current instance only"
 exit 0
 fi
-
 ################10046 ###################
 if [ "$1" = "10046" ]; then
   echo ""
@@ -5511,6 +5510,9 @@ if [ "$1" = "10046" ]; then
   echo "alter session set events '10046 trace name context forever, level 12'; "
   echo "<Run your SQL here;>"
   echo "alter session set events '10046 trace name context off';"
+  echo "set line 2000"
+  echo "set pages 200"
+  echo "select TRACEFILE from v\$process where addr = (select paddr from v\$session where sid = (select sid from v\$mystat where rownum = 1));"
   echo "2.Format your 10046 trace file:"
   echo "\$tkprof <trace file> <output file>"
   echo "For example:"
@@ -5528,11 +5530,8 @@ select
 from
     v\$session s,
     v\$process p
-where
-    s.paddr = p.addr
-and
-    s.program like '%(J0%'
-/
+where s.paddr = p.addr
+and s.program like '%(J0%';
 
 -- Close 10046
 select
@@ -5542,16 +5541,12 @@ select
 from
    v\$session s,
    v\$process p
-where
-    s.paddr = p.addr
-and
-    s.program like '%(J0%'
-/
+where s.paddr = p.addr
+and s.program like '%(J0%';
   """
-
 exit 1
 fi
-################################################################################
+#################################################
 if [ "$1" = "pid" ]; then
 
   if [ "$2" = "" ]; then
@@ -5663,10 +5658,8 @@ if [ "$1" = "gather" ]; then
    echo "dbms_stats.gather_table_stats('$2','$3',cascade=>true,no_invalidate=>false); command executed"
 exit 0
 fi
-
-################################################################################
+################################################
 if [ "$1" = "top" ]; then
-
     if [ "$2" = "" ]; then
       dur=10
     else
@@ -5689,8 +5682,7 @@ if [ "$1" = "top" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     set trimspool on
     spool ora_top_$filedate.log
     prompt
@@ -5751,33 +5743,23 @@ if [ "$1" = "idx2sqlid" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
-
+    set pagesize 30 linesize 200
     col text_120 format a120
-
 
     Pro dba_hist_sql_plan and gv\$sql_plan*******************************:
     select sql_id,replace(replace(to_nchar(SUBSTR(sql_text,1,120)),chr(10),''),chr(13),'') as text_120
     from dba_hist_sqltext
-    where sql_id in
-    (
-      select sql_id from dba_hist_sql_plan where object_name=upper('$2')
-    )
+    where sql_id in ( select sql_id from dba_hist_sql_plan where object_name=upper('$2') )
     union
     select sql_id,replace(replace(to_nchar(SUBSTR(sql_text,1,120)),chr(10),''),chr(13),'') as text_120
     from gv\$sql
-    where sql_id in
-    (
-      select sql_id from gv\$sql_plan where object_name=upper('$2')
-    ) order by 1;
+    where sql_id in ( select sql_id from gv\$sql_plan where object_name=upper('$2') ) order by 1;
 $ECHO
 
 !
 exit 0
 fi
-
-################################################################################
+######################################
 if [ "$1" = "ashdump" ]; then
 
   if [ "$2" = "" ]; then
@@ -5917,7 +5899,6 @@ if [ "$1" = "outline" ]; then
     order by row_num;
     $ECHO
 
-
     --select name,hint as outline_hints
     --from (select p.name, p.signature, p.category, row_number()
     --      over (partition by sd.signature, sd.category order by sd.signature) row_num,
@@ -5991,7 +5972,7 @@ if [ "$1" = "top_level" ]; then
 !
 exit 0
 fi
-################################################################################
+##############################################
 if [ "$1" = "high_version" ]; then
 #usage ora high_version 100
   if [ "$2" = "" ]; then
@@ -6000,13 +5981,11 @@ if [ "$1" = "high_version" ]; then
     cnt=$2
   fi
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
 
     Pro Group by sql_id (having count(*)>$cnt):
     select sql_id, count(*) reasons_not_cursors
@@ -6040,8 +6019,7 @@ echo "instance_number=$INST"
 echo "display information for reasons cursor not shared more than $cnt."
 exit 0
 fi
-
-######################################################################
+#########################################
 if [ "$1" = "raw" ]; then
 
   if [ "$2" = "" -o "$3" = "" ]; then
@@ -6055,13 +6033,11 @@ if [ "$1" = "raw" ]; then
     dtype=$2
   fi
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     set serveroutput on feedback off
 
     declare
