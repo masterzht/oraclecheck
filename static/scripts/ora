@@ -11344,6 +11344,15 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     col TRU for a30
     col filename new_value filename
     col filename format a30
+    col WINDOW_NAME for a18
+    col REPEAT_INTERVAL for a56
+    col DURATION for a20
+    col resource_plan for a30
+    col schedule_owner for a20
+    col last_start_date for a20
+    col next_start_date for a20
+    col enable for A5
+    set trimspool on
     spool ora_stats_${tablename}_${filedate}.log
     set timing off
     set serveroutput on
@@ -11354,14 +11363,6 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     undefine owner
     var table_name varchar2(100);
     var owner varchar2(100);
-    col WINDOW_NAME for a18
-    col REPEAT_INTERVAL for a56
-    col DURATION for a20
-    col resource_plan for a30
-    col schedule_owner for a20
-    col last_start_date for a20
-    col next_start_date for a20
-    col enable for A5
     pro Gather Statistics Time Window
     pro ======================
 SELECT t1.window_name,t1.repeat_interval,t1.duration,to_char(t1.last_start_date,'yyyy-mm-dd hh24:mi:ss') as last_start_date,to_char(t1.next_start_date,'yyyy-mm-dd hh24:mi:ss') as next_start_date,enabled
