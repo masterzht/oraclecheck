@@ -694,8 +694,8 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     col GETS for a7
     col reads for 99999
     SET FEEDBACK ON
-    COL "elapsed(ms)" for 999999
-    COL "cpu(ms)" for 999999
+    COL "elapsed(ms)" for 99999999
+    COL "cpu(ms)" for 99999999
     SELECT INST_ID as "inst#",
            to_char(SQL_EXEC_START, 'mmdd hh24:mi:ss') SQL_EXEC_START,
            status,
@@ -11394,16 +11394,10 @@ FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window
     v_lock0 c_lock0%rowtype;
 
     cursor c_lock is select q'[exec DBMS_STATS.UNLOCK_TABLE_STATS(OWNNAME=> ']' || OWNER || q'[',TABNAME=> ']' || SEGMENT_NAME  || q'[');]' as sql_command
-  from (SELECT OWNER,
-                     SEGMENT_NAME,
-                     SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
+  from (SELECT OWNER, SEGMENT_NAME, SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
                 FROM DBA_SEGMENTS a
                WHERE (owner,SEGMENT_NAME) IN
-                     (SELECT /*+ UNNEST */
-                      DISTINCT owner,TABLE_NAME
-                        FROM DBA_TAB_STATISTICS
-                       WHERE  OWNER = :owner
-    and stattype_locked is not null)
+                     (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE OWNER = :owner and stattype_locked is not null)
                GROUP BY OWNER, SEGMENT_NAME);
     v_lock c_lock%rowtype;
 
@@ -11427,50 +11421,30 @@ GROUP BY owner, SEGMENT_NAME);
   from (
   SELECT owner,
         SEGMENT_NAME,
-             CASE WHEN SIZE_GB < 0.5 THEN 30
-               WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN 20
-               WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN 10
-               WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN 5
-               WHEN SIZE_GB >= 10 THEN 1
-             END AS PERCENT,
-             8 AS DEGREE
-        FROM (select OWNER,
-                     SEGMENT_NAME,
-                     SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
-                FROM DBA_SEGMENTS a
+        CASE WHEN SIZE_GB < 0.5 THEN 30 WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN 20 WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN 10 WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN 5 WHEN SIZE_GB >= 10 THEN 1 END AS PERCENT,
+        8 AS DEGREE
+        FROM (select OWNER, SEGMENT_NAME, SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB FROM DBA_SEGMENTS a
                WHERE (owner,SEGMENT_NAME) IN
                      (select /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE owner =:owner and (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7))
                GROUP BY OWNER, SEGMENT_NAME)
   order BY PERCENT);
     v_expire0 c_expire0%rowtype;
 
-    cursor c_temp is SELECT /*+ NO_MERGE */
-       s.owner, s.table_name
-  FROM dba_tab_statistics s,
-       dba_tables t
- WHERE s.object_type = 'TABLE'
-   AND s.owner = :owner
-   AND s.last_analyzed IS NOT NULL
-   /*AND s.stale_stats = 'YES'*/
-   AND t.temporary = 'Y'
-   AND t.owner = s.owner
-   AND t.table_name = s.table_name
-   AND NOT EXISTS (
-SELECT NULL
-  FROM dba_external_tables e
- WHERE e.owner = s.owner
-   AND e.table_name = s.table_name
-)
- ORDER BY
-       s.owner, s.table_name;
+    cursor c_temp is SELECT /*+ NO_MERGE */ s.owner, s.table_name
+     FROM dba_tab_statistics s, dba_tables t
+      WHERE s.object_type = 'TABLE'
+      and s.owner = :owner
+      and s.last_analyzed IS NOT NULL
+      /*and s.stale_stats = 'YES'*/
+      and t.temporary = 'Y'
+      and t.owner = s.owner
+      and t.table_name = s.table_name
+      and NOT EXISTS ( SELECT NULL FROM dba_external_tables e WHERE e.owner = s.owner AND e.table_name = s.table_name)
+ ORDER BY s.owner, s.table_name;
    v_temp c_temp%rowtype;
 
    cursor c_expire_index_stats is
-   SELECT /*+ NO_MERGE */
-       s.table_name,
-       s.index_name,
-       s.stale_stats,
-       to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed
+   SELECT /*+ NO_MERGE */ s.table_name, s.index_name, s.stale_stats, to_char(s.last_analyzed,'YYYY/MM/DD HH24:MI:SS') as last_analyzed
   FROM dba_ind_statistics s,
        dba_indexes t
  WHERE s.OBJECT_TYPE = 'INDEX'
@@ -11483,15 +11457,8 @@ SELECT NULL
    AND t.table_name = s.table_name
    AND t.temporary = 'N'
    and t.index_type != 'LOB'
-   AND NOT EXISTS (
-SELECT NULL
-  FROM dba_external_tables e
- WHERE e.owner = s.owner
-   AND e.owner = :owner
-   AND e.table_name = s.table_name
-)
- ORDER BY
-       s.owner, s.table_name;
+   AND NOT EXISTS (SELECT NULL from dba_external_tables e WHERE e.owner = s.owner AND e.owner = :owner AND e.table_name = s.table_name)
+ ORDER BY s.owner, s.table_name;
    v_expire_index_stats c_expire_index_stats%rowtype;
 
 begin
@@ -11629,8 +11596,7 @@ There is No Temporary Table That has been Gathered Statistics for Current Owner'
 end if;
 
 SELECT count(*) into v_cnt_expired_index_stats
-  FROM dba_ind_statistics s,
-       dba_indexes t
+  FROM dba_ind_statistics s, dba_indexes t
  WHERE s.OBJECT_TYPE = 'INDEX'
    AND s.owner = :owner
    AND (s.last_analyzed IS NULL or  s.stale_stats = 'YES' or s.last_analyzed < sysdate -7)
@@ -11678,8 +11644,7 @@ end;
 
   exit 0
 fi
-
-#####################################################################################################
+###################################################################
 if [ "$1" = "source" ]; then
 
     if [ "$2" = "" ]; then
@@ -11703,7 +11668,7 @@ if [ "$1" = "source" ]; then
 !
   exit 0
 fi
-#####################################################################################################
+##########################################################
 if [ "$1" = "x" ]; then
 
    if [ "$2" = "" ]; then
@@ -11717,7 +11682,7 @@ if [ "$1" = "x" ]; then
     connect $DBUSER
 
     set linesize 200 pagesize 600
-    set tab      off
+    set tab off
     col PARSING_SCHEMA_NAME for a16
     col plan_table format a180
     col snap_time for a12
