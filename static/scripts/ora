@@ -5819,7 +5819,7 @@ fi
 if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd" ]; then
   echo ""
   echo "http://orafun.info/stack"
-  echo "Collect systemtemp and hanganalyze!"
+  echo "Collect systemtemp and hanganalyze for 30 seconds!"
   echo "========================="
   # sqlplus -prelim / as sysdba
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -5837,6 +5837,45 @@ if [ "$1" = "systemdump" -o "$1" = "hanganalyze" -o "$1" = "hang" -o "$1" = "ssd
 !
 echo "on current instance"
 echo "risk operation,commented! If need , uncomment"
+echo """
+hanganalyze阅读步骤:
+step 1、
+search [State of ALL nodes] For the keyword Of hanganalyze file
+State of ALL nodes
+([nodenum]/cnode/sid/sess_srno/session/ospid/state/[adjlist]):
+([hanganalyze生成的session序列号]/实例编号/sid/serial#/会话的地址saddr/v\$process spid/状态/[表明会话是否等待,如有值,表明是持锁会话的CHAIN编号，否则为空])
+step2、
+search [LEAF] in [State of ALL nodes], LEAF means the blocking session
+
+[3]/1/4/55336/0x7b5700a8/24095/LEAF/
+[36]/1/37/27327/0x7b5c2590/32175/LEAF/
+[274]/1/275/42398/0x7b8146a0/24309/IN_HANG/[3][278]
+[277]/1/278/32001/0x7b81be58/32108/NLEAF/[36]
+[278]/1/279/27104/0x7b81e640/23802/IN_HANG/[3][274]
+
+sid and serial@inst_id   OWNER_AND_OBJECT_NAME  SQL_ID        EVENT                          SQL_TEXT
+------------------------ ---------------------- ------------- ------------------------------ ------------------------------------------
+4,55336@1                SYS.TEST                             SQL*Net message from client
+    275,42398@1          SYS.TEST               btwadvaubfmmr enq: TM - contention           insert  /*+append*/ into test select * fro
+    279,27104@1          SYS.TEST               37wxchzrmx9vj enq: TM - contention           insert  /*+append*/ into test select * fro
+37,27327@1               SYS.TEST1              avpfr0sq7rd2w SQL*Net message from client    insert into test1 select * from test1
+    278,32001@1          SYS.TEST1              0r3qsnakxnj1x enq: TM - contention           insert  /*+append*/ into test1 select * fr
+
+State有如下几种状态：
+adjlist      --> adjacent node   (Usually represents a blocker node) --通常是阻塞者blocker node
+predecessor  --> predecessor node (Usually represents a waiter node) --通常是被阻塞者waiter node
+IN_HANG      --> 如果Session处于这种状态，表示Session遇到deadlock或者处于hung状态。
+LEAF/LEAF_NW --> 这些Session通常是“blocker”或者是等待某些资源的“slow” node，通过字段“predecessor” 可以很容易标识出这些node。
+LEAF         --> 表明它是持锁会话，即它不等待任何会话或资源
+LEAF_NEW     --> 它也是持锁会话
+NLEAF        --> 表明是等待会话,这些Session通常被认为是“stuck”会话，意味着这些Session在等待某些Session的资源。通过字段“adjlist”可以很容易的定义该进程的blocker。
+IGN/IGN_DMP  --> 这些Session通常是IDLE Session。
+SINGLE_NODE  --> 表明它是等待任何会话或资源
+
+step3、
+search [session id: specific sid]
+look for current sql
+"""
 exit 0
 fi
 ##############################################
