@@ -10872,8 +10872,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     else
       ver2=''
     fi
-#    owner=$2
-#    tablename=$3
+
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -11328,7 +11327,7 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     fi
    else
     owner=$3
-  fi
+    fi
 
     ver2=`get_ver 2`
     if [ $ver2 -lt 11 ]; then
@@ -11336,9 +11335,6 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     else
       ver2=''
     fi
-
-#    owner=$2
-#    tablename=$3
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -11372,8 +11368,8 @@ SELECT t1.window_name,t1.repeat_interval,t1.duration,to_char(t1.last_start_date,
 FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window_name = t2.window_name AND t2.window_group_name IN ('MAINTENANCE_WINDOW_GROUP', 'BSLN_MAINTAIN_STATS_SCHED') order by last_start_date;
     alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
     begin
-      :owner :=upper(':owner');
-      :table_name := upper(':tablename');
+      :owner :=upper('$owner');
+      :table_name := upper('$tablename');
       end;
       /
   declare
@@ -11382,6 +11378,10 @@ FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window
     v_protection_mode  varchar2(100) :=null;
     v_switchover  varchar2(100) :=null;
     v_force_logging varchar2(100) :=null;
+    v_expired_table_cnt number;
+    v_lock_table_stats_cnt number;
+    v_temp_stat_cnt number;
+    v_cnt_expired_index_stats number;
 
     cursor c_sys is select client_name,status from DBA_AUTOTASK_CLIENT;
     v_sys c_sys%rowtype;
@@ -11408,53 +11408,37 @@ FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window
 
     cursor c_expire is SELECT OWNER,
     SEGMENT_NAME,
-    CASE
-    WHEN SIZE_GB < 0.5 THEN 100 WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN 80
+    CASE WHEN SIZE_GB < 0.5 THEN 100 WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN 80
     WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN 50
     WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN 30
     WHEN SIZE_GB >= 10 THEN 10 END AS PERCENT,
     1 AS DEGREE
-FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
+FROM (SELECT owner,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
       FROM DBA_SEGMENTS a
-      WHERE (owner,SEGMENT_NAME)
-      IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS
-           WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES'
-       OR last_analyzed < sysdate -7
-)
-           AND OWNER = :owner
-           AND TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
-           AND stattype_locked is null
+      WHERE (owner,SEGMENT_NAME) IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7 )
+      and owner = upper(:owner)
+      and stattype_locked is null
 ) and not exists (select null from dba_tables b where b.iot_type = 'IOT_OVERFLOW' and a.segment_name = b.table_name)
-GROUP BY OWNER, SEGMENT_NAME);
+GROUP BY owner, SEGMENT_NAME);
     v_expire c_expire%rowtype;
 
-    cursor c_expire0 is select q'[exec DBMS_STATS.GATHER_TABLE_STATS(OWNNAME=> ']' || OWNER || q'[',TABNAME=> ']' || SEGMENT_NAME || q'[',ESTIMATE_PERCENT =>]' || PERCENT || q'[,METHOD_OPT=> 'for all columns size auto',DEGREE=> 50,CASCADE => TRUE);]' as sql_command
+    cursor c_expire0 is select q'[exec DBMS_STATS.GATHER_TABLE_STATS(OWNNAME=> ']' || owner || q'[',TABNAME=> ']' || SEGMENT_NAME || q'[',ESTIMATE_PERCENT =>]' || PERCENT || q'[,METHOD_OPT=> 'for all columns size auto',DEGREE=> 50,CASCADE => TRUE);]' as sql_command
   from (
-  SELECT OWNER,
+  SELECT owner,
         SEGMENT_NAME,
-             CASE
-               WHEN SIZE_GB < 0.5 THEN
-                30
-               WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN
-                20
-               WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN
-                10
-               WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN
-                5
-               WHEN SIZE_GB >= 10 THEN
-                1
+             CASE WHEN SIZE_GB < 0.5 THEN 30
+               WHEN SIZE_GB >= 0.5 AND SIZE_GB < 1 THEN 20
+               WHEN SIZE_GB >= 1 AND SIZE_GB < 5 THEN 10
+               WHEN SIZE_GB >= 5 AND SIZE_GB < 10 THEN 5
+               WHEN SIZE_GB >= 10 THEN 1
              END AS PERCENT,
              8 AS DEGREE
-        FROM (SELECT OWNER,
+        FROM (select OWNER,
                      SEGMENT_NAME,
                      SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
                 FROM DBA_SEGMENTS a
                WHERE (owner,SEGMENT_NAME) IN
-                     (SELECT /*+ UNNEST */
-                      DISTINCT owner,TABLE_NAME
-                        FROM DBA_TAB_STATISTICS
-                       WHERE  OWNER =:owner
-    and stattype_locked is null and last_analyzed < sysdate -1)
+                     (select /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE owner =:owner and stattype_locked is null and last_analyzed < sysdate -1)
                GROUP BY OWNER, SEGMENT_NAME)
   order BY PERCENT);
     v_expire0 c_expire0%rowtype;
@@ -11509,10 +11493,6 @@ SELECT NULL
        s.owner, s.table_name;
    v_expire_index_stats c_expire_index_stats%rowtype;
 
-   v_expired_table_cnt number;
-   v_lock_table_stats_cnt number;
-   v_temp_stat_cnt number;
-   v_cnt_expired_index_stats number;
 begin
   dbms_output.enable(buffer_size => NULL);
 
@@ -11535,15 +11515,14 @@ FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
       FROM DBA_SEGMENTS a
       WHERE (owner,SEGMENT_NAME)
       IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS
-           WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES'
---       OR last_analyzed < sysdate -7
-)
+           WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7)
            AND OWNER = :owner
-           AND TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
            AND stattype_locked is null
 ) and not exists (select null from dba_tables b where b.iot_type = 'IOT_OVERFLOW' and a.segment_name = b.table_name)
 GROUP BY OWNER, SEGMENT_NAME);
-if  v_expired_table_cnt > 0 then
+
+if v_expired_table_cnt > 0 then
+  dbms_output.put_line(v_expired_table_cnt);
   dbms_output.put_line('
 The Table Statistics are Expired or Last Analyzed > 7 Days');
   dbms_output.put_line('======================');
@@ -11557,8 +11536,7 @@ The Table Statistics are Expired or Last Analyzed > 7 Days');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------');
   close c_expire;
-
-   dbms_output.put_line('
+  dbms_output.put_line('
 Gather table statistics using dbms_stats.gather_table_stats Based on the username entered');
   dbms_output.put_line('======================');
   dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
@@ -11571,8 +11549,8 @@ Gather table statistics using dbms_stats.gather_table_stats Based on the usernam
     end loop;
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_expire0;
-
 else
+  dbms_output.put_line(v_expired_table_cnt);
   dbms_output.put_line('
 There is No Expired Table Statistics for Current Owner');
   dbms_output.put_line('======================');
