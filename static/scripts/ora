@@ -11415,7 +11415,7 @@ FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window
     1 AS DEGREE
 FROM (SELECT owner,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
       FROM DBA_SEGMENTS a
-      WHERE (owner,SEGMENT_NAME) IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7 )
+      WHERE (owner,SEGMENT_NAME) IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7 )
       and owner = upper(:owner)
       and stattype_locked is null
 ) and not exists (select null from dba_tables b where b.iot_type = 'IOT_OVERFLOW' and a.segment_name = b.table_name)
@@ -11438,7 +11438,7 @@ GROUP BY owner, SEGMENT_NAME);
                      SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
                 FROM DBA_SEGMENTS a
                WHERE (owner,SEGMENT_NAME) IN
-                     (select /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE owner =:owner and stattype_locked is null and last_analyzed < sysdate -1)
+                     (select /*+ UNNEST */ DISTINCT owner,TABLE_NAME FROM DBA_TAB_STATISTICS WHERE owner =:owner and (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES' OR last_analyzed < sysdate - 7))
                GROUP BY OWNER, SEGMENT_NAME)
   order BY PERCENT);
     v_expire0 c_expire0%rowtype;
@@ -11522,7 +11522,6 @@ FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
 GROUP BY OWNER, SEGMENT_NAME);
 
 if v_expired_table_cnt > 0 then
-  dbms_output.put_line(v_expired_table_cnt);
   dbms_output.put_line('
 The Table Statistics are Expired or Last Analyzed > 7 Days');
   dbms_output.put_line('======================');
