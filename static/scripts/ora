@@ -11302,8 +11302,7 @@ end;
 
   exit 0
 fi
-###################################################stats#######################################################
-
+##########################stats##################################
 if [ "$1" = "stats" -o "$1" = "statistics" ]; then
 
   if [ "$2" = ""  ]; then
@@ -11359,6 +11358,18 @@ if [ "$1" = "stats" -o "$1" = "statistics" ]; then
     undefine owner
     var table_name varchar2(100);
     var owner varchar2(100);
+    col WINDOW_NAME for a18
+    col REPEAT_INTERVAL for a56
+    col DURATION for a20
+    col resource_plan for a30
+    col schedule_owner for a20
+    col last_start_date for a20
+    col next_start_date for a20
+    col enable for A5
+    pro Gather Statistics Time Window
+    pro ======================
+SELECT t1.window_name,t1.repeat_interval,t1.duration,to_char(t1.last_start_date,'yyyy-mm-dd hh24:mi:ss') as last_start_date,to_char(t1.next_start_date,'yyyy-mm-dd hh24:mi:ss') as next_start_date,enabled
+FROM dba_scheduler_windows t1, dba_scheduler_wingroup_members t2 where t1.window_name = t2.window_name AND t2.window_group_name IN ('MAINTENANCE_WINDOW_GROUP', 'BSLN_MAINTAIN_STATS_SCHED') order by last_start_date;
     alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
     begin
       :owner :=upper(':owner');
@@ -11408,7 +11419,7 @@ FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
       WHERE (owner,SEGMENT_NAME)
       IN (SELECT /*+ UNNEST */ DISTINCT owner,TABLE_NAME  FROM DBA_TAB_STATISTICS
            WHERE (LAST_ANALYZED IS NULL OR STALE_STATS = 'YES'
---       OR last_analyzed < sysdate -7
+       OR last_analyzed < sysdate -7
 )
            AND OWNER = :owner
            AND TABLE_NAME not in ('PCASE','VTE_PADUA_INFO','VTE_CAPRINI_INFO','DOC_TYPE_DICT')
@@ -11534,7 +11545,7 @@ FROM (SELECT OWNER,SEGMENT_NAME,SUM(BYTES / 1024 / 1024 / 1024) SIZE_GB
 GROUP BY OWNER, SEGMENT_NAME);
 if  v_expired_table_cnt > 0 then
   dbms_output.put_line('
-The Table Statistics are Expired ');
+The Table Statistics are Expired or Last Analyzed > 7 Days');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------');
   dbms_output.put_line('| TABLE_OWNER      |' || ' TABLE_NAME                       |' || ' DEGREE          ' || '|');
