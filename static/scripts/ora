@@ -7441,6 +7441,7 @@ and    a.THREAD# = b.INST_ID
 and    a.inst_id = b.inst_id
 order by 1,2;
 col member format a70
+col status for a11
 pro Standby Log File Information
 pro ======================
 SELECT
