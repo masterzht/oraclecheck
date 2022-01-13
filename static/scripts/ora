@@ -7347,10 +7347,7 @@ if [ "$1" = "redo" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
-    --set sqlnumber off : no use for -e
-
+set pagesize 30 linesize 200
 col h00 format 999
 col h01 format 999
 col h02 format 999
