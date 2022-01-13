@@ -10897,7 +10897,6 @@ if [ "$1" = "library" -o "$1" = "library cache lock" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set linesize 250 pagesize 30
     set trimspool on
     spool ora_library_${tablename}_${filedate}.log
@@ -10915,7 +10914,6 @@ pro select KGLHDNSP,KGLHDNSD from x$kglob where KGLHDNSP=79;
     $ECHO
     spool off
 !
-
   exit 0
 fi
 ###############################################
@@ -10931,8 +10929,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     tablename=$2
   fi
 
-   if [ "$3" = ""  ]; then
-
+    if [ "$3" = ""  ]; then
     defowner=`echo "select trim(12345||LISTAGG (owner,',') WITHIN GROUP (ORDER BY owner)) AS owner from dba_tables where table_name=upper('$tablename') and rownum<=4;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-100`
     if [ -z "${defowner}" ];then
        echo "table $tablename not found,please check again!"
@@ -10954,9 +10951,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     fi
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
-
     set linesize 250 pagesize 30
     col TRU for a30
     col filename new_value filename
@@ -10971,7 +10966,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
     set long 500000
 
     pro
-    Pro Table Basic Information
+    pro Table Basic Information
     prompt ======================
     col owner format a10 trunc
     col table_name format a20 trunc
