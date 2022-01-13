@@ -8603,6 +8603,9 @@ vi /etc/sysctl.conf
 vm.nr_hugepages=144000
 sysctl -p
 cat /proc/meminfo | grep HugePages
+vim /etc/security/limits.conf
+oracle soft memlock -1
+oracle hard memlock -1
 Alert.log can See
 ************************ Large Pages Information *******************
 Per process system memlock (soft) limit = UNLIMITED
@@ -8619,6 +8622,10 @@ alter system set sga_target = 280G sid='orcl1' scope=spfile;
 alter system set sga_max_size=280G sid='orcl2' scope=spfile;
 alter system set sga_target = 280G sid='orcl2' scope=spfile;
 reboot database
+To Close AnonHugePages
+vim /etc/grub.conf
+transparent_hugepage=never
+
   """
   echo 'redhat-release:' `cat /etc/redhat-release`
   echo 'hostname:' `hostname`
