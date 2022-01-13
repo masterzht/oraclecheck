@@ -12720,7 +12720,7 @@ if [ "$1" = "active" ]; then
     connect $DBUSER
 
   set linesize 200 pagesize 20
-  col username for a10
+  col username for a11
   col spid for a6
   col sid_and_serial# for a15
   col terminal for a15
@@ -12740,7 +12740,6 @@ prompt =======================
   col RESOURCE_NAME for a13
   col INITIAL_ALLOCATION for a18
   col LIMIT_VALUE for a11
-
 select RESOURCE_NAME, CURRENT_UTILIZATION, MAX_UTILIZATION, INITIAL_ALLOCATION, LIMIT_VALUE
 from v\$resource_limit where RESOURCE_NAME in ('processes','sessions');
 
