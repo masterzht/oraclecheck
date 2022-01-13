@@ -8168,7 +8168,7 @@ if [ "$1" = "sessions" ]; then
     echo "all sessions:"
   fi
 
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
@@ -8209,9 +8209,7 @@ echo "example:ora sessions [active]|all   (order by logon_timie)"
 echo "instance_number=$INST"
 exit 0
 fi
-
-#######################################################################################################
-
+##################################################################
 if [ "$1" = "degree" -o "$1" = "parallel" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -12732,10 +12730,8 @@ fi
 
 ######################################active####################################
 if [ "$1" = "active" ]; then
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
+sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
-
   set linesize 200 pagesize 20
   col username for a11
   col spid for a6
