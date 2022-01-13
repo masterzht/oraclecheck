@@ -76,7 +76,7 @@ usage()
 
       - job                                    show all jobs
 
-      - library                                Usage:./ora library p1p2p3 eg ./ora library 108394436480,107511115504,5177346
+      - troubleshooting                        Usage:./ora troubleshooting event_name p1,p2,p3 eg ./ora troubleshooting \"latch: cache buffers chains\" 259201931656,177,0
       - logminer                               the usage of logminer
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
@@ -10875,16 +10875,25 @@ if [ "$1" = "obj" ]; then
   exit 0
 fi
 ##########################################
-if [ "$1" = "library" -o "$1" = "library cache lock" ]; then
-
+if [ "$1" = "troubleshooting" -o "$1" = "trouble" ]; then
   if [ "$2" = ""  ]; then
+   read -p "Please input event name:" event_name
+    if [ -z "${event_name}" ];then
+         echo "no input , exit"
+         exit 1
+    fi
+  else
+    event_name=$2
+  fi
+
+  if [ "$3" = ""  ]; then
    read -p "Please input p1 p2 p3:" p1p2p3
     if [ -z "${p1p2p3}" ];then
          echo "no input , exit"
          exit 1
     fi
   else
-    p1p2p3=$2
+    p1p2p3=$3
   fi
 
     ver2=`get_ver 2`
@@ -10894,12 +10903,13 @@ if [ "$1" = "library" -o "$1" = "library cache lock" ]; then
       ver2=''
     fi
 
+if [ "$event_name" = "library cache lock" ]; then
+  echo "Troubleshooting Library Cache: Lock, Pin and Load Lock (Doc ID 444560.1)	"
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
     set linesize 250 pagesize 30
     set trimspool on
-    spool ora_library_${tablename}_${filedate}.log
+    spool ora_library_cache_lock.log
     pro
     Pro Event P1P2P3 Meaning Information
     prompt ======================
@@ -10915,6 +10925,52 @@ pro select KGLHDNSP,KGLHDNSD from x$kglob where KGLHDNSP=79;
     spool off
 !
   exit 0
+
+elif [ "$event_name" = "row cache lock" ]; then
+    echo 'WAITEVENT: "row cache lock" Reference Note (Doc ID 34609.1)'
+
+elif [ "$event_name" = "latch: cache buffers chains" ]; then
+    echo "Troubleshooting 'latch: cache buffers chains' Wait Contention (Doc ID 1342917.1)	"
+    echo 'WAITEVENT: "latch: cache buffers chains" Reference Note (Doc ID 2098064.1)	'
+
+   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
+    set linesize 250 pagesize 30
+    set trimspool on
+    spool ora_library_cache_lock.log
+    pro
+    Pro Event P1P2P3 Meaning Information
+    prompt ======================
+    col owner format a10 trunc
+
+select to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx') p1raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,2),'xxxxxxxxxxxxx') p2raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,3),'xxxxxxxxxxxxx') p3raw from dual;
+
+SELECT name, 'Child '||child#, gets, misses, sleeps
+    FROM v\$latch_children
+   WHERE addr=upper(to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx'));
+  SELECT File#, dbablk, class, state
+    FROM x\$bh
+   WHERE hladdr=upper(to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx'));
+
+    $ECHO
+    spool off
+!
+  exit 0
+
+elif [ "$event_name" = "latch free" ]; then
+    echo 'WAITEVENT: "latch free" Reference Note (Doc ID 34576.1)'
+elif [ "$event_name" = "e4" ]; then
+    echo "Friday"
+elif [ "$event_name" = "e5" ]; then
+    echo "Saturday"
+elif [ "$event_name" = "e7" ]; then
+    echo "Sunday"
+else
+    echo "error"
+fi
+
 fi
 ###############################################
 if [ "$1" = "table" -o "$1" = "tab" ]; then
