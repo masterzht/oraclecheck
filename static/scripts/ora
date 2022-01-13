@@ -7413,8 +7413,8 @@ order by 1,2 ;
 $ECHO
 
 pro Redo Log File Information
-pro alter database add logfile thread 1 '+DATA' size 2G;
-pro alter database add logfile thread 2 '+DATA' size 2G;
+pro alter database add logfile thread 1 '+DATA' size 2G;;
+pro alter database add logfile thread 2 '+DATA' size 2G;;
 pro ======================
 col status format a8
 col member format a60
@@ -7438,6 +7438,8 @@ order by 1,2;
 col member format a70
 col status for a11
 pro Standby Log File Information
+pro alter database add standby logfile thread 1 '+DATA' size 2G;;
+pro alter database add standby logfile thread 2 '+DATA' size 2G;;
 pro ======================
 SELECT
        a.THREAD#,
