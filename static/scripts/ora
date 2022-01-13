@@ -8602,23 +8602,23 @@ if [ "$1" = "params" ]; then
 vi /etc/sysctl.conf
 vm.nr_hugepages=144000
 sysctl -p
-然后查询cat /proc/meminfo | grep HugePages
-看到hugepages_total达到145920为止。
+cat /proc/meminfo | grep HugePages
 Alert.log can See
-======================
+************************ Large Pages Information *******************
+Per process system memlock (soft) limit = UNLIMITED
+
 Total Shared Global Region in Large Pages = 280 GB (100%)
 
 Large Pages used by this instance: 143361 (280 GB)
-Large Pages unused system wide = 2539 (5078 MB)
-Large Pages configured system wide = 145900 (285 GB)
+Large Pages unused system wide = 639 (1278 MB)
+Large Pages configured system wide = 144000 (281 GB)
 Large Page size = 2048 KB
-
+********************************************************************
 alter system set sga_max_size=280G sid='orcl1' scope=spfile;
 alter system set sga_target = 280G sid='orcl1' scope=spfile;
 alter system set sga_max_size=280G sid='orcl2' scope=spfile;
 alter system set sga_target = 280G sid='orcl2' scope=spfile;
-alter system checkpoint;
-shutdownn immediate;
+reboot database
   """
   echo 'redhat-release:' `cat /etc/redhat-release`
   echo 'hostname:' `hostname`
