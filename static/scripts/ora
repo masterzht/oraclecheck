@@ -7454,7 +7454,7 @@ SELECT
 FROM   gv\$standby_log     a,
        gv\$logfile b
 WHERE  b.GROUP# = a.GROUP#
-and    a.THREAD# = b.INST_ID
+and  decode(a.THREAD#,0,1,a.THREAD#) = b.INST_ID
 and    a.inst_id = b.inst_id
 order by 1,2;
 
