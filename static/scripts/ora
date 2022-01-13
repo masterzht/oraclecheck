@@ -8155,11 +8155,8 @@ if [ "$1" = "repeat" ]; then
   done;
   exit 0
 fi
-
-#####################################################################################################
-
+#############################################################
 if [ "$1" = "sessions" ]; then
-
   if [ "$2" = "" -o "$2" = "active" ]; then
     PRED=" and status='ACTIVE' and type<>'BACKGROUND' "
     echo "active sessions and not BACKGROUND:"
@@ -8175,27 +8172,27 @@ sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     set pagesize 30
     set linesize 200
     col username format A15 trunc
-    col inst_id format 9999
-    col sid format 999999
-    col serial# format 999999
+    col inst# format 9999
+    col sid_and_serial for a14
     col pid format a6
     col cl_pid format A10
     col module format A8 trunc
     col program format a8 trunc
     col event format a15 trunc
     col sql_id format A13
-    col logon_time format a20
+    col logon_time format a17
     col status format a8
     col bl_i format 999999
     col bl_s format 999999
 
-    select s.inst_id,s.sid,s.serial#--, s.PROCESS cl_pid
+    select s.inst_id as inst#,s.sid||','||s.serial# as sid_and_serial
+           --, s.PROCESS cl_pid
            , p.spid pid, s.username,status
            ,s.module
            ,blocking_instance as bl_i,blocking_session as bl_s,event
            --,s.type--, s.server,
            ,s.PROGRAM, sql_id--$COLNM $COLNM_HEADER
-           ,to_char(logon_time,'yyyy-mm-dd hh24:mi:ss') as logon_time
+           ,to_char(logon_time,'yyyymmdd hh24:mi:ss') as logon_time
            ,P.PGA_ALLOC_MEM
            ,P.PGA_USED_MEM
     from gv\$session s, gv\$process p
@@ -8204,7 +8201,6 @@ sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     order by logon_time;
     $ECHO
 !
-
 echo "example:ora sessions [active]|all   (order by logon_timie)"
 echo "instance_number=$INST"
 exit 0
