@@ -9429,11 +9429,8 @@ Which Table or Index Objects in DB Buffer Cache(Defaul Pool,Keep Pool) ');
     end loop;
     dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
   close c_b;
-
-
 end;
 /
-
 
 --Library pool usage
 -- library pool
