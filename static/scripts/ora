@@ -10996,7 +10996,7 @@ bh.dbablk,
 bh.tch
 from x\$bh bh
 where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-order by bh.hladdr,bh.tch,bh.obj;
+order by bh.hladdr,bh.tch desc,bh.obj;
     v_b c_b%rowtype;
 
 begin
@@ -11016,8 +11016,8 @@ into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
 * P1 = Latch address
 * P2 = Latch number
 * P3 = Tries
-latch free Information
-From v\$latch or v\$latch_childern');
+latch: cache buffers chains Information
+From v\$latch, v\$latch_childern, x\$bh');
   dbms_output.put_line('======================');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
@@ -11037,15 +11037,15 @@ dbms_output.put_line('
 * P3 = Tries
 Finding Blockers a hot block (or a hung process) Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   open c_b;
     loop fetch c_b into v_b;
     exit when c_b%notfound;
     dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   close c_b;
 
 end;
