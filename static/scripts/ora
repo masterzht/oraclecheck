@@ -10988,7 +10988,7 @@ sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
     set linesize 500 pagesize 300
     set trimspool on
-    spool ora_library_cache_lock.log
+    spool ora_latch_free.log
 
     set timing off
     set serveroutput on
@@ -11032,15 +11032,15 @@ into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
 latch free Information
 From v\$latch or v\$latch_childern');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| NAME                         |' || ' child                | ' ||' gets            |' || ' misses      |'|| ' sleeps    ' || '| addr ' || '|');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| NAME                         |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
   open c_latch;
     loop fetch c_latch into v_latch;
     exit when c_latch%notfound;
-    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,15) || ' | '|| lpad(v_latch.misses,13) || ' | ' || lpad(v_latch.sleeps,7) ||' | '|| lpad(v_latch.addr,11) || ' |');
+    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,18) || ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
   close c_latch;
 end;
 /
