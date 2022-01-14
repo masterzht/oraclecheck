@@ -10982,8 +10982,7 @@ declare
     SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
     WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
     v_latch c_latch%rowtype;
-    cursor c_bh is
-    select /*+ ordered */
+    cursor c_b is select /*+ ordered */
         bp.name as pool_name,
         u.username as username,
         ob.name as object_name,
@@ -11026,7 +11025,7 @@ and     ws.set_id in (bp.lo_setid,bp.hi_setid)
 and     bp.buffers != 0
 group by u.username,bp.name, ob.name,ob.type#,ob.subname
 order by bp.name, blocks desc, ob.name, ob.subname;
-    v_bh c_bh%rowtype;
+    v_b c_b%rowtype;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
