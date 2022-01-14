@@ -10901,6 +10901,7 @@ if [ "$1" = "troubleshooting" -o "$1" = "trouble" ]; then
     fi
 
 if [ "$event_name" = "library cache lock" ]; then
+  echo ''
   echo 'WAITEVENT: "library cache lock" Reference Note (Doc ID 34578.1)	'
   echo "Troubleshooting Library Cache: Lock, Pin and Load Lock (Doc ID 444560.1)	"
 
@@ -10928,28 +10929,52 @@ declare
     v_p1 number;
     v_p2 number;
     v_p3 number;
-    cursor c_latch
+    cursor c_namespace is select KGLHDNSP,KGLHDNSD,count(*) as CNT
+    from x\$kglob
+    where KGLHDNSP in
+    (select to_number(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx'),9,2),'xx') from dual)
+group by KGLHDNSP,KGLHDNSD order by 3 desc;
+    v_namespace c_namespace%rowtype;
 
-     select to_number('4f','xx') as from dual;
-pro select KGLHDNSP,KGLHDNSD from x$kglob where KGLHDNSP=79;
+    cursor c_blocker is
+  SELECT s.inst_id, s.SID,s.USERNAME,s.TERMINAL,s.PROGRAM, l.kgllksnm "Obj Name", sq.sql_text
+  FROM GV\$SESSION  s, GV\$SQL sq, x\$kgllk l
+  WHERE s.INST_ID = sq.INST_ID
+  and s.SQL_HASH_VALUE = sq.HASH_VALUE
+  and s.SQL_ADDRESS = sq.ADDRESS
+  and l.inst_id = s.inst_id
+  and l.kgllksnm = s.sid
+  and s.SADDR in
+      (SELECT KGLLKSES FROM X\$KGLLK LOCK_A
+      WHERE KGLLKREQ = 0
+      AND EXISTS (SELECT LOCK_B.KGLLKHDL FROM X$KGLLK LOCK_B
+                      WHERE KGLLKSNM IN
+                          (SELECT sid FROM v\$session_wait
+                           WHERE wait_time = 0 AND event = 'library cache lock')
+                      AND LOCK_A.KGLLKHDL = LOCK_B.KGLLKHDL
+                      AND KGLLKREQ > 0));
+    v_blocker c_blocker%rowtype;
 
-    cursor c_latch
-    v_latch c_latch%rowtype;
-    cursor c_b is select hladdr,
-bh.obj as object_id,
-case when
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-is null then 'None'
-else
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-end as object_name,
-bh.dbarfil,
-bh.dbablk,
-bh.tch
-from x\$bh bh
-where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-order by bh.hladdr,bh.tch desc,bh.obj;
-    v_b c_b%rowtype;
+
+  cursor c_waiter is
+  SELECT s.inst_id, s.SID,s.USERNAME,s.TERMINAL,s.PROGRAM, l.kgllksnm "Obj Name", sq.sql_text
+  FROM GV\$SESSION  s, GV\$SQL sq, x\$kgllk l
+  WHERE
+  s.INST_ID = sq.INST_ID
+  and s.SQL_HASH_VALUE = sq.HASH_VALUE
+  and s.SQL_ADDRESS = sq.ADDRESS
+  and l.inst_id = s.inst_id
+  and l.kgllksnm = s.sid
+  and s.SADDR in
+      (SELECT KGLLKSES FROM X\$KGLLK LOCK_A
+      WHERE KGLLKREQ > 0
+      AND EXISTS (SELECT LOCK_B.KGLLKHDL FROM X\$KGLLK LOCK_B
+                      WHERE KGLLKSNM IN
+                          (SELECT sid FROM v\$session_wait )
+                      AND LOCK_A.KGLLKHDL = LOCK_B.KGLLKHDL
+                      AND KGLLKREQ = 0)
+     );
+    v_waiter c_waiter%rowtype;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
@@ -10962,44 +10987,56 @@ REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
   dbms_output.put_line('
  Parameters:
-* P1 = Latch address :'|| v_p1 );
-  dbms_output.put_line('* P2 = Latch number  :'|| v_p2 );
-  dbms_output.put_line('* P3 = Tries         :'|| v_p3 );
+* P1 = handle address       :'|| v_p1 );
+  dbms_output.put_line('* P2 = lock address         :'|| v_p2 );
+  dbms_output.put_line('* P3 = 100*Mode + Namespace :'|| v_p3 );
   dbms_output.put_line('latch: cache buffers chains Information
-From v\$latch, v\$latch_childern, x\$bh');
+From x\$kglob');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_latch;
-    loop fetch c_latch into v_latch;
-    exit when c_latch%notfound;
-    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,17) || ' |');
+  dbms_output.put_line('-----------------------------------------------------');
+  dbms_output.put_line('| KGLHDNSP               |' || ' KGLHDNSD                 ' || '|');
+  dbms_output.put_line('-----------------------------------------------------');
+  open c_namespace;
+    loop fetch c_namespace into v_namespace;
+    exit when c_namespace%notfound;
+    dbms_output.put_line('| ' || lpad(v_namespace.KGLHDNSP,22) ||' | '|| rpad(v_namespace.KGLHDNSD,24)  || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_latch;
+    dbms_output.put_line('-----------------------------------------------------');
+  close c_namespace;
 
 dbms_output.put_line('
- Parameters:
-* P1 = Latch address
-* P2 = Latch number
-* P3 = Tries
-Finding Blockers a hot block (or a hung process) Information');
+Blocker Sesssion and Object info');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# ' || '| SID    |' || ' USERNAME          ' || '| TERMINAL |' || ' PROGRAM     '|| '| OBJECT_NAME  |'  ' || '| SQL_TEXT           ' ||'|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  open c_blocker;
+    loop fetch c_blocker into v_blocker;
+    exit when c_blocker%notfound;
+    dbms_output.put_line('| ' || lpad(v_blocker.inst_id,4) || ' | '|| lpad(v_blocker.SID,6) ||' | '|| rpad(vv_blocker_b.USERNAME,30) || ' | '|| lpad(v_b.TERMINAL,5) || ' | '|| lpad(v_b.PROGRAM,12) || ' | '|| lpad(v_b.Obj_Name,3) || ' |');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  close c_blocker;
+/**
+dbms_output.put_line('
+Waiter Sesssion and Object info');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  open c_b;
-    loop fetch c_b into v_b;
-    exit when c_b%notfound;
-    dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
+  open c_waiter;
+    loop fetch c_waiter into v_waiter;
+    exit when c_waiter%notfound;
+    dbms_output.put_line('| ' || lpad(v_waiter.hladdr,16) || ' | '|| lpad(v_waiter.object_id,12) ||' | '|| rpad(v_waiter.object_name,30) || ' | '|| lpad(v_waiter.dbarfil,5) || ' | '|| lpad(v_waiter.dbablk,12) || ' | '|| lpad(v_waiter.tch,3) || ' |');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  close c_b;
-
+  close c_waiter;
 end;
 /
-
+    $ECHO
+    spool off
+!
+  exit 0
 elif [ "$event_name" = "row cache lock" ]; then
     echo 'WAITEVENT: "row cache lock" Reference Note (Doc ID 34609.1)'
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
