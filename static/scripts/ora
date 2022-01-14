@@ -10983,8 +10983,7 @@ declare
     WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
     v_latch c_latch%rowtype;
     cursor c_bh is
-    select
-        /*+ ordered */
+    select /*+ ordered */
         bp.name as pool_name,
         u.username as username,
         ob.name as object_name,
@@ -11015,9 +11014,9 @@ from (
         where lower(substr(hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
         group by set_ds, obj
         )                      bh,
-        obj\$                   ob,
-        x\$kcbwds               ws,
-        v\$buffer_pool          bp,
+        obj\$                  ob,
+        x\$kcbwds              ws,
+        v\$buffer_pool         bp,
         dba_users              u
 where
         ob.dataobj# = bh.obj
@@ -11068,16 +11067,16 @@ dbms_output.put_line('
 * P3 = Tries
 Finding Blockers a hot block (or a hung process) Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_latch;
-    loop fetch c_latch into v_latch;
-    exit when c_latch%notfound;
-    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,17) || ' |');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| POOL_NAME  ' || '| USERNAME         |' || ' OBJECT_NAME           ' || '| SUB_NAME          |' || ' OBJECT_TYPE       ' || '| BLOCKS     |' || ' SIZE_MB      ' ||'|');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
+  open c_b;
+    loop fetch c_b into v_b;
+    exit when c_b%notfound;
+    dbms_output.put_line('| ' || rpad(v_b.POOL_NAME,10) || ' | '|| rpad(v_b.USERNAME,16) ||' | '|| rpad(v_b.OBJECT_NAME,21) || ' | '|| rpad(v_b.SUB_NAME,17) || ' | '|| rpad(v_b.OBJECT_TYPE,17) || ' | '|| lpad(v_b.BLOCKS,10) || ' | '|| lpad(v_b.SIZE_MB,12) ||  ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_latch;
+    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
+  close c_b;
 
 end;
 /
