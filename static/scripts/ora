@@ -10982,30 +10982,68 @@ SELECT name, 'Child '||child#, gets, misses, sleeps
   exit 0
 
 elif [ "$event_name" = "latch free" ]; then
+    echo ''
     echo 'WAITEVENT: "latch free" Reference Note (Doc ID 34576.1)'
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
-    set linesize 250 pagesize 30
-    col name for a30
+    set linesize 500 pagesize 300
     set trimspool on
     spool ora_library_cache_lock.log
-    pro
-    Pro Event P1P2P3 Meaning Information
-    prompt ======================
-    col owner format a10 trunc
 
-select to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx') p1raw,
-       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,2),'xxxxxxxxxxxxx') p2raw,
-       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,3),'xxxxxxxxxxxxx') p3raw from dual;
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    undefine p1p2p3
+    var p1p2p3 varchar2(100);
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+begin
+    :p1p2p3 :=upper('$p1p2p3');
+end;
+/
+declare
+    v_p1raw varchar2(100) :=null;
+    v_p2raw varchar2(100) :=null;
+    v_p3raw varchar2(100) :=null;
+    v_p1 number;
+    v_p2 number;
+    v_p3 number;
+    cursor c_latch is SELECT name, decode('Child '||child#,null,'None','Child '||child#) as child, gets, misses, sleeps,addr FROM v\$latch_children
+    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
+    UNION
+    SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
+    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
 
-  SELECT name, 'Child '||child#, gets, misses, sleeps,addr
-    FROM v\$latch_children
-   WHERE lower(addr) like '%to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx')%'
-  UNION
-  SELECT name, null, gets, misses, sleeps,addr
-    FROM v\$latch
-   WHERE lower(addr) like '%to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx')%';
-
+    v_latch c_latch%rowtype;
+begin
+  dbms_output.enable(buffer_size=>NULL);
+/**
+select
+to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
+to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
+to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p2,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p3
+into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
+**/
+  dbms_output.put_line(v_p1raw);
+  dbms_output.put_line('
+latch free Information
+From v\$latch or v\$latch_childern');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| NAME                         |' || ' child                | ' ||' gets            |' || ' misses      |'|| ' sleeps    ' || '| addr ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_latch;
+    loop fetch c_latch into v_latch;
+    exit when c_latch%notfound;
+    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,15) || ' | '|| lpad(v_latch.misses,13) || ' | ' || lpad(v_latch.sleeps,7) ||' | '|| lpad(v_latch.addr,11) || ' |');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_latch;
+end;
+/
     $ECHO
     spool off
 !
