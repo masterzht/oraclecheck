@@ -11001,22 +11001,19 @@ order by bh.hladdr,bh.tch desc,bh.obj;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
-/**
-select
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
+select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
 to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
 to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
 REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p2,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p3
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
-**/
   dbms_output.put_line('
  Parameters:
-* P1 = Latch address
-* P2 = Latch number
-* P3 = Tries
-latch: cache buffers chains Information
+* P1 = Latch address :'|| v_p1 );
+  dbms_output.put_line('* P2 = Latch number  :'|| v_p2 );
+  dbms_output.put_line('* P3 = Tries         :'|| v_p3 );
+  dbms_output.put_line('latch: cache buffers chains Information
 From v\$latch, v\$latch_childern, x\$bh');
   dbms_output.put_line('======================');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
@@ -11098,8 +11095,8 @@ to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
 to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
 to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
 REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p2,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p3
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
 **/
   dbms_output.put_line(v_p1raw);
