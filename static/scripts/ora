@@ -10949,6 +10949,7 @@ SELECT name, 'Child '||child#, gets, misses, sleeps
   exit 0
 
 elif [ "$event_name" = "latch: cache buffers chains" ]; then
+    echo ''
     echo 'WAITEVENT: "latch: cache buffers chains" Reference Note (Doc ID 2098064.1)	'
     echo "Troubleshooting 'latch: cache buffers chains' Wait Contention (Doc ID 1342917.1)	"
 
