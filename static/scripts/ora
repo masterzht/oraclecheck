@@ -10901,27 +10901,104 @@ if [ "$1" = "troubleshooting" -o "$1" = "trouble" ]; then
     fi
 
 if [ "$event_name" = "library cache lock" ]; then
+  echo 'WAITEVENT: "library cache lock" Reference Note (Doc ID 34578.1)	'
   echo "Troubleshooting Library Cache: Lock, Pin and Load Lock (Doc ID 444560.1)	"
-    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+
+sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
-    set linesize 250 pagesize 30
+    set linesize 500 pagesize 300
     set trimspool on
     spool ora_library_cache_lock.log
-    pro
-    Pro Event P1P2P3 Meaning Information
-    prompt ======================
-    col owner format a10 trunc
 
-select to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx') p1raw,
-       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,2),'xxxxxxxxxxxxx') p2raw,
-       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,3),'xxxxxxxxxxxxx') p3raw from dual;
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    undefine p1p2p3
+    var p1p2p3 varchar2(100);
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+begin
+    :p1p2p3 :=upper('$p1p2p3');
+end;
+/
+declare
+    v_p1raw varchar2(100) :=null;
+    v_p2raw varchar2(100) :=null;
+    v_p3raw varchar2(100) :=null;
+    v_p1 number;
+    v_p2 number;
+    v_p3 number;
+    cursor c_latch
 
-pro select to_number('4f','xx') as from dual;
+     select to_number('4f','xx') as from dual;
 pro select KGLHDNSP,KGLHDNSD from x$kglob where KGLHDNSP=79;
-    $ECHO
-    spool off
-!
-  exit 0
+
+    cursor c_latch
+    v_latch c_latch%rowtype;
+    cursor c_b is select hladdr,
+bh.obj as object_id,
+case when
+(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
+is null then 'None'
+else
+(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
+end as object_name,
+bh.dbarfil,
+bh.dbablk,
+bh.tch
+from x\$bh bh
+where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
+order by bh.hladdr,bh.tch desc,bh.obj;
+    v_b c_b%rowtype;
+
+begin
+  dbms_output.enable(buffer_size=>NULL);
+select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
+to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
+to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
+REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
+into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
+  dbms_output.put_line('
+ Parameters:
+* P1 = Latch address :'|| v_p1 );
+  dbms_output.put_line('* P2 = Latch number  :'|| v_p2 );
+  dbms_output.put_line('* P3 = Tries         :'|| v_p3 );
+  dbms_output.put_line('latch: cache buffers chains Information
+From v\$latch, v\$latch_childern, x\$bh');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_latch;
+    loop fetch c_latch into v_latch;
+    exit when c_latch%notfound;
+    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,17) || ' |');
+    end loop;
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_latch;
+
+dbms_output.put_line('
+ Parameters:
+* P1 = Latch address
+* P2 = Latch number
+* P3 = Tries
+Finding Blockers a hot block (or a hung process) Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  open c_b;
+    loop fetch c_b into v_b;
+    exit when c_b%notfound;
+    dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
+    end loop;
+    dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  close c_b;
+
+end;
+/
 
 elif [ "$event_name" = "row cache lock" ]; then
     echo 'WAITEVENT: "row cache lock" Reference Note (Doc ID 34609.1)'
@@ -11127,7 +11204,7 @@ SELECT * FROM v\$latchname WHERE latch# = (select REGEXP_SUBSTR(:p1p2p3,'[^,]+',
   exit 0
 
 
-elif [ "$event_name" = "e4" ]; then
+elif [ "$event_name" = "buffer busy waits" ]; then
     echo "Friday"
 elif [ "$event_name" = "e5" ]; then
     echo "Saturday"
