@@ -10928,6 +10928,28 @@ pro select KGLHDNSP,KGLHDNSD from x$kglob where KGLHDNSP=79;
 
 elif [ "$event_name" = "row cache lock" ]; then
     echo 'WAITEVENT: "row cache lock" Reference Note (Doc ID 34609.1)'
+sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
+    set linesize 250 pagesize 30
+    set trimspool on
+    spool ora_library_cache_lock.log
+    pro
+    Pro Event P1P2P3 Meaning Information
+    prompt ======================
+    col owner format a10 trunc
+
+select to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx') p1raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,2),'xxxxxxxxxxxxx') p2raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,3),'xxxxxxxxxxxxx') p3raw from dual;
+
+SELECT name, 'Child '||child#, gets, misses, sleeps
+    FROM v\$latch_children
+   WHERE addr=upper(to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx'));
+
+    $ECHO
+    spool off
+!
+  exit 0
 
 elif [ "$event_name" = "latch: cache buffers chains" ]; then
     echo "Troubleshooting 'latch: cache buffers chains' Wait Contention (Doc ID 1342917.1)	"
@@ -10961,6 +10983,35 @@ SELECT name, 'Child '||child#, gets, misses, sleeps
 
 elif [ "$event_name" = "latch free" ]; then
     echo 'WAITEVENT: "latch free" Reference Note (Doc ID 34576.1)'
+sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
+    set linesize 250 pagesize 30
+    col name for a30
+    set trimspool on
+    spool ora_library_cache_lock.log
+    pro
+    Pro Event P1P2P3 Meaning Information
+    prompt ======================
+    col owner format a10 trunc
+
+select to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx') p1raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,2),'xxxxxxxxxxxxx') p2raw,
+       to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,3),'xxxxxxxxxxxxx') p3raw from dual;
+
+  SELECT name, 'Child '||child#, gets, misses, sleeps,addr
+    FROM v\$latch_children
+   WHERE lower(addr) like '%to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx')%'
+  UNION
+  SELECT name, null, gets, misses, sleeps,addr
+    FROM v\$latch
+   WHERE lower(addr) like '%to_char(REGEXP_SUBSTR('$p1p2p3','[^,]+',1,1),'xxxxxxxxxxxxx')%';
+
+    $ECHO
+    spool off
+!
+  exit 0
+
+
 elif [ "$event_name" = "e4" ]; then
     echo "Friday"
 elif [ "$event_name" = "e5" ]; then
