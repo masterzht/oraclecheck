@@ -11240,17 +11240,16 @@ SELECT * FROM v\$latchname WHERE latch# = (select REGEXP_SUBSTR(:p1p2p3,'[^,]+',
 !
   exit 0
 
-
 elif [ "$event_name" = "buffer busy waits" ]; then
     echo "Friday"
-elif [ "$event_name" = "e5" ]; then
-    echo "Saturday"
+elif [ "$event_name" = "library cache pin" ]; then
+    echo 'WAITEVENT: "library cache pin" Reference Note (Doc ID 34579.1)'
 elif [ "$event_name" = "e7" ]; then
     echo "Sunday"
 else
-    echo "error"
+    echo "Current Event Name Not exists!!!"
 fi
-
+  exit 0
 fi
 ###############################################
 if [ "$1" = "table" -o "$1" = "tab" ]; then
