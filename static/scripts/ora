@@ -10983,49 +10983,20 @@ declare
     SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
     WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
     v_latch c_latch%rowtype;
-    cursor c_b is select /*+ ordered */
-        bp.name as pool_name,
-        u.username as username,
-        ob.name as object_name,
-        decode(ob.subname,null,'None',ob.subname) as sub_name,
-        decode(ob.type#,
-         0,'NEXT OBJECT',1,'INDEX',2,'TABLE',3, 'CLUSTER',4,'VIEW',5, 'SYNONYM',
-         6,'SEQUENCE',7, 'PROCEDURE',8, 'FUNCTION',9, 'PACKAGE',11, 'PACKAGE BODY',12, 'TRIGGER',13, 'TYPE',
-         14,'TYPE BODY',19, 'TABLE PARTITION', 20, 'INDEX PARTITION', 21, 'LOB',
-         22,'LIBRARY', 23, 'DIRECTORY', 24, 'QUEUE',28, 'JAVA SOURCE', 29, 'JAVA CLASS', 30,'JAVA RESOURCE',
-         32,'INDEXTYPE',33, 'OPERATOR',34,'TABLE SUBPARTITION',35,'INDEX SUBPARTITION',40,'LOB PARTITION', 41, 'LOB SUBPARTITION',
-         43, 'DIMENSION',
-         44, 'CONTEXT', 46, 'RULE SET', 47, 'RESOURCE PLAN',
-         48, 'CONSUMER GROUP',
-         51, 'SUBSCRIPTION', 52, 'LOCATION',
-         55, 'XML SCHEMA', 56, 'JAVA DATA',
-         57, 'SECURITY PROFILE', 59, 'RULE',
-         60, 'CAPTURE', 61, 'APPLY',
-         62, 'EVALUATION CONTEXT',
-         66, 'JOB', 67, 'PROGRAM', 68, 'JOB CLASS', 69, 'WINDOW',
-         72, 'WINDOW GROUP', 74, 'SCHEDULE', 79, 'CHAIN',
-         81, 'FILE GROUP',
-        'UNDEFINED') object_type,
-        sum(bh.ct) as blocks,
-        round((sum(bh.ct)*(select value from v\$parameter where name = 'db_block_size' and rownum = 1))/1024/1024,2) as size_mb
-from (
-        select set_ds, obj, count(*) ct
-        from x\$bh
-        where lower(substr(hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-        group by set_ds, obj
-        )                      bh,
-        obj\$                  ob,
-        x\$kcbwds              ws,
-        v\$buffer_pool         bp,
-        dba_users              u
-where
-        ob.dataobj# = bh.obj
-and     ob.owner#   = u.user_id
-and     bh.set_ds   = ws.addr
-and     ws.set_id in (bp.lo_setid,bp.hi_setid)
-and     bp.buffers != 0
-group by u.username,bp.name, ob.name,ob.type#,ob.subname
-order by bp.name, blocks desc, ob.name, ob.subname;
+    cursor c_b is select hladdr,
+bh.obj as object_id,
+case when
+(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
+is null then 'None'
+else
+(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
+end as object_name,
+bh.dbarfil,
+bh.dbablk,
+bh.tch
+from x\$bh bh
+where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
+order by bh.hladdr,bh.tch,bh.obj;
     v_b c_b%rowtype;
 
 begin
@@ -11040,7 +11011,6 @@ REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p2,
 REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p3
 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
 **/
-  dbms_output.put_line(v_p1raw);
   dbms_output.put_line('
  Parameters:
 * P1 = Latch address
@@ -11067,15 +11037,15 @@ dbms_output.put_line('
 * P3 = Tries
 Finding Blockers a hot block (or a hung process) Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| POOL_NAME  ' || '| USERNAME         |' || ' OBJECT_NAME           ' || '| SUB_NAME          |' || ' OBJECT_TYPE       ' || '| BLOCKS     |' || ' SIZE_MB      ' ||'|');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
   open c_b;
     loop fetch c_b into v_b;
     exit when c_b%notfound;
-    dbms_output.put_line('| ' || rpad(v_b.POOL_NAME,10) || ' | '|| rpad(v_b.USERNAME,16) ||' | '|| rpad(v_b.OBJECT_NAME,21) || ' | '|| rpad(v_b.SUB_NAME,17) || ' | '|| rpad(v_b.OBJECT_TYPE,17) || ' | '|| lpad(v_b.BLOCKS,10) || ' | '|| lpad(v_b.SIZE_MB,12) ||  ' |');
+    dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
     end loop;
-    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
   close c_b;
 
 end;
