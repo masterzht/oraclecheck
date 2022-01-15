@@ -2614,7 +2614,6 @@ declare
              || CASE WHEN output_eventavg    = 1 THEN CASE WHEN s2(b).stype IN ('WAIT') THEN lpad(tptformat(delta / CASE WHEN evcnt = 0 THEN 1 ELSE evcnt END, s2(b).stype), 10, ' ')||' average wait' ELSE get_useful_average(s2(b), s1(a)) END END
         );
     end;
-
     function get_delta(metric_id in varchar2) return number
     is
         rec1 srec;
@@ -2628,17 +2627,14 @@ declare
         exception
             when no_data_found then val1 := 0;
         end;
-
         begin
             val2 := l2(metric_id).value;
         exception
             when no_data_found then val2 := 0;
         end;
-
         d := val2 - NVL(val1, 0);
         return d;
     end get_delta;
-
     function gd(c in srec, metric_type in varchar2 DEFAULT NULL, metric_name in varchar2 DEFAULT NULL) return number
     is
         str varchar2(1000);
@@ -2656,7 +2652,6 @@ declare
         tmp_delta := get_delta(str);
         return tmp_delta;
     end;
-
     function get_useful_average(c in srec /* curr_metric */, p in srec /* all_prev_metrics */) return varchar2
     is
         ret varchar2(1000);
@@ -2775,8 +2770,8 @@ declare
                                                                                                             - gd(c, 'WAIT', 'cell worker idle')
                                                                                            ,0) , mt), 10) || ' unaccounted time' ;
               else null;
-            end case; -- mt=time, mn
-        end case; -- mt
+            end case;
+        end case;
         return ret;
     end get_useful_average;
 
