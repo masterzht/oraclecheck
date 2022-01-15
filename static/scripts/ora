@@ -2791,9 +2791,7 @@ declare
     begin
         if p_num = 0 then return '0'; end if;
         if p_num IS NULL then return '~'; end if;
-
         if p_stype in ('WAIT','TIME') then
-
             return
                 round(
                     p_num / power( p_base , trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) ), p_precision
@@ -2807,9 +2805,7 @@ declare
                        when p_grouplen*4 then 'Ms'
                        else '*'||p_base||'^'||to_char( trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) )||' us'
                     end;
-
         else
-
             return
                 round(
                     p_num / power( p_base , trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) ), p_precision
@@ -2825,10 +2821,8 @@ declare
                        when p_grouplen*6 then 'E'
                        else '*'||p_base||'^'||to_char( trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) )
                     end;
-
         end if;
     end;
-
     function getopt( p_parvalues in varchar2,
                      p_extract in varchar2,
                      p_delim in varchar2 default ','
@@ -2836,25 +2830,14 @@ declare
     is
         ret varchar(1000) := NULL;
     begin
-
         if lower(p_parvalues) like lower(p_extract)||'%'
         or lower(p_parvalues) like '%'||p_delim||lower(p_extract)||'%' then
-
             ret :=
                 nvl( substr(p_parvalues,
                             instr(p_parvalues, p_extract)+length(p_extract),
-                            case instr(
-                                    substr(p_parvalues,
-                                            instr(p_parvalues, p_extract)+length(p_extract)
-                                    )
-                                    , p_delim
-                                )
+                            case instr(substr(p_parvalues, instr(p_parvalues, p_extract)+length(p_extract)), p_delim)
                             when 0 then length(p_parvalues)
-                            else
-                                instr(
-                                    substr(p_parvalues,
-                                            instr(p_parvalues, p_extract)+length(p_extract)
-                                    )
+                            else instr(substr(p_parvalues,instr(p_parvalues, p_extract)+length(p_extract))
                                     , p_delim
                                 ) - 1
                             end
@@ -2981,7 +2964,7 @@ declare
                           ||sitem(s.client_identifier)         -- 29  -- 64 bytes
                           ||sitem(s.service_name)              -- 30  -- 64 bytes, 10g+
                     , 1, 1000);
-          end if; -- sample is of an active session
+          end if;
           ash_i := g_sessions.next(ash_i);
        end loop;
    exception
@@ -3087,8 +3070,6 @@ declare
         order by inst_id, sid, stype, statistic#;
 
         if p_stats.COUNT > 0 then
-            -- l_stats is an associative array for stats lookup, used for the useful averages calculation
-            -- p_stats_string is a dbms_debug_vc2coll collection datatype for "persisting" stats values across snapper DB calls (for "before" and "after" snaps)
             p_stats_string := sys.dbms_debug_vc2coll();
             for s in p_stats.first..p_stats.last loop
                 -- type srec is record (stype varchar2(4), sid number, statistic# number, value number, event_count number );
@@ -3232,7 +3213,6 @@ declare
               when 'action'                       then l_ash_grouping := l_ash_grouping + c_action                   ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('ACTION'                    , w_action                   , ' ');
               when 'client_identifier'            then l_ash_grouping := l_ash_grouping + c_client_identifier        ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('CLIENT_IDENTIFIER'         , w_client_identifier        , ' ');
               when 'service_name'                 then l_ash_grouping := l_ash_grouping + c_service_name             ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('SERVICE_NAME'              , w_service_name             , ' ');
-              -- aliases for convenience (only either real name or alias should be used together at the same time)
               when 'user'                         then l_ash_grouping := l_ash_grouping + c_username                 ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('USERNAME'                  , w_username                 , ' ');
               when 'obj'                          then l_ash_grouping := l_ash_grouping + c_row_wait_obj#            ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('ROW_WAIT_OBJ#'             , w_row_wait_obj#            , ' ');
               when 'file'                         then l_ash_grouping := l_ash_grouping + c_row_wait_file#           ; l_ash_header_line := l_ash_header_line || ' | ' || rpad('ROW_WAIT_FILE#'            , w_row_wait_file#           , ' ');
@@ -4092,7 +4072,6 @@ if [ "$1" = "dpr_risk" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     col small_value new_value small_value;
     def hisdays=1
     def ratio=0.8
@@ -4159,8 +4138,7 @@ if [ "$1" = "drop" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
 
     declare
     drop_type varchar2(30);
@@ -4179,10 +4157,7 @@ if [ "$1" = "drop" ]; then
 !
 exit 0
 fi
-
-
-
-################################################################################
+####################################################
 if [ "$1" = "stat" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -4196,18 +4171,13 @@ if [ "$1" = "stat" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 180
-
-    pro
+    set pagesize 30 linesize 180
     pro
     prompt dba_tab_modifications:
 
     col partition_name format a20 trunc
     col table_owner format a20 trunc
     col table_name format a30
-
 
     select b.table_owner,b.TABLE_NAME,b.partition_name
     ,b.INSERTS,b.UPDATES,b.DELETES
@@ -4264,8 +4234,6 @@ if [ "$1" = "stat" ]; then
            table_name,
            owner,
            savtime DESC NULLS FIRST;
-
-
 
     Pro Index statistics:
     set linesize 180 pagesize 100
@@ -4324,11 +4292,8 @@ if [ "$1" = "stat" ]; then
        AND s.table_name = i.table_name
      ORDER BY s.index_name;
 
-
-    PRO
     pro
     pro Columns info:
-
     col owner format a12
     col table_name format a30
     col table_owner format a30
@@ -4338,7 +4303,6 @@ if [ "$1" = "stat" ]; then
     col high_val_25 format a25
     col histogram format a15
     col LAST_ANALYZED format a20
-
     select --owner,table_name,
     column_name,NULLABLE,NUM_NULLS,data_type,num_distinct,
     substr(low_value,1,25) as low_val_25,substr(high_value,1,25) as high_val_25,
