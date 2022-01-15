@@ -2567,9 +2567,6 @@ declare
         -- */
     end;
 
-   /*---------------------------------------------------
-   -- function for converting interval datatype to microseconds
-   ---------------------------------------------------*/
    function get_seconds(i interval day to second) return number
    as
    begin
