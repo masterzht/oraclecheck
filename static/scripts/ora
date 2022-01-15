@@ -2191,12 +2191,11 @@ fi
 
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
- if [ "$2" = "" ]; then
-   echo "./ora snapper \"`date +"%Y/%m/%d %H:%M"`\" 30"
-   echo "calc average active session "
-   exit 1
- fi
-
+  if [ "$2" = "" ]; then
+    echo "./ora snapper \"`date +"%Y/%m/%d %H:%M"`\" 30"
+    echo "calc average active session "
+    exit 1
+  fi
   if [ "$3" = "" ]; then
     dur=30
   else
@@ -2216,31 +2215,21 @@ set pages 0
 set linesize 999
 set trimspool on
 set trimout on null ""
-
 define snapper_options="ash=sid+username+machine+service_name+sql_id+event"
 define   snapper_sleep="5"
 define   snapper_count="1"
-define     snapper_sid="all"
-
-
+define   snapper_sid="all"
 define _IF_ORA11_OR_HIGHER="--"
 define _IF_LOWER_THAN_ORA11="--"
 define _IF_DBMS_SYSTEM_ACCESSIBLE="/* dbms_system is not accessible"
 -- /*dummy*/ -- this "dummy" is here just for avoiding VIM syntax highlighter going crazy due to previous line
 define _IF_X_ACCESSIBLE="--"
-
--- plsql_object_id columns available in v\$session (from 10.2.0.3)
 define _YES_PLSQL_OBJ_ID="--"
 define _NO_PLSQL_OBJ_ID=""
--- blocking_instance available in v\$session (from 10.2)
 define _YES_BLK_INST="--"
 define _NO_BLK_INST=""
-
--- snapper v4 manual before/after snapshotting
 define _MANUAL_SNAPSHOT="--"
 define _USE_DBMS_LOCK=""
-
--- set the noprint's value to "noprint" if you don't want these temporary variables to show up in a sqlplus spool file
 DEF noprint=""
 col snapper_ora11higher    &noprint new_value _IF_ORA11_OR_HIGHER
 col snapper_ora11lower     &noprint new_value _IF_LOWER_THAN_ORA11
@@ -2252,30 +2241,21 @@ col no_blk_inst            &noprint new_value _NO_BLK_INST
 col yes_blk_inst           &noprint new_value _YES_BLK_INST
 col manual_snapshot        &noprint new_value _MANUAL_SNAPSHOT
 col use_dbms_lock          &noprint new_value _USE_DBMS_LOCK
-
 col snapper_sid            &noprint new_value snapper_sid
-
 def sid_filter="/**/"
 def inst_filter="/**/"
 col sid_filter             &noprint new_value sid_filter
 col inst_filter            &noprint new_value inst_filter
-
-
--- initialize, precompute and determine stuff
 var v                      varchar2(100)
 var x                      varchar2(10)
 var sid_filter             varchar2(4000)
 var inst_filter            varchar2(4000)
 
--- this is here for a reason
--- im extracting the first word of the snapper_sid (if its a complex expression, not just a single SID)
--- by relying on how DEF and & assignment treat spaces in strings
 def ssid_begin=&snapper_sid
 
 set termout off
 set serveroutput off
 declare
-
     o                      sys.dbms_describe.number_table;
     p                      sys.dbms_describe.number_table;
     l                      sys.dbms_describe.number_table;
@@ -2288,7 +2268,6 @@ declare
     scal                   sys.dbms_describe.number_table;
     rad                    sys.dbms_describe.number_table;
     spa                    sys.dbms_describe.number_table;
-
     tmp                    number;
     lv_sid_filter          varchar2(4000);
     lv_inst_filter         varchar2(4000);
@@ -2304,11 +2283,8 @@ declare
       end if;
       return ret;
     end get_filter;
-
 begin
-    -- compute inst_filter
-    case
-        when regexp_instr('&ssid_begin','@')           = 0 then
+    case when regexp_instr('&ssid_begin','@') = 0 then
             lv_inst_filter := 's.inst_id=USERENV(''Instance'')';
         when regexp_instr('&ssid_begin','@\*') > 0 or '&ssid_begin' like '(%' then
             lv_inst_filter := '1=1';
@@ -2317,8 +2293,6 @@ begin
         else
             lv_inst_filter := 's.inst_id=USERENV(''Instance'')';
     end case;
-
-    -- compute sid_filter
     case
         when trim(lower('&ssid_begin')) like 'sid=%'       then lv_sid_filter   := 's.sid in ('||get_filter('&ssid_begin')||')'; --||trim(replace('&ssid_begin','sid=',''))||')';
         when trim(lower('&ssid_begin')) like 'user=%'      then lv_sid_filter   := 'lower(username) like '''         ||get_filter('&ssid_begin')||'''';
@@ -2347,7 +2321,6 @@ begin
         when trim(lower('&ssid_begin')) like '(%'          then lv_inst_filter := '/* inst_filter2 */ 1=1'; lv_sid_filter := q'{(s.inst_id,s.sid) in (&snapper_sid)}'; -- '1=1'; lv_inst_filter := '1=1';
         else                                                    lv_sid_filter   := '/* sid_filter_else_cond */ s.sid in ('||get_filter('&ssid_begin')||')'; --lv_sid_filter := '/* sid_filter_else_cond */ s.sid in (&ssid_begin)';
     end case;
-
     :inst_filter := lv_inst_filter;
     :sid_filter  := lv_inst_filter||' and '||lv_sid_filter;
 
@@ -2364,19 +2337,11 @@ begin
     );
 
     :v:= ' ';
-
 exception
     when others then null;
 end;
 /
-
-with mod_banner as (
-    select
-        replace(banner,'9.','09.') banner
-    from
-        v\$version
-    where rownum = 1
-)
+with mod_banner as (select replace(banner,'9.','09.') banner from v\$version where rownum = 1)
 select
     decode(substr(banner, instr(banner, 'Release ')+8,2), '09', '--', '') snapper_ora10lower,
     decode(substr(banner, instr(banner, 'Release ')+8,2), '09', '',  '--') snapper_ora9,
@@ -2401,11 +2366,7 @@ set termout on serveroutput on size 1000000 format wrapped
 
 prompt Sampling SID &4 with interval &snapper_sleep seconds, taking &snapper_count snapshots...
 
--- let the Snapping start!!!
--- main()
 declare
-    -- Snapper start
-    -- forward declarations
     procedure output(p_txt in varchar2);
     procedure fout;
 
@@ -2421,13 +2382,7 @@ declare
                      p_delim in varchar2 default ','
                    )
                    return varchar2;
-
-
-    -- type, constant, variable declarations
-
-    -- trick for holding 32bit UNSIGNED event and stat_ids in 32bit SIGNED PLS_INTEGER
     pls_adjust constant number(10,0) := power(2,31) - 1;
-
     type srec is record (ts timestamp, stype varchar2(4), inst_id number, sid number, statistic# number, value number, event_count number );
     type stab is table of srec index by pls_integer;
     type ltab is table of srec index by varchar2(100); -- lookup tab for various average calculation
@@ -2666,17 +2621,10 @@ declare
               to_number(extract(day    from i)) * 60 * 60 * 24;
    end get_seconds;
 
-  /*---------------------------------------------------
-    -- proc for outputting data, utilizing global vars
-    ---------------------------------------------------*/
     procedure fout is
         l_output_username VARCHAR2(100);
         gsid varchar2(20);
     begin
-        --if s2(b).stype='WAIT' then output( 'DEBUG WAIT ' || sn(s2(b).statistic#).name || ' ' || delta ); end if;
-        --output( 'DEBUG, Entering fout(), b='||to_char(b)||' sn(s2(b).statistic#='||s2(b).statistic# );
-        --output( 'DEBUG, In fout(), a='||to_char(a)||' b='||to_char(b)||' s1.count='||s1.count||' s2.count='||s2.count||' s2.count='||s2.count);
-
         gsid := trim(to_char(s2(b).inst_id))||','||trim(to_char(s2(b).sid));
 
         if output_username = 1 then
@@ -2687,11 +2635,6 @@ declare
                 when others then raise;
             end;
         end if;
-
-        -- DEBUG
-        --output('before');
-        --output (CASE WHEN output_eventavg    = 1 THEN CASE WHEN s2(b).stype IN ('WAIT') THEN lpad(tptformat(delta / CASE WHEN evcnt = 0 THEN 1 ELSE evcnt END, s2(b).stype), 10, ' ')||' average wait' ELSE get_useful_average(s2(b), s1(a)) END END);
-        --output('after');
 
         output( CASE WHEN output_header      = 1 THEN 'SID= ' END
              || CASE WHEN output_inst        = 1 THEN to_char(s2(b).inst_id, '9999')||', ' END
@@ -2712,21 +2655,14 @@ declare
              || CASE WHEN output_eventcnt_s  = 1 THEN CASE WHEN s2(b).stype IN ('WAIT') THEN lpad(tptformat((evcnt / case get_seconds(d2-d1) when 0 then &snapper_sleep else get_seconds(d2-d1) end ), 'STAT' ), 10, ' ') ELSE '          ' END END||', '
              || CASE WHEN output_eventavg    = 1 THEN CASE WHEN s2(b).stype IN ('WAIT') THEN lpad(tptformat(delta / CASE WHEN evcnt = 0 THEN 1 ELSE evcnt END, s2(b).stype), 10, ' ')||' average wait' ELSE get_useful_average(s2(b), s1(a)) END END
         );
-
     end;
 
-
-  /*---------------------------------------------------
-   -- lookup stat delta helper calculator (l2.value - l1.value)
-   ---------------------------------------------------*/
     function get_delta(metric_id in varchar2) return number
     is
         rec1 srec;
         rec2 srec;
-
         val1 number;
         val2 number;
-
         d    number;
     begin
         begin
@@ -2745,9 +2681,6 @@ declare
         return d;
     end get_delta;
 
-  /*---------------------------------------------------
-   -- delta helper function for convenience - it allows to specify any metric delta, if not specified then get current one
-   ---------------------------------------------------*/
     function gd(c in srec, metric_type in varchar2 DEFAULT NULL, metric_name in varchar2 DEFAULT NULL) return number
     is
         str varchar2(1000);
@@ -2763,22 +2696,16 @@ declare
             end;
         end if;
         tmp_delta := get_delta(str);
-        --output('tmp_delta '||c.stype||' '||tmp_delta);
         return tmp_delta;
-        -- return get_delta(str);
     end;
 
-    /*---------------------------------------------------
-     -- function for calculating useful averages and ratios between metrics
-     ---------------------------------------------------*/
     function get_useful_average(c in srec /* curr_metric */, p in srec /* all_prev_metrics */) return varchar2
     is
         ret varchar2(1000);
         mt  varchar2(100) := c.stype; -- metric_type
         mn  varchar2(100) := sn(c.statistic#).name; -- metric_name
     begin
-        case
-          when mt = 'STAT' then
+        case when mt = 'STAT' then
             case
               when mn = 'bytes sent via SQL*Net to client'         then ret := lpad( tptformat(gd(c) / nullif(gd(c, 'STAT', 'SQL*Net roundtrips to/from client'),0), mt), 10) || ' bytes per roundtrip' ;
               when mn = 'bytes receive via SQL*Net from client'    then ret := lpad( tptformat(gd(c) / nullif(gd(c, 'STAT', 'SQL*Net roundtrips to/from client'),0), mt), 10) || ' bytes per roundtrip' ;
@@ -2792,7 +2719,7 @@ declare
           when mt = 'TIME' then
             -- this is ugly and wrong at the moment - will refactor some day
             case
-              when mn = 'DB time'                                  then ret := lpad(tptformat(get_seconds(d2 - d1)*1000000 - gd(c) - nullif(gd(c, 'DB CPU', 'TIME')
+              when mn = 'DB time' then ret := lpad(tptformat(get_seconds(d2 - d1)*1000000 - gd(c) - nullif(gd(c, 'DB CPU', 'TIME')
                                                                                                             - gd(c, 'WAIT', 'pmon timer')
                                                                                                             - gd(c, 'WAIT', 'VKTM Logical Idle Wait')
                                                                                                             - gd(c, 'WAIT', 'VKTM Init Wait for GSGA')
@@ -2895,9 +2822,6 @@ declare
         return ret;
     end get_useful_average;
 
-  /*---------------------------------------------------
-    -- function for converting large numbers to human-readable format
-    ---------------------------------------------------*/
     function tptformat( p_num in number,
                         p_stype in varchar2 default 'STAT',
                         p_precision in number default 2,
@@ -2945,12 +2869,8 @@ declare
                     end;
 
         end if;
+    end;
 
-    end; -- tptformat
-
-  /*---------------------------------------------------
-    -- simple function for parsing arguments from parameter string
-    ---------------------------------------------------*/
     function getopt( p_parvalues in varchar2,
                      p_extract in varchar2,
                      p_delim in varchar2 default ','
@@ -2959,18 +2879,13 @@ declare
         ret varchar(1000) := NULL;
     begin
 
-      -- dbms_output.put('p_parvalues = ['||p_parvalues||'] ' );
-      -- dbms_output.put('p_extract = ['||p_extract||'] ' );
-
         if lower(p_parvalues) like lower(p_extract)||'%'
         or lower(p_parvalues) like '%'||p_delim||lower(p_extract)||'%' then
 
             ret :=
-                nvl (
-                    substr(p_parvalues,
+                nvl( substr(p_parvalues,
                             instr(p_parvalues, p_extract)+length(p_extract),
-                            case
-                                instr(
+                            case instr(
                                     substr(p_parvalues,
                                             instr(p_parvalues, p_extract)+length(p_extract)
                                     )
@@ -2992,71 +2907,36 @@ declare
         else
             ret := null; -- no parameter found
         end if;
-
-      -- dbms_output.put_line('ret = ['||replace(ret,chr(0),'\0')||']');
-
         return ret;
-
     end; -- getopt
-
-  /*---------------------------------------------------
-    -- proc for getting session list with username, osuser, machine etc
-    ---------------------------------------------------*/
    procedure get_sessions is
        tmp_sessions tmp_sestab;
    begin
 
        select /*+ unnest */ /* get_session_list:1 */
            *
-       bulk collect into
-           tmp_sessions
-       from
-           gv\$session s
-       where
-           1=1
-       and (
-           &sid_filter
+       bulk collect into tmp_sessions from gv\$session s where 1=1
+       and ( &sid_filter
        ) ;
            --(inst_id,sid) in (&snapper_sid);
-
        g_sessions := g_empty_sessions;
-
        for i in 1..tmp_sessions.count loop
            g_sessions(tmp_sessions(i).inst_id||','||tmp_sessions(i).sid) := tmp_sessions(i);
        end loop;
-
-   end; -- get_sessions
-
-  /*---------------------------------------------------
-    -- function for getting session list with username, osuser, machine etc
-    -- this func does not update the g_sessions global array but returns session info as return value
-    ---------------------------------------------------*/
+   end;
    function get_sessions return sestab is
        tmp_sessions tmp_sestab;
        l_return_sessions sestab;
    begin
-
        select /*+ unnest */ /* get_session_list:2 */
            *
-       bulk collect into
-           tmp_sessions
-       from
-           gv\$session s
-       where
-           1=1
-       and (&sid_filter) ;
-         --(inst_id,sid) in (&snapper_sid);
+       bulk collect into tmp_sessions from gv\$session s where 1=1 and (&sid_filter) ;
 
        for i in 1..tmp_sessions.count loop
-           --output('get_sessions i='||i||' sid='||tmp_sessions(i).sid);
            l_return_sessions(tmp_sessions(i).inst_id||','||tmp_sessions(i).sid) := tmp_sessions(i);
        end loop;
-
        return l_return_sessions;
-
    end; -- get_sessions
-
-
    function sitem(p in varchar2) return varchar2 as
    begin
       return '<'||translate(p, '<>', '__')||'>';
@@ -3076,11 +2956,9 @@ declare
    begin
       return '<'||upper(rawtohex(p))||'>';
    end; -- sitem_raw
-
    procedure reset_ash is
    begin
       g_ash_samples_taken := 0;
-      -- clear g_ash
       g_ash := new sys.dbms_debug_vc2coll();
    end; -- reset_ash
 
@@ -3235,7 +3113,6 @@ declare
  &_IF_X_ACCESSIBLE &_IF_ORA11_OR_HIGHER  and   why.indx = sw.indx
  &_IF_X_ACCESSIBLE &_IF_ORA11_OR_HIGHER        -- deliberate cartesian join
  &_IF_X_ACCESSIBLE &_IF_ORA11_OR_HIGHER  and   (lv_gather like '%b%' or lv_gather like '%a%')
-                                         --
                                          union all
                                          select 'ENQG', s.inst_id, -1 sid,
                                                ascii(substr(s.eq_type,1,1))*256 + ascii(substr(s.eq_type,2,1)) +
@@ -3944,6 +3821,43 @@ max(machine) as machine,
 max(top_level_sql_id) as procedure_sql_id
 FROM tmp GROUP BY sql_id ORDER BY COUNT(*) DESC
 ) x where rownum < 20;
+
+
+prompt top sql from v\$sql_area
+    col db_user format a10 trunc
+    col "wait/elap" format a10
+    col sql_text format a25
+    col rank format 9999
+    col avg_buffer format 99999999
+    col rc format 999
+    col rr format 999
+    col rt format 999
+    col i# format 99
+    col sql_id format a13
+    select a.*
+    from
+      (select inst_id as i#,
+            row_number() over (partition by inst_id order by cpu_time desc) as rc,
+            row_number() over (partition by inst_id order by disk_reads desc) as rr,
+            row_number() over (partition by inst_id order by elapsed_Time desc) as rt,
+            PARSING_SCHEMA_NAME db_USER,
+            sql_id,
+            round(cpu_time/1e6) as cpu_s ,
+            round(elapsed_Time/1e6) as elap_s ,
+            round((elapsed_Time - cpu_time)/1e6) wait_s,
+            trunc((elapsed_Time - cpu_time)*100/greatest(elapsed_Time,1),1)||'%' as "wait/elap",
+            executions as execs,
+            round(elapsed_Time/(executions+1)/1e6,2) ela_Pe,
+            buffer_gets as tot_bufs,
+            round(buffer_gets/greatest(executions,1),1) as avg_buf,
+            disk_reads as reads,
+            round(USER_IO_WAIT_TIME/1e6) as IOwait_s,
+            substr(sql_text,1,20) sql_text
+            from gv\$sqlarea t where inst_id=$INST
+            --where elapsed_time > 20000　and PARSING_SCHEMA_NAME<>'SYS'
+        ) a
+    where rc <=5 or rr<=5 or rt<=5
+    order by i#,rc;
 
 prompt Which Object Caused The Library Cache Wait
 col object_name for a30
@@ -6057,7 +5971,7 @@ exit 0
 fi
 
 ##new add method 03:
-################################################################################
+###############################################
 if [ "$1" = "sql_patch" ]; then
 
    if [ "$2" = "" ]; then
@@ -6237,9 +6151,7 @@ fi
 ## for version 12.2+
 if [ "$v4" = "12.2" -o  "$v2" = "18" -o "$v2" = "19" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
-
     declare patch_name varchar2(30);
 begin
 patch_name := dbms_sqldiag.create_sql_patch(
@@ -6252,9 +6164,7 @@ fi
 echo ora sql_patch sql_id  hint_info
 exit 0
 fi
-
-
-################################################################################
+##############################################
 if [ "$1" = "sqlhc" ]; then
 
   if [ "$2" = "" ]; then
@@ -6283,9 +6193,7 @@ done
 echo "need ora_sqlhc.sql in the curret directory!"
 exit 0
 fi
-
-#####################################################################################################
-
+##########################################################
 if [ "$1" = "tophis" ]; then
 
    if [ "$2" = "" -o "$2" = "cpu" -o "$2" = "CPU" ]; then
@@ -6326,17 +6234,6 @@ if [ "$1" = "tophis" ]; then
      else
       topn=$5
    fi
-
-
-### if [ "$3" = "" -o "$4" = "" ]; then
-###  echo "ora tophis cpu|read|time [begin_snapid] [end_snapid](default is last two snap) "
-###  bid="(select max(snap_id)-1 from dba_hist_snapshot)"
-###  eid="(select max(snap_id)   from dba_hist_snapshot)"
-### else
-###  bid=$3
-###  eid=$4
-### fi
-
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -6417,9 +6314,7 @@ if [ "$1" = "purge" ]; then
     echo "ora purge <sqlid>"
     exit 1
   fi
-
   sqlid=$2
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -6744,11 +6639,8 @@ END;
 !
 exit 0
 fi
-
-
-################################################################################
+###############################################
 if [ "$1" = "dbtime" -o "$1" = "db_time" ]; then
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -6826,8 +6718,7 @@ spool off
 echo "show dbtime by day and top 10 by snapshots"
 exit 0
 fi
-
-################################################################################
+################################################
 if [ "$1" = "sysmetric" ]; then
 
 #AIX not support date  -d
@@ -6837,14 +6728,12 @@ if [ "$1" = "sysmetric" ]; then
     exit 1
   fi
 
-   if [ "$3" = "" ]; then
+  if [ "$3" = "" ]; then
     defdur=30
    else
      defdur=$3
   fi
-
   btime=$2
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -6918,15 +6807,10 @@ spool off
 echo "instance_number=$INST"
 exit 0
 fi
-
-
-################################################################################
+##############################################
 if [ "$1" = "recover" -o "$1" = "recover_state" ]; then
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
-
 set linesize 100
 alter session set NLS_DATE_FORMAT='DD-MON-YYYY HH24:MI:SS';
 select usn,
@@ -6937,7 +6821,6 @@ select usn,
        decode(cputime, 0, 'unknown', sysdate + (((undoblockstotal - undoblocksdone) / (undoblocksdone / cputime)) / 86400)) "Estimated time to complete"
 from gv\$fast_start_transactions;
 $ECHO
-
 !
 exit 0
 fi
@@ -10586,7 +10469,6 @@ with plan_sum as (
  and ((w_plan.avg_ela/1e6 >=1) or ( w_plan.avg_ela/1e6 <1 and  w_plan.sum_exec >=1))
 &order_by;
 $ECHO
-
 spool off
 
 !
@@ -10594,63 +10476,7 @@ echo "full nodes"
  echo "plan change info for recent $awr_his days. default is 7 "
   exit 0
 fi
-
-
-#####################################################################################################
-if [ "$1" = "toparea" ]; then
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-
-    set linesize 300 pagesize 30
-
-    col db_user format a10 trunc
-    col "wait/elap" format a10
-    col sql_text format a25
-    col rank format 9999
-    col avg_buffer format 99999999
-    col rc format 999
-    col rr format 999
-    col rt format 999
-    col inst# format 99
-    col sql_id format a13
-    spool ora_toparea_$filedate.log
-    select a.*
-    from
-      (select inst_id as inst#,
-            row_number() over (partition by inst_id order by cpu_time desc) as rc,
-            row_number() over (partition by inst_id order by disk_reads desc) as rr,
-            row_number() over (partition by inst_id order by elapsed_Time desc) as rt,
-            PARSING_SCHEMA_NAME db_USER,
-            sql_id,
-            round(cpu_time/1e6) as cpu_s ,
-            round(elapsed_Time/1e6) as elap_s ,
-            round((elapsed_Time - cpu_time)/1e6) wait_s,
-            trunc((elapsed_Time - cpu_time)*100/greatest(elapsed_Time,1),1)||'%' as "wait/elap",
-            executions as execs,
-            round(elapsed_Time/(executions+1)/1e6,2) ela_Pe,
-            buffer_gets as tot_bufs,
-            round(buffer_gets/greatest(executions,1),1) as avg_buf,
-            disk_reads as reads,
-            round(USER_IO_WAIT_TIME/1e6) as IOwait_s,
-            substr(sql_text,1,20) sql_text
-            from gv\$sqlarea t where inst_id=$INST
-            --where elapsed_time > 20000　and PARSING_SCHEMA_NAME<>'SYS'
-        ) a
-    where rc <=5 or rr<=5 or rt<=5
-    order by inst#,rc;
-$ECHO
-spool off
-
-!
-echo "instance_number=$INST"
-  exit 0
-fi
-
-
-#####################################################################################################
-
+########################################################
 if [ "$1" = "rman" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -10724,30 +10550,21 @@ if [ "$1" = "rman" ]; then
     ) where rownum <= 100;
 
     $ECHO
-
 !
   exit 0
 fi
-
-
-#####################################################################################################
-
+################################################
 if [ "$1" = "batch_osstat" -o "$1" = "osstat" ]; then
-
     if [ "$2" = ""  -o  "$3" = "" ]; then
-      #echo "ora iostat <bid> <eid> "
-      #exit 1
       bid="(select max(snap_id)-48 from dba_hist_snapshot)"
       eid="(select max(snap_id)    from dba_hist_snapshot)"
     else
        bid=$2
        eid=$3
     fi
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set linesize 200 pagesize 100
     col END_SNAP_TIME format a20
     col inst_id format 9999
@@ -10757,16 +10574,11 @@ if [ "$1" = "batch_osstat" -o "$1" = "osstat" ]; then
          ,s.snap_id as eid
          ,to_char(s.end_interval_time,'yyyy-mm-dd hh24:mi:ss')  end_snap_time
          , round(load,2) as load
-         , decode(busy_time+idle_time,0,to_number(null)
-                  , round(busy_time/(busy_time+idle_time)*100,2))   busy_pct
-         , decode(busy_time+idle_time,0,to_number(null)
-                  , round(user_time/(busy_time+idle_time)*100,2))   user_pct
-         , decode(busy_time+idle_time,0,to_number(null)
-                  , round(sys_time/(busy_time+idle_time)*100,2))     sys_pct
-         , decode(busy_time+idle_time,0,to_number(null)
-                  , round(idle_time/(busy_time+idle_time)*100,2))    idl_pct
-         , decode(busy_time+idle_time,0,to_number(null)
-                  , round(wio_time/(busy_time+idle_time)*100,2))     wio_pct
+         , decode(busy_time+idle_time,0,to_number(null), round(busy_time/(busy_time+idle_time)*100,2))   busy_pct
+         , decode(busy_time+idle_time,0,to_number(null), round(user_time/(busy_time+idle_time)*100,2))   user_pct
+         , decode(busy_time+idle_time,0,to_number(null), round(sys_time/(busy_time+idle_time)*100,2))     sys_pct
+         , decode(busy_time+idle_time,0,to_number(null), round(idle_time/(busy_time+idle_time)*100,2))    idl_pct
+         , decode(busy_time+idle_time,0,to_number(null), round(wio_time/(busy_time+idle_time)*100,2))     wio_pct
        from (select snap_id
             , instance_number
             , dbid
@@ -10805,9 +10617,7 @@ echo "instance_number=$INST"
  echo "ora osstat for recent 48 snapshots"
   exit 0
 fi
-
-#####################################################################################################
-
+##########################################
 if [ "$1" = "obj" ]; then
 
    if [ "$2" = "" ]; then
@@ -10820,21 +10630,6 @@ if [ "$1" = "obj" ]; then
    else
       pred="and a.owner=upper('$3')"
    fi
-
-   #echo $2
-   #pref=$2|cut -c1-1
-   #str1=$2
-   #echo ${str1:1:1}
-   #echo ${str1:2:10}
-   #${str1:2:(20-5)} begin 2 len 15
-
-   #if [ "$pref" = "=" ]; then
-   # cond=" = upper($2"
-   #else if [ "$pref" = "^" ]; then
-   #
-   #else if [ "$pref" = "*" ]; then
-   # fi
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -10851,7 +10646,6 @@ if [ "$1" = "obj" ]; then
     col created format a17
     col LAST_DDL format a17
     col status format a6 trunc
-
     select a.owner,object_name,object_id,--data_object_id,
             object_type,status
            ,to_char(created,'yyyymmdd hh24:mi:ss') as created
@@ -10864,11 +10658,7 @@ if [ "$1" = "obj" ]; then
          and a.owner=b.owner(+) $pred
     order by a.owner,a.object_name;
     $ECHO
-    --select * from dba_synonyms
-    --where synonym_name like upper('%$2%');
-
 !
-#echo "ora obj %abc%  [owner] "
   exit 0
 fi
 ##########################################
