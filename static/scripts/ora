@@ -2369,7 +2369,6 @@ prompt Sampling SID &4 with interval &snapper_sleep seconds, taking &snapper_cou
 declare
     procedure output(p_txt in varchar2);
     procedure fout;
-
     function tptformat( p_num in number,
                         p_stype in varchar2 default 'STAT',
                         p_precision in number default 2,
@@ -2379,8 +2378,7 @@ declare
                    return varchar2;
     function getopt( p_parvalues in varchar2,
                      p_extract in varchar2,
-                     p_delim in varchar2 default ','
-                   )
+                     p_delim in varchar2 default ',')
                    return varchar2;
     pls_adjust constant number(10,0) := power(2,31) - 1;
     type srec is record (ts timestamp, stype varchar2(4), inst_id number, sid number, statistic# number, value number, event_count number );
@@ -2390,48 +2388,33 @@ declare
     s2 stab;
     l1 ltab;
     l2 ltab;
-
     type snrec is record (stype varchar2(4), statistic# number, name varchar2(100));
     type sntab is table of snrec index by pls_integer;
     sn_tmp sntab;
     sn sntab;
-
     type sntab_reverse is table of snrec index by varchar2(100); -- used for looking up stat id from stat name
     sn_reverse sntab_reverse;
-
-    tmp_varchar2 varchar2(1000); -- misc
-
+    tmp_varchar2 varchar2(1000);
     function get_useful_average(c in srec /* curr_metric */, p in srec /* all_prev_metrics */) return varchar2;
-
     type tmp_sestab is table of gv\$session%rowtype index by pls_integer;
     type sestab is table of gv\$session%rowtype index by varchar2(20);
-
     g_sessions           sestab;
     g_empty_sessions     sestab;
-
     type hc_tab is table of number index by pls_integer; -- index is sql hash value
     type ses_hash_tab is table of hc_tab index by pls_integer; -- index is SID
-
     g_ses_hash_tab       ses_hash_tab;
     g_empty_ses_hash_tab ses_hash_tab;
-
-    -- dbms_debug_vc2coll is a built-in collection present in every oracle db
     g_ash                sys.dbms_debug_vc2coll := new sys.dbms_debug_vc2coll();
     g_empty_ash          sys.dbms_debug_vc2coll := new sys.dbms_debug_vc2coll();
     g_snap1              sys.dbms_debug_vc2coll;
     g_snap2              sys.dbms_debug_vc2coll;
-
     g_ash_samples_taken  number := 0;
-
     g_count_statname  number;
     g_count_eventname number;
-
     g_mysid           number;
-
     i number;
     a number;
     b number;
-
     c number;
     delta number;
     evcnt number;
@@ -2440,7 +2423,7 @@ declare
     missing_values_s1 number := 0;
     missing_values_s2 number := 0;
     disappeared_sid   number := 0;
-    lv_curr_sid       number := 0; -- used for determining whether to print an empty line between session stats
+    lv_curr_sid       number := 0;
     d1 timestamp(6);
     d2 timestamp(6);
     ash_date1 date;
@@ -2448,45 +2431,34 @@ declare
     lv_gather        varchar2(1000);
     gv_header_string varchar2(1000);
     lv_data_string   varchar2(1000);
-
     lv_ash           varchar2(1000);
     lv_stats         varchar2(1000);
-
     gather_stats     number := 0;
     gather_ash       number := 0;
-
     g_snap_begin    varchar2(1000);
     g_snap_end      varchar2(1000);
-
-    -- CONFIGURABLE STUFF --
-
-    -- this sets what are the default ash sample TOP reporting group by columns
     g_ash_columns     varchar2(1000) := 'inst_id + sql_id + sql_child_number + event + wait_class';
     g_ash_columns1    varchar2(1000) := 'inst_id + event + p1 + wait_class';
     g_ash_columns2    varchar2(1000) := 'inst_id + sid + user + machine + program';
     g_ash_columns3    varchar2(1000) := 'inst_id + plsql_object_id + plsql_subprogram_id + sql_id';
-
-    -- output column configuration
-    output_header     number := 0; -- 1=true 0=false
-    output_username   number := 1; -- v$session.username
-    output_inst       number := 0; -- inst
-    output_sid        number := CASE WHEN dbms_utility.is_cluster_database = TRUE THEN 0 ELSE 1 END; -- just sid
-    output_inst_sid   number := CASE WHEN dbms_utility.is_cluster_database = TRUE THEN 1 ELSE 0 END; -- inst_id and sid together
-    output_time       number := 0; -- time of snapshot start
-    output_seconds    number := 0; -- seconds in snapshot (shown in footer of each snapshot too)
-    output_stype      number := 1; -- statistic type (WAIT,STAT,TIME,ENQG,LATG,...)
-    output_sname      number := 1; -- statistic name
-    output_delta      number := 1; -- raw delta
-    output_delta_s    number := 0; -- raw delta normalized to per second
-    output_hdelta     number := 0; -- human readable delta
-    output_hdelta_s   number := 1; -- human readable delta normalized to per second
-    output_percent    number := 1; -- percent of total time/samples
-    output_eventcnt   number := 1; -- wait event count
-    output_eventcnt_s number := 1; -- wait event count
-    output_eventavg   number := 1; -- average wait duration
-    output_pcthist    number := 1; -- percent of total visual bar (histogram) -- Histograms seem to work for me on 9.2.0.7 + - JBJ2)
-
-    -- column widths in ASH report output
+    output_header     number := 0;
+    output_username   number := 1;
+    output_inst       number := 0;
+    output_sid        number := CASE WHEN dbms_utility.is_cluster_database = TRUE THEN 0 ELSE 1 END;
+    output_inst_sid   number := CASE WHEN dbms_utility.is_cluster_database = TRUE THEN 1 ELSE 0 END;
+    output_time       number := 0;
+    output_seconds    number := 0;
+    output_stype      number := 1;
+    output_sname      number := 1;
+    output_delta      number := 1;
+    output_delta_s    number := 0;
+    output_hdelta     number := 0;
+    output_hdelta_s   number := 1;
+    output_percent    number := 1;
+    output_eventcnt   number := 1;
+    output_eventcnt_s number := 1;
+    output_eventavg   number := 1;
+    output_pcthist    number := 1;
     w_inst_id                     number :=  4;
     w_sid                         number :=  6;
     w_username                    number := 20;
@@ -2517,12 +2489,7 @@ declare
     w_action                      number := 25;
     w_client_identifier           number := 25;
     w_service_name                number := 25;
-
     w_activity_pct                number :=  7;
-
-    -- END CONFIGURABLE STUFF --
-
-    -- constants for ash collection extraction from the vc2 collection
     s_inst_id                      constant number :=  1 ;
     s_sid                          constant number :=  2 ;
     s_username                     constant number :=  3 ;
@@ -2553,8 +2520,6 @@ declare
     s_action                       constant number := 28 ;
     s_client_identifier            constant number := 29 ;
     s_service_name                 constant number := 30 ;
-
-    -- constants for ash collection reporting, which columns to show in report
     c_inst_id                      constant number := power(2, s_inst_id                  );
     c_sid                          constant number := power(2, s_sid                      );
     c_username                     constant number := power(2, s_username                 );
@@ -2585,14 +2550,8 @@ declare
     c_action                       constant number := power(2, s_action                   );
     c_client_identifier            constant number := power(2, s_client_identifier        );
     c_service_name                 constant number := power(2, s_service_name             );
-
-
-  /*---------------------------------------------------
-    -- proc for outputting data to trace or dbms_output
-    ---------------------------------------------------*/
     procedure output(p_txt in varchar2) is
     begin
-
         if (getopt('&snapper_options', 'out') is not null)
             or
            (getopt('&snapper_options', 'out') is null and getopt('&snapper_options', 'trace') is null)
@@ -2600,14 +2559,13 @@ declare
             dbms_output.put_line(p_txt);
         end if;
 
-        -- The block below is a sqlplus trick for conditionally commenting out PL/SQL code
         &_IF_DBMS_SYSTEM_ACCESSIBLE
         if getopt('&snapper_options', 'trace') is not null then
             sys.dbms_system.ksdwrt(1, p_txt);
             sys.dbms_system.ksdfls;
         end if;
         -- */
-    end; -- output
+    end;
 
    /*---------------------------------------------------
    -- function for converting interval datatype to microseconds
