@@ -2665,118 +2665,56 @@ declare
               when mn = 'session cursor cache hits'                then ret := lpad( tptformat(gd(c) -       (gd(c, 'STAT', 'parse count (total)'              )  ), mt), 10) || ' softparses avoided thanks to cursor cache';
               when mn = 'buffer is pinned count'                   then ret := lpad( tptformat(gd(c) / nullif(gd(c) + gd(c, 'STAT', 'session logical reads'),0) * 100, mt), 10) || ' % buffer gets avoided thanks to buffer pin caching';
               else ret :=                                                      lpad( tptformat(gd(c) / nullif(gd(c, 'STAT', 'execute count'),0), mt), 10) || ' per execution' ;
-            end case; -- mt=stat, mn
+            end case;
           when mt = 'TIME' then
-            -- this is ugly and wrong at the moment - will refactor some day
-            case
-              when mn = 'DB time' then ret := lpad(tptformat(get_seconds(d2 - d1)*1000000 - gd(c) - nullif(gd(c, 'DB CPU', 'TIME')
-                                                                                                            - gd(c, 'WAIT', 'pmon timer')
-                                                                                                            - gd(c, 'WAIT', 'VKTM Logical Idle Wait')
-                                                                                                            - gd(c, 'WAIT', 'VKTM Init Wait for GSGA')
-                                                                                                            - gd(c, 'WAIT', 'IORM Scheduler Slave Idle Wait')
-                                                                                                            - gd(c, 'WAIT', 'rdbms ipc message')
-                                                                                                            - gd(c, 'WAIT', 'i/o slave wait')
-                                                                                                            - gd(c, 'WAIT', 'VKRM Idle')
-                                                                                                            - gd(c, 'WAIT', 'wait for unread message on broadcast channel')
-                                                                                                            - gd(c, 'WAIT', 'wait for unread message on multiple broadcast channels')
-                                                                                                            - gd(c, 'WAIT', 'class slave wait')
-                                                                                                            - gd(c, 'WAIT', 'KSV master wait')
-                                                                                                            - gd(c, 'WAIT', 'PING')
-                                                                                                            - gd(c, 'WAIT', 'watchdog main loop')
-                                                                                                            - gd(c, 'WAIT', 'DIAG idle wait')
-                                                                                                            - gd(c, 'WAIT', 'ges remote message')
-                                                                                                            - gd(c, 'WAIT', 'gcs remote message')
-                                                                                                            - gd(c, 'WAIT', 'heartbeat monitor sleep')
-                                                                                                            - gd(c, 'WAIT', 'GCR sleep')
-                                                                                                            - gd(c, 'WAIT', 'SGA: MMAN sleep for component shrink')
-                                                                                                            - gd(c, 'WAIT', 'MRP redo arrival')
-                                                                                                            - gd(c, 'WAIT', 'LNS ASYNC archive log')
-                                                                                                            - gd(c, 'WAIT', 'LNS ASYNC dest activation')
-                                                                                                            - gd(c, 'WAIT', 'LNS ASYNC end of log')
-                                                                                                            - gd(c, 'WAIT', 'simulated log write delay')
-                                                                                                            - gd(c, 'WAIT', 'LGWR real time apply sync')
-                                                                                                            - gd(c, 'WAIT', 'parallel recovery slave idle wait')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner builder: idle')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner builder: branch')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner preparer: idle')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner reader: log (idle)')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner reader: redo (idle)')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner client: transaction')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner: other')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner: activate')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner: reset')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner: find session')
-                                                                                                            - gd(c, 'WAIT', 'LogMiner: internal')
-                                                                                                            - gd(c, 'WAIT', 'Logical Standby Apply Delay')
-                                                                                                            - gd(c, 'WAIT', 'parallel recovery coordinator waits for slave cleanup')
-                                                                                                            - gd(c, 'WAIT', 'parallel recovery control message reply')
-                                                                                                            - gd(c, 'WAIT', 'parallel recovery slave next change')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Txn Recovery Start')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Txn Recovery Reply')
-                                                                                                            - gd(c, 'WAIT', 'fbar timer')
-                                                                                                            - gd(c, 'WAIT', 'smon timer')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Metadata Update')
-                                                                                                            - gd(c, 'WAIT', 'Space Manager: slave idle wait')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Index Merge Reply')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Index Merge Execute')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Index Merge Close')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: kdcph_mai')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: kdcphc_ack')
-                                                                                                            - gd(c, 'WAIT', 'shared server idle wait')
-                                                                                                            - gd(c, 'WAIT', 'dispatcher timer')
-                                                                                                            - gd(c, 'WAIT', 'cmon timer')
-                                                                                                            - gd(c, 'WAIT', 'pool server timer')
-                                                                                                            - gd(c, 'WAIT', 'JOX Jit Process Sleep')
-                                                                                                            - gd(c, 'WAIT', 'jobq slave wait')
-                                                                                                            - gd(c, 'WAIT', 'pipe get')
-                                                                                                            - gd(c, 'WAIT', 'PX Deque wait')
-                                                                                                            - gd(c, 'WAIT', 'PX Idle Wait')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Join ACK')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq Credit: need buffer')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq Credit: send blkd')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Msg Fragment')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Parse Reply')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Execute Reply')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Execution Msg')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Table Q Normal')
-                                                                                                            - gd(c, 'WAIT', 'PX Deq: Table Q Sample')
-                                                                                                            - gd(c, 'WAIT', 'Streams fetch slave: waiting for txns')
-                                                                                                            - gd(c, 'WAIT', 'Streams: waiting for messages')
-                                                                                                            - gd(c, 'WAIT', 'Streams capture: waiting for archive log')
-                                                                                                            - gd(c, 'WAIT', 'single-task message')
-                                                                                                            - gd(c, 'WAIT', 'SQL*Net message from client')
-                                                                                                            - gd(c, 'WAIT', 'SQL*Net vector message from client')
-                                                                                                            - gd(c, 'WAIT', 'SQL*Net vector message from dblink')
-                                                                                                            - gd(c, 'WAIT', 'PL/SQL lock timer')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: emn coordinator idle wait')
-                                                                                                            - gd(c, 'WAIT', 'EMON slave idle wait')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: waiting for messages in the queue')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: waiting for time management or cleanup tasks')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: delete acknowledged messages')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: deallocate messages from Streams Pool')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: qmn coordinator idle wait')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: qmn slave idle wait')
-                                                                                                            - gd(c, 'WAIT', 'Streams AQ: RAC qmn coordinator idle wait')
-                                                                                                            - gd(c, 'WAIT', 'HS message to agent')
-                                                                                                            - gd(c, 'WAIT', 'ASM background timer')
-                                                                                                            - gd(c, 'WAIT', 'auto-sqltune: wait graph update')
-                                                                                                            - gd(c, 'WAIT', 'WCR: replay client notify')
-                                                                                                            - gd(c, 'WAIT', 'WCR: replay clock')
-                                                                                                            - gd(c, 'WAIT', 'WCR: replay paused')
-                                                                                                            - gd(c, 'WAIT', 'JS external job')
-                                                                                                            - gd(c, 'WAIT', 'cell worker idle')
-                                                                                           ,0) , mt), 10) || ' unaccounted time' ;
+            case when mn = 'DB time' then ret := lpad(tptformat(get_seconds(d2 - d1)*1000000 - gd(c) - nullif(gd(c, 'DB CPU', 'TIME')
+              - gd(c, 'WAIT', 'pmon timer') - gd(c, 'WAIT', 'VKTM Logical Idle Wait')  - gd(c, 'WAIT', 'VKTM Init Wait for GSGA')
+              - gd(c, 'WAIT', 'IORM Scheduler Slave Idle Wait') - gd(c, 'WAIT', 'rdbms ipc message') - gd(c, 'WAIT', 'i/o slave wait')
+              - gd(c, 'WAIT', 'VKRM Idle') - gd(c, 'WAIT', 'wait for unread message on broadcast channel')
+              - gd(c, 'WAIT', 'wait for unread message on multiple broadcast channels') - gd(c, 'WAIT', 'class slave wait')
+              - gd(c, 'WAIT', 'KSV master wait') - gd(c, 'WAIT', 'PING') - gd(c, 'WAIT', 'watchdog main loop')
+              - gd(c, 'WAIT', 'DIAG idle wait') - gd(c, 'WAIT', 'ges remote message') - gd(c, 'WAIT', 'gcs remote message')
+              - gd(c, 'WAIT', 'heartbeat monitor sleep') - gd(c, 'WAIT', 'GCR sleep') - gd(c, 'WAIT', 'SGA: MMAN sleep for component shrink')
+              - gd(c, 'WAIT', 'MRP redo arrival') - gd(c, 'WAIT', 'LNS ASYNC archive log') - gd(c, 'WAIT', 'LNS ASYNC dest activation')
+              - gd(c, 'WAIT', 'LNS ASYNC end of log') - gd(c, 'WAIT', 'simulated log write delay') - gd(c, 'WAIT', 'LGWR real time apply sync')
+              - gd(c, 'WAIT', 'parallel recovery slave idle wait') - gd(c, 'WAIT', 'LogMiner builder: idle')
+              - gd(c, 'WAIT', 'LogMiner builder: branch') - gd(c, 'WAIT', 'LogMiner preparer: idle') - gd(c, 'WAIT', 'LogMiner reader: log (idle)')
+              - gd(c, 'WAIT', 'LogMiner reader: redo (idle)') - gd(c, 'WAIT', 'LogMiner client: transaction') - gd(c, 'WAIT', 'LogMiner: other')
+              - gd(c, 'WAIT', 'LogMiner: activate') - gd(c, 'WAIT', 'LogMiner: reset') - gd(c, 'WAIT', 'LogMiner: find session')
+              - gd(c, 'WAIT', 'LogMiner: internal') - gd(c, 'WAIT', 'Logical Standby Apply Delay') - gd(c, 'WAIT', 'parallel recovery coordinator waits for slave cleanup')
+              - gd(c, 'WAIT', 'parallel recovery control message reply') - gd(c, 'WAIT', 'parallel recovery slave next change')
+              - gd(c, 'WAIT', 'PX Deq: Txn Recovery Start') - gd(c, 'WAIT', 'PX Deq: Txn Recovery Reply') - gd(c, 'WAIT', 'fbar timer')
+              - gd(c, 'WAIT', 'smon timer') - gd(c, 'WAIT', 'PX Deq: Metadata Update') - gd(c, 'WAIT', 'Space Manager: slave idle wait')
+              - gd(c, 'WAIT', 'PX Deq: Index Merge Reply') - gd(c, 'WAIT', 'PX Deq: Index Merge Execute')
+              - gd(c, 'WAIT', 'PX Deq: Index Merge Close') - gd(c, 'WAIT', 'PX Deq: kdcph_mai')
+              - gd(c, 'WAIT', 'PX Deq: kdcphc_ack') - gd(c, 'WAIT', 'shared server idle wait')
+              - gd(c, 'WAIT', 'dispatcher timer') - gd(c, 'WAIT', 'cmon timer') - gd(c, 'WAIT', 'pool server timer')
+              - gd(c, 'WAIT', 'JOX Jit Process Sleep') - gd(c, 'WAIT', 'jobq slave wait') - gd(c, 'WAIT', 'pipe get')
+              - gd(c, 'WAIT', 'PX Deque wait') - gd(c, 'WAIT', 'PX Idle Wait') - gd(c, 'WAIT', 'PX Deq: Join ACK')
+              - gd(c, 'WAIT', 'PX Deq Credit: need buffer')  - gd(c, 'WAIT', 'PX Deq Credit: send blkd')
+              - gd(c, 'WAIT', 'PX Deq: Msg Fragment') - gd(c, 'WAIT', 'PX Deq: Parse Reply')
+              - gd(c, 'WAIT', 'PX Deq: Execute Reply') - gd(c, 'WAIT', 'PX Deq: Execution Msg')  - gd(c, 'WAIT', 'PX Deq: Table Q Normal')
+              - gd(c, 'WAIT', 'PX Deq: Table Q Sample') - gd(c, 'WAIT', 'Streams fetch slave: waiting for txns')
+              - gd(c, 'WAIT', 'Streams: waiting for messages') - gd(c, 'WAIT', 'Streams capture: waiting for archive log')
+              - gd(c, 'WAIT', 'single-task message') - gd(c, 'WAIT', 'SQL*Net message from client') - gd(c, 'WAIT', 'SQL*Net vector message from client')
+              - gd(c, 'WAIT', 'SQL*Net vector message from dblink') - gd(c, 'WAIT', 'PL/SQL lock timer') - gd(c, 'WAIT', 'Streams AQ: emn coordinator idle wait') - gd(c, 'WAIT', 'EMON slave idle wait')
+              - gd(c, 'WAIT', 'Streams AQ: waiting for messages in the queue') - gd(c, 'WAIT', 'Streams AQ: waiting for time management or cleanup tasks')
+              - gd(c, 'WAIT', 'Streams AQ: delete acknowledged messages') - gd(c, 'WAIT', 'Streams AQ: deallocate messages from Streams Pool')
+              - gd(c, 'WAIT', 'Streams AQ: qmn coordinator idle wait') - gd(c, 'WAIT', 'Streams AQ: qmn slave idle wait')
+              - gd(c, 'WAIT', 'Streams AQ: RAC qmn coordinator idle wait') - gd(c, 'WAIT', 'HS message to agent')
+              - gd(c, 'WAIT', 'ASM background timer') - gd(c, 'WAIT', 'auto-sqltune: wait graph update') - gd(c, 'WAIT', 'WCR: replay client notify')
+              - gd(c, 'WAIT', 'WCR: replay clock') - gd(c, 'WAIT', 'WCR: replay paused') - gd(c, 'WAIT', 'JS external job')
+              - gd(c, 'WAIT', 'cell worker idle')  ,0) , mt), 10) || ' unaccounted time' ;
               else null;
             end case;
         end case;
         return ret;
     end get_useful_average;
-
     function tptformat( p_num in number,
                         p_stype in varchar2 default 'STAT',
                         p_precision in number default 2,
-                        p_base in number default 10,    -- for KiB/MiB formatting use
-                        p_grouplen in number default 3  -- p_base=2 and p_grouplen=10
+                        p_base in number default 10,
+                        p_grouplen in number default 3
                       )
                       return varchar2
     is
@@ -2799,9 +2737,7 @@ declare
                     end;
         else
             return
-                round(
-                    p_num / power( p_base , trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) ), p_precision
-                )
+                round(p_num / power( p_base , trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen)) ), p_precision)
                 || case trunc(log(p_base,abs(p_num)))-trunc(mod(log(p_base,abs(p_num)),p_grouplen))
                        when 0            then ''
                        when 1            then ''
@@ -2845,7 +2781,6 @@ declare
    procedure get_sessions is
        tmp_sessions tmp_sestab;
    begin
-
        select /*+ unnest */ /* get_session_list:1 */
            *
        bulk collect into tmp_sessions from gv\$session s where 1=1
@@ -2869,31 +2804,31 @@ declare
            l_return_sessions(tmp_sessions(i).inst_id||','||tmp_sessions(i).sid) := tmp_sessions(i);
        end loop;
        return l_return_sessions;
-   end; -- get_sessions
+   end;
    function sitem(p in varchar2) return varchar2 as
    begin
       return '<'||translate(p, '<>', '__')||'>';
-   end; -- sitem varchar2
+   end;
 
    function sitem(p in number) return varchar2 as
    begin
       return '<'||to_char(p)||'>';
-   end; -- sitem number
+   end;
 
    function sitem(p in date) return varchar2 as
    begin
       return '<'||to_char(p, 'YYYY-MM-DD HH24:MI:SS')||'>';
-   end; -- sitem date
+   end;
 
    function sitem_raw(p in raw) return varchar2 as
    begin
       return '<'||upper(rawtohex(p))||'>';
-   end; -- sitem_raw
+   end;
    procedure reset_ash is
    begin
       g_ash_samples_taken := 0;
       g_ash := new sys.dbms_debug_vc2coll();
-   end; -- reset_ash
+   end;
 
    procedure extract_ash is
        ash_i varchar2(30);
