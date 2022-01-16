@@ -109,7 +109,6 @@ usage()
       - rman                                   rman status and RECOVERY_FILE_DEST info
 
       - seq                                    show sequences have bad setting (order_flag='Y' or cache_size<=20)
-      - seg <object_name>                      segment info for given object
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
       - session_event [all]|<noidle>|<px>      ora session_event | ora session_event px | ora session_event noidle
       - snapper \"12:10\" 40                     AAS
@@ -3805,8 +3804,6 @@ with tmp as
           from dba_hist_active_sess_history
           where snap_id >= $bid
             and snap_id <=$eid
-          -- SAMPLE_TIME > to_date('2022-01-04 10:00', 'yyyy-mm-dd hh24:mi')
-          -- and SAMPLE_TIME < to_date('2022-01-04 10:20', 'yyyy-mm-dd hh24:mi')
             and INSTANCE_NUMBER = $INST
           group by event, to_char(sample_time, 'yyyy-mm-dd hh24:mi')
          )
@@ -3814,7 +3811,6 @@ select * from (
     select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
 from tmp
     ) where rn < 4;
-
     set linesize 300 pagesize 8
     col event format a30 trunc
     col inst_id format 9999
@@ -3825,8 +3821,6 @@ from tmp
     col r3_event format a15 trunc
     col r4_event format a15 trunc
     col r5_event format a15 trunc
-
-    --break on eid
     break on snap_end_time
     with tmp_res as
     (select v1.instance_number as inst_id,--v1.begin_snap_id,
@@ -3938,7 +3932,7 @@ echo "get batch awr top event for recent $snaps snapshots"
 echo "./ora -i 2 batch_event <begin_snap_id> <end_snap_id>"
 exit 0
 fi
-###############################################
+#########################################
 if [ "$1" = "big_by_tbs" ]; then
 
  if [ "$2" = "" ]; then
@@ -3955,7 +3949,6 @@ if [ "$1" = "big_by_tbs" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set pagesize 30 linesize 150
     col tablespace_name format a20 trunc
     col owner format a20 trunc
@@ -4066,7 +4059,6 @@ if [ "$1" = "drop" ]; then
     connect $DBUSER
 
     set pagesize 30 linesize 150
-
     declare
     drop_type varchar2(30);
     v_text PLS_INTEGER;
@@ -4085,213 +4077,13 @@ if [ "$1" = "drop" ]; then
 exit 0
 fi
 ####################################################
-if [ "$1" = "stat" ]; then
-
-   if [ "$2" = "" -o "$3" = "" ]; then
-     echo "ora stat <owner> <table_name>"
-     exit 1
-   else
-     owner=$2
-     tablename=$3
-   fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-    set pagesize 30 linesize 180
-    pro
-    prompt dba_tab_modifications:
-
-    col partition_name format a20 trunc
-    col table_owner format a20 trunc
-    col table_name format a30
-
-    select b.table_owner,b.TABLE_NAME,b.partition_name
-    ,b.INSERTS,b.UPDATES,b.DELETES
-    ,to_char(b.TIMESTAMP,'yyyy-mm-dd hh24:mi:ss') as flush_time
-    ,b.TRUNCATED
-    --,b.DROP_SEGMENTS
-    from dba_tab_modifications b
-    where table_name=upper('$tablename') and table_owner=upper('$owner')
-    order by partition_name;
-
-    pro
-    pro
-    prompt Statistics history:
-
-    col table_name format a20 trunc
-    col owner format a10 trunc
-    col savtime format a20
-
-    SELECT *
-      FROM (
-    SELECT /*+ NO_MERGE LEADING(pt s t m) */
-           t.table_name ,
-           t.owner,
-           'CURRENT' version_type,
-           NULL savtime,
-           t.last_analyzed analyzetime,
-           t.num_rows rowcnt,
-           t.sample_size samplesize,
-           CASE WHEN t.num_rows > 0 THEN TO_CHAR(ROUND(t.sample_size * 100 / t.num_rows, 1), '99999990D0') END perc,
-           t.blocks blkcnt,
-           t.avg_row_len avgrln
-      FROM  dba_tables t
-     WHERE t.owner = upper('$owner') and
-           t.table_name=upper('$tablename')
-    UNION ALL
-    SELECT /*+ NO_MERGE LEADING(s t m) */
-           t.object_name,
-           t.owner,
-           'HISTORY' version_type,
-           to_char(h.savtime, 'yyyy-mm-dd hh24:mi:ss') as savetime,
-           h.analyzetime,
-           h.rowcnt,
-           h.samplesize,
-           CASE WHEN h.rowcnt > 0 THEN TO_CHAR(ROUND(h.samplesize * 100 / h.rowcnt, 1), '99999990D0') END perc,
-           h.blkcnt,
-           h.avgrln
-      FROM dba_objects t,
-           sys.WRI\$_OPTSTAT_TAB_HISTORY h
-     WHERE t.owner = upper('$owner')
-       and t.object_name=upper('$tablename')
-       AND t.object_id = h.obj#
-       AND t.object_type = 'TABLE' )
-     ORDER BY
-           table_name,
-           owner,
-           savtime DESC NULLS FIRST;
-
-    Pro Index statistics:
-    set linesize 180 pagesize 100
-    col idx_type format a10 trunc
-    col deg format a3
-    col vis format a3
-    col cols format 99
-    col lv format 99
-    col index_name format a20 trunc
-    col LAST_ANALYZED format a15
-    col status format a6
-    SELECT /*+ NO_MERGE LEADING(pt s i) */
-          -- s.table_name,
-          -- s.table_owner,
-           s.index_name,
-          -- s.owner,
-           decode(i.index_type,'FUNCTION-BASED NORMAL','F_normal',i.index_type) as idx_type,
-           i.partitioned,
-           i.degree as deg,
-           i.temporary,
-           i.status,
-           --decode(i.VISIBILITy,'VISIBLE','Y','N') as vis,
-           decode(i.uniqueness,'NONUNIQUE','N','UNIQUE','Y','N/A') as uni,
-           (SELECT COUNT(*)
-              FROM dba_ind_columns c
-             WHERE c.index_owner = s.owner
-               AND c.index_name = s.index_name
-               AND c.table_owner = s.table_owner
-               AND c.table_name = s.table_name) cols,
-           s.num_rows,
-           --s.sample_size,
-           --CASE WHEN s.num_rows > 0 THEN TO_CHAR(ROUND(s.sample_size * 100 / s.num_rows, 1), '99999990D0') END sample_size_perc,
-           TO_CHAR(s.last_analyzed, 'YYYYMMDD HH24MISS') last_analyzed,
-           s.distinct_keys as DK,
-           s.blevel as lv,
-           s.leaf_blocks as lf_blks,
-           s.avg_leaf_blocks_per_key as LF_key,
-           s.avg_data_blocks_per_key as DB_Key,
-           s.clustering_factor as CF,
-           --s.global_stats,
-           --s.user_stats,
-           s.stattype_locked as locked,
-           s.stale_stats
-      FROM --plan_tables pt,
-           dba_ind_statistics s,
-           dba_indexes i
-     WHERE --pt.object_type = 'TABLE'
-       --AND pt.object_owner = s.table_owner
-       --AND pt.object_name = s.table_name
-           s.table_owner=upper('$owner')
-       AND s.table_name=upper('$tablename')
-       AND s.object_type = 'INDEX'
-       AND s.owner = i.owner
-       AND s.index_name = i.index_name
-       AND s.table_owner = i.table_owner
-       AND s.table_name = i.table_name
-     ORDER BY s.index_name;
-
-    pro
-    pro Columns info:
-    col owner format a12
-    col table_name format a30
-    col table_owner format a30
-    col column_name format a30
-    col data_type format a12
-    col low_val_25 format a25
-    col high_val_25 format a25
-    col histogram format a15
-    col LAST_ANALYZED format a20
-    select --owner,table_name,
-    column_name,NULLABLE,NUM_NULLS,data_type,num_distinct,
-    substr(low_value,1,25) as low_val_25,substr(high_value,1,25) as high_val_25,
-    to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
-    histogram
-    --,NUM_BUCKETS
-    from dba_tab_columns
-    where table_name=upper('$tablename') and owner=upper('$owner')
-    order by column_name;
-
-    Pro Table statistics:
-    col stale_stats format a12
-    select owner,table_name,partition_name,partition_position,num_rows,blocks
-    ,last_analyzed,stattype_locked as locked,stale_stats
-    from dba_tab_statistics
-    where table_name=upper('$tablename') and owner=upper('$owner')
-    order by partition_position;
-
-
-    Pro Basic Info:
-    col owner format a10
-    col table_name format a30
-    col degree format a7
-    col temporary format a4
-    col segment_created format a5
-    col logging format a5
-    col compression format a9
-    col created format a20
-    col last_analyzed format a20
-    select a.owner,table_name,num_rows,blocks,trim(degree) as degree,a.temporary,
-           a.logging,a.segment_created,a.partitioned,a.compression,
-           to_char(last_analyzed,'yyyy-mm-dd hh24:mi:ss') as last_analyzed,
-           to_char(b.created,'yyyy-mm-dd hh24:mi:ss') as created
-    from dba_tables a,dba_objects b
-    where table_name=upper('$tablename') and a.owner=upper('$owner')
-          and a.owner=b.owner and b.object_name=a.table_name and b.object_type='TABLE';
-
-    prompt Segment info:
-    col segment_name format a30
-    select owner,segment_name,round(sum(bytes)/1024/1024) seg_size_M ,count(*) as segment_cnt
-    from dba_segments
-    where  segment_name=upper('$tablename') and owner=upper('$owner')
-    group by owner,segment_name;
-    $ECHO
-!
- echo "ora stat $owner $tablename"
- exit 0
-fi
-
-
-################################################################################
 if [ "$1" = "sparse_index" ]; then
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
     set verify off
-
     column index_name format a50 trunc
     column part_name format a10 trunc
     column subpart_name format a10 trunc
@@ -10941,7 +10733,7 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
 
     pro
     pro Table Basic Information
-    prompt ======================
+    pro ======================
     col owner format a10 trunc
     col table_name format a20 trunc
     col degree format a7
@@ -10957,6 +10749,54 @@ if [ "$1" = "table" -o "$1" = "tab" ]; then
            to_char(b.created,'yyyy-mm-dd hh24:mi:ss') as created
     from dba_tables a,dba_objects b
     where table_name=upper('$tablename') and a.owner=upper('$owner') and a.owner=b.owner and b.object_name=a.table_name and b.object_type='TABLE';
+
+    pro Statistics History Information
+    pro ======================
+    col table_name format a20 trunc
+    col owner format a10 trunc
+    col savtime format a20
+
+    SELECT *
+      FROM (
+    SELECT /*+ NO_MERGE LEADING(pt s t m) */
+           t.table_name ,
+           t.owner,
+           'CURRENT' version_type,
+           NULL savtime,
+           t.last_analyzed analyzetime,
+           t.num_rows rowcnt,
+           t.sample_size samplesize,
+           CASE WHEN t.num_rows > 0 THEN TO_CHAR(ROUND(t.sample_size * 100 / t.num_rows, 1), '99999990D0') END perc,
+           t.blocks blkcnt,
+           t.avg_row_len avgrln
+      FROM  dba_tables t
+     WHERE t.owner = upper('$owner') and
+           t.table_name=upper('$tablename')
+    UNION ALL
+    SELECT /*+ NO_MERGE LEADING(s t m) */
+           t.object_name,
+           t.owner,
+           'HISTORY' version_type,
+           to_char(h.savtime, 'yyyy-mm-dd hh24:mi:ss') as savetime,
+           h.analyzetime,
+           h.rowcnt,
+           h.samplesize,
+           CASE WHEN h.rowcnt > 0 THEN TO_CHAR(ROUND(h.samplesize * 100 / h.rowcnt, 1), '99999990D0') END perc,
+           h.blkcnt,
+           h.avgrln
+      FROM dba_objects t,
+           sys.WRI\$_OPTSTAT_TAB_HISTORY h
+     WHERE t.owner = upper('$owner')
+       and t.object_name=upper('$tablename')
+       AND t.object_id = h.obj#
+       AND t.object_type = 'TABLE' )
+     ORDER BY
+           table_name,
+           owner,
+           savtime DESC NULLS FIRST;
+
+
+
     $ECHO
 
     set timing off
@@ -12873,35 +12713,6 @@ if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
 echo "get sql binds in gv\$sql_bind_capture and dba_hist_sqlbind(recent 10 snapshots)"
 exit 0
 fi
-
-################################################################################
-if [ "$1" = "seg" -o "$1" = "segment" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "ora seg segment_name"
-    exit 1
-  fi
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
-    col owner format a15 trunc
-    col tablespace_name format a20 trunc
-    col SEGMENT_NAME format a30
-    col partition_name format a20
-    Pro Segment info of $2 :
-    select owner,segment_name,partition_name,segment_type,tablespace_name
-          , round(bytes/(1024*1024)) Size_MB
-    from dba_segments where segment_name=upper('$2')
-    order by 1,2,3;
-    $ECHO
-
-!
- echo "ora seg <seg_name>"
-exit 0
-fi
 ####"ORA"####灵感来自渤海证券问题处理 ORA-00020: maximum number of processes (2000) exceeded###
 if [ "$1" = "ORA" -o "$1" = "ora" ]; then
   if [ "$2" = "00020" -o "$2" = "20" ]; then
@@ -12955,12 +12766,8 @@ ORA-01306: dbms_logmnr.start_logmnr() must be invoked before selecting from v\$l
   """
 exit 1
 fi
-
-##################################################################################################
-
-#
+##########################################
 # Do pstack on all process
-#
 if [ "$1" = "pstack" ]; then
 #be careful use "all" option
 #ora pstack pid|all $DIR
@@ -13003,7 +12810,6 @@ if [ "$1" = "pstack" ]; then
   fi
   exit 0
 fi
-
 ###########################################
 if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
   #
@@ -13023,23 +12829,18 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
     column pc               heading pc          format a3
     column tot              heading total       format 999999999
     column cnt              heading count       format 999999999
-
     column sum_heap0        heading sum0        format 999999999
     column sum_heap4        heading sum4        format 999999999
     column sum_heap6        heading sum6        format 999999999
-
     column cnt_heap0        heading cnt0        format 999999999
     column cnt_heap4        heading cnt4        format 999999999
     column cnt_heap6        heading cnt6        format 999999999
-
     column avg_heap0        heading avg0        format 999999999
     column avg_heap4        heading avg4        format 999999999
     column avg_heap6        heading avg6        format 999999999
-
     column max_heap0        heading max0        format 999999999
     column max_heap4        heading max4        format 999999999
     column max_heap6        heading max6        format 999999999
-
     select /* ora pinned_cursors */
            case when pc = 'PAR' and lmd = '0' and pmd = '0' then 'Parent Freeable'
                 when pc = 'PAR' and lmd = 'N' and pmd = '0' then 'Parent Inuse'
@@ -13081,7 +12882,6 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
     group by pc, lmd, pmd
     order by pc desc, lmd, pmd;
     $ECHO
-
 !
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
   exit 0
@@ -13169,10 +12969,9 @@ https://docs.oracle.com/en/database/oracle/oracle-database/12.2/netag/troublesho
 """
   exit 1
 fi
-
-############################################################
+##########################################################
 # Run a shell command. Useful when combined with repeat...
-############################################################
+##########################################################
 if [ "$1" = "sh" ]; then
 
   shift 1
