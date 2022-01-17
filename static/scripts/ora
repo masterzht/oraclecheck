@@ -183,7 +183,7 @@ fi
 ###################################
 #very important init parameter
 #filedate=`date +"%Y%m%d_%H%M%S"`
-filedate=`date +"%Y%m%d"`
+filedate=`date +"%Y%m%d_%H:%M:%S"`
 ECHO=""
 DEFNODISP="--"
 DEFDISP=""
