@@ -6777,17 +6777,18 @@ KTUXESTA means the transaction status');
 
 
    dbms_output.put_line('
+Estimate How long it takes to rollback From v\$fast_start_transactions
 ');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| NEED_ROLLBACK_BLOCK_TOTAL |' || ' HAVE_ROLLBACKED_UNDO_BLOCK ' || '| LEFT_TO_ROLLBACK_UNDO_BLOCK |' || ' Estimated_time_to_complete ' || '| Current_timestamp '  || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| NEED_ROLLBACK_BLOCK_TOTAL |' || ' Has_rollbacked_undo_blocks ' || '| LEFT_to_rollback_undo_blocks |' || ' Estimated_complete_time ' || '|   Current_timestamp '  || '|');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
   open c_fast_start_transactions;
     loop fetch c_fast_start_transactions into v_fast_start_transactions;
     exit when c_fast_start_transactions%notfound;
-    dbms_output.put_line('| ' || lpad(v_fast_start_transactions.TOTAL,25) ||' | '|| lpad(v_fast_start_transactions.DONE,15) || ' | ' || lpad(v_fast_start_transactions.TODO,10) || ' | '|| lpad(v_fast_start_transactions.Estimated_time_to_complete,12) || ' | '|| rpad(v_fast_start_transactions.current_date,16) || ' |');
+    dbms_output.put_line('| ' || lpad(v_fast_start_transactions.TOTAL,25) ||' | '|| lpad(v_fast_start_transactions.DONE,26) || ' | ' || lpad(v_fast_start_transactions.TODO,28) || ' | '|| lpad(v_fast_start_transactions.Estimated_time_to_complete,23) || ' | '|| rpad(v_fast_start_transactions.current_date,19) || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
   close c_fast_start_transactions;
 
 
