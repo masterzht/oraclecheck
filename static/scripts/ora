@@ -11433,10 +11433,9 @@ end;
     $ECHO
     spool off
 !
-
   exit 0
 fi
-###################################################################
+#######################
 if [ "$1" = "source" ]; then
 
     if [ "$2" = "" ]; then
@@ -11460,7 +11459,7 @@ if [ "$1" = "source" ]; then
 !
   exit 0
 fi
-##########################################################
+##################
 if [ "$1" = "x" ]; then
 
    if [ "$2" = "" ]; then
@@ -11505,8 +11504,7 @@ if [ "$1" = "x" ]; then
 !
   exit 0
 fi
-
-########################################################################################
+###################
 if [ "$1" = "xp" ]; then
 
   if [ "$2" = "" ]; then
@@ -11518,9 +11516,8 @@ if [ "$1" = "xp" ]; then
 
     connect $DBUSER
 
-    set pagesize 200
+    set pagesize 200 linesize 350
     set tab      off
-    set linesize 350
     col PARSING_SCHEMA for a16
     col inst# for 99999
     set echo off
@@ -11553,7 +11550,7 @@ if [ "$1" = "xp" ]; then
 exit 0
 
 fi
-########################################################################################
+####################################
 if [ "$1" = "xpo" ]; then
 
   if [ "$2" = "" ]; then
@@ -11688,8 +11685,7 @@ if [ "$1" = "xpo" ]; then
 
 exit 0
 fi
-#####################################################################################################
-
+####################
 if [ "$1" = "xo" ]; then
 
    if [ "$2" = "" ]; then
@@ -11829,9 +11825,7 @@ if [ "$1" = "xo" ]; then
 !
   exit 0
 fi
-
-####################################################################################################
-
+######################
 if [ "$1" = "tbsinc" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -11854,8 +11848,7 @@ if [ "$1" = "tbsinc" ]; then
 !
   exit 0
 fi
-
-########################################################################################
+########################
 if [ "$1" = "offload" ]; then
 
   if [ "$2" = "" ]; then
@@ -11867,9 +11860,9 @@ if [ "$1" = "offload" ]; then
 
     connect $DBUSER
     spool ora_offload_$2_${filedate}.log
-    prompt ####################################################################
+    prompt ##########################################
     prompt Display Exadata SQL Offloading Information
-    prompt ####################################################################
+    prompt ##########################################
     set linesize 300
     col ksppinm for a35
     col ksppstvl for a12
@@ -11925,8 +11918,7 @@ if [ "$1" = "offload" ]; then
 !
 exit 0
 fi
-
-########################################################################################
+###################
 if [ "$1" = "app" ]; then
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -11974,8 +11966,7 @@ if [ "$1" = "app" ]; then
 !
 exit 0
 fi
-###################################################################################################
-
+####################
 if [ "$1" = "tbs" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -12435,8 +12426,7 @@ end;
 !
   exit 0
 fi
-
-######################################active####################################
+######################
 if [ "$1" = "active" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
@@ -12564,7 +12554,6 @@ if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set pagesize 37
     set tab      off
     set linesize 220
@@ -12632,7 +12621,7 @@ if [ "$1" = "ORA" -o "$1" = "ora" ]; then
 exit 1
 fi
 
-############################
+#########################
 if [ "$1" = "logminer" ]; then
   echo "----------------------------------------------------------------------------"
   echo "|                      The Step Of logminer                                |"
@@ -12669,7 +12658,7 @@ ORA-01306: dbms_logmnr.start_logmnr() must be invoked before selecting from v\$l
   """
 exit 1
 fi
-##########################################
+######################
 # Do pstack on all process
 if [ "$1" = "pstack" ]; then
 #be careful use "all" option
@@ -12725,7 +12714,6 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
 
     set echo off
     set lines 200 pages 200
-
     column curtyp           heading curtyp      format a6 truncate
     column lmd              heading lmd         format a2
     column pmd              heading pmd         format a2
@@ -12789,7 +12777,7 @@ if [ "$1" = "cursor_summary" -o "$1" = "pinned_cursors" ]; then
 echo "Summarizes information about pinned/locked/unpinned cursors and their sizes"
   exit 0
 fi
-####################################################
+#########################
 if [ "$1" = "tfa" ]; then
   echo ""
   echo "Display How to Collect Tfa Log"
