@@ -6668,12 +6668,12 @@ order by sys.dba_rollback_segs.segment_id;
   v_ktu c_ktu%rowtype;
 
   cursor c_fast_start_transactions is
-SELECT UNDOBLOCKSTOTAL as TOTAL,
-       UNDOBLOCKSDONE as DONE,
-       (UNDOBLOCKSTOTAL - UNDOBLOCKSDONE) as TODO,
-       DECODE(CPUTIME,0,'unknown',TO_CHAR(SYSDATE + (((UNDOBLOCKSTOTAL - UNDOBLOCKSDONE) /(UNDOBLOCKSDONE / CPUTIME)) / 86400),'yyyy-mm-dd hh24:mi:ss')) "ESTIMATED_TIME_TO_COMPLETE",
+SELECT fst.UNDOBLOCKSTOTAL as TOTAL,
+       fst.UNDOBLOCKSDONE as DONE,
+       (fst.UNDOBLOCKSTOTAL - fst.UNDOBLOCKSDONE) as TODO,
+       DECODE(fst.CPUTIME,0,'unknown',TO_CHAR(SYSDATE + (((UNDOBLOCKSTOTAL - UNDOBLOCKSDONE) /(UNDOBLOCKSDONE / CPUTIME)) / 86400),'yyyy-mm-dd hh24:mi:ss')) "ESTIMATED_TIME_TO_COMPLETE",
        TO_CHAR(SYSDATE, 'yyyy-mm-dd hh24:mi:ss') as current_date
-  FROM V\$FAST_START_TRANSACTIONS;
+  FROM v\$fast_start_transactions fst;
   v_fast_start_transactions c_fast_start_transactions%rowtype;
 
 begin
@@ -6774,26 +6774,19 @@ KTUXESTA means the transaction status');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------------------------------------------');
   close c_ktu;
-
-
    dbms_output.put_line('
-Estimate How long it takes to rollback From v\$fast_start_transactions
-');
+Estimate How long it takes to rollback From v\$fast_start_transactions');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| NEED_ROLLBACK_BLOCK_TOTAL |' || ' Has_rollbacked_undo_blocks ' || '| LEFT_to_rollback_undo_blocks |' || ' Estimated_complete_time ' || '|   Current_timestamp '  || '|');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| Total blocks Need to be rollbacked |' || ' The blocks has been Rollbacked ' || '| LEFT_to_rollback_undo_blocks |' || ' Estimated_complete_time ' || '|   Current_timestamp '  || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_fast_start_transactions;
     loop fetch c_fast_start_transactions into v_fast_start_transactions;
     exit when c_fast_start_transactions%notfound;
-    dbms_output.put_line('| ' || lpad(v_fast_start_transactions.TOTAL,25) ||' | '|| lpad(v_fast_start_transactions.DONE,26) || ' | ' || lpad(v_fast_start_transactions.TODO,28) || ' | '|| lpad(v_fast_start_transactions.Estimated_time_to_complete,23) || ' | '|| rpad(v_fast_start_transactions.current_date,19) || ' |');
+    dbms_output.put_line('| ' || lpad(v_fast_start_transactions.TOTAL,34) ||' | '|| lpad(v_fast_start_transactions.DONE,30) || ' | ' || lpad(v_fast_start_transactions.TODO,28) || ' | '|| lpad(v_fast_start_transactions.Estimated_time_to_complete,23) || ' | '|| rpad(v_fast_start_transactions.current_date,19) || ' |');
     end loop;
-    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_fast_start_transactions;
-
-
-
-
 
   dbms_output.put_line('
 How long does it take to roll back(Minutes)');
@@ -6802,19 +6795,18 @@ How long does it take to roll back(Minutes)');
   select ktuxesiz into l_start from x\$ktuxe where KTUXEUSN = v_KTUXEUSN and KTUXESLT = v_KTUXESLT;
   dbms_lock.sleep(60);
   select ktuxesiz into l_end from x\$ktuxe where KTUXEUSN = v_KTUXEUSN and KTUXESLT = v_KTUXESLT;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-----------------------------------------------------------');
     dbms_output.put_line('| Estimated remaining Minutes: '|| round(l_end/(l_start -l_end)) || ' min' || '                    |'         );
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-----------------------------------------------------------');
      exception
      when others then
-      dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+      dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
       dbms_output.put_line('| There are no transactions that need to be rolled back at the moment.  ' || substr(SQLERRM,1,80) || '     |');
-      dbms_output.put_line('------------------------------------------------------------------------------------------------------');
+      dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
 end;
 /
 spool off
  $ECHO
-
 !
 exit 0
 fi
