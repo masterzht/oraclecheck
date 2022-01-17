@@ -6560,7 +6560,8 @@ if [ "$1" = "undo" ]; then
     ON C.USN = D.USN
  ORDER BY A.INSTANCE_NUM, A.TABLESPACE_NAME, A.SEGMENT_NAME;
 
-prompt search rollback segments online and offline cnt：
+pro search rollback segments online and offline cnt
+pro ======================
     select tablespace_name,status,sum(bytes)/1024/1024 sum_size_mb,sum(blocks) sum_blocks
     from DBA_UNDO_EXTENTS
     group by tablespace_name,status
