@@ -10745,7 +10745,7 @@ begin
   dbms_output.enable(buffer_size=>NULL);
   dbms_output.put_line('
 Common Causes:
-  gc buffer busy 是RAC数据库中常见的等待事件,11g开始gc buffer  busy分为gc buffer busy acquire和gc buffer  busy release:
+  gc buffer busy 是RAC数据库中常见的等待事件,11g开始gc buffer busy分为gc buffer busy acquire和gc buffer busy release:
   gc buffer busy acquire是当session#1尝试请求访问远程实例(remote instance) buffer,但是在session#1之前已经有相同实例上另外一个session#2请求访问了相同的buffer,并且没有完成,那么session#1等待gc buffer busy acquire
   gc buffer busy release是在session#1之前已经有远程实例的session#2请求访问了相同的buffer,并且没有完成,那么session#1等待gc buffer busy release
 原因/解决方法
