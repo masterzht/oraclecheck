@@ -6566,7 +6566,7 @@ pro ======================
     group by tablespace_name,status
     order by tablespace_name,status;
 
-    select max(bb.tot_cnt),max(bb.offline_cnt),max(online_cnt)
+    select max(bb.tot_cnt) as tot_cnt,max(bb.offline_cnt) as offline_cnt,max(online_cnt) as online_cnt
     from (select count(*) over () tot_cnt,
                  case when status='OFFLINE' then count(*) over (partition by status) end offline_cnt,
                  case when status='ONLINE' then count(*) over (partition by status) end online_cnt
@@ -12515,8 +12515,7 @@ Used% Means PCT_USED%
 AUTO? Means AUTOEXTEND
 MANAGE? Means EXTENT_MANAGEMENT
 UNDO%*REAL_USED Means The Count undo segments of UNEXPIRED and ACTIVE
-The undo segment has to wait for smon to be idle and automatically reclaimed
-
+UNDO Segment waiting for SMON to be idle and automatically shrink
 Tablespace Used Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
