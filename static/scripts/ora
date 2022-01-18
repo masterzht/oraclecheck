@@ -10600,6 +10600,7 @@ elif [ "$event_name" = "library cache pin" ]; then
 elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block lost" ]; then
     echo ""
     echo 'WAITEVENT: "gc current/cr block lost" Reference Note (Doc ID 2296681.1)'
+    echo 'RAC 环境中 gc block lost 和私网通信性能问题的诊断 (Doc ID 1674865.1)	'
     echo """
     Common Causes:
 
@@ -10611,16 +10612,15 @@ elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block l
  Known Bug
 
  AWR Reports
-
 Sections to check for :
-
 Top 10 Foreground Events by Total Wait Time : Check the Average Wait time for Network Related Waits
 Wait Classes by Total Wait Time : Check the Average Wait time in Network Layer
 Interconnect Stats
-Interconnect Latency Stats	Ping latency of the roundtrip of a message from this instance to target instances
-Interconnect Throughput by Client	Throughput of interconnect usage by major consumers
-Interconnect Device Stats	Throughput and errors of interconnect devices (at OS level)
-
+----------------------------------------------------------------------------------------------------------------------------
+｜Interconnect Latency Stats	        ｜Ping latency of the roundtrip of a message from this instance to target instances｜
+｜Interconnect Throughput by Client	｜Throughput of interconnect usage by major consumers                              ｜
+｜Interconnect Device Stats	        ｜Throughput and errors of interconnect devices (at OS level)                      ｜
+----------------------------------------------------------------------------------------------------------------------------
     """
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
