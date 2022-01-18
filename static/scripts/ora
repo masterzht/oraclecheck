@@ -10601,6 +10601,7 @@ elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block l
     echo ""
     echo 'WAITEVENT: "gc current/cr block lost" Reference Note (Doc ID 2296681.1)'
     echo 'RAC 环境中 gc block lost 和私网通信性能问题的诊断 (Doc ID 1674865.1)	'
+    echo 'Troubleshooting gc block lost and Poor Network Performance in a RAC Environment (Doc ID 563566.1)	'
     echo """
 Common Causes:
 
