@@ -10600,12 +10600,21 @@ elif [ "$event_name" = "library cache pin" ]; then
 elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block lost" ]; then
     echo ""
     echo 'WAITEVENT: "gc current/cr block lost" Reference Note (Doc ID 2296681.1)'
+    echo """
+    Common Causes:
+
+ Network Interconnect Hardware issues
+ Misconfiguration in Network parameters and settings
+ Saturation in Network Due to Load
+ Firewall Enabled Over Private Interconnect
+ High CPU consumption on Servers Causing Delay in Network Packet Processing
+ Known Bug
+    """
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
     set linesize 500 pagesize 300
     set trimspool on
-    spool ora_gc_cache_buffers_chains.log
-
+    spool ora_gc_current_cr_block_lost.log
     set timing off
     set serveroutput on
     set feedback off
@@ -10624,91 +10633,63 @@ declare
     v_p1 number;
     v_p2 number;
     v_p3 number;
-    cursor c_latch is SELECT name, decode('Child '||child#,null,'None','Child '||child#) as child, gets, misses, sleeps,addr FROM v\$latch_children
-    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-    UNION
-    SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
-    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
-    v_latch c_latch%rowtype;
-    cursor c_b is select hladdr,
-bh.obj as object_id,
-case when
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-is null then 'None'
-else
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-end as object_name,
-bh.dbarfil,
-bh.dbablk,
-bh.tch
-from x\$bh bh
-where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-order by bh.hladdr,bh.tch desc,bh.obj;
-    v_b c_b%rowtype;
+    cursor c_gc_lost is
+    select a.inst_id,
+       a.value as gc_blocks_lost,
+       b.value as gc_current_blocks_served,
+       c.value as gc_cr_blocks_served,
+       a.value / decode((b.value + c.value), 0, 100000000000000, (b.value + c.value)) ratio
+from gv\$sysstat a,
+     gv\$sysstat b,
+     gv\$sysstat c
+where a.name = 'gc blocks lost'
+  and b.name = 'gc current blocks served'
+  and c.name = 'gc cr blocks served'
+  and b.inst_id = a.inst_id
+  and c.inst_id = a.inst_id;
+    v_gc_lost c_gc_lost%rowtype;
+
+    cursor c_lost is select inst_id, event, total_waits, time_waited
+    from gv\$system_event
+    where event in ('gc current block lost','gc cr block lost')
+    order by inst_id, total_waits desc;
+    v_lost c_lost%rowtype;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
-select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
-into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
   dbms_output.put_line('
-Common Causes:
-Network Interconnect Hardware issues
-Misconfiguration in Network parameters and settings
-Saturation in Network Due to Load
-Firewall Enabled Over Private Interconnect
-High CPU consumption on Servers Causing Delay in Network Packet Processing
-Known Bug
-Parameters:
-* P1 File # :'|| v_p1 );
-  dbms_output.put_line('* P2 Block #P3  :'|| v_p2 );
-  dbms_output.put_line('*  Mode requested/mode held/block class :'|| v_p3 );
-  dbms_output.put_line('latch: cache buffers chains Information
-From v\$latch, v\$latch_childern, x\$bh');
+gc cr/current block lost has no p1p2p3');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_latch;
-    loop fetch c_latch into v_latch;
-    exit when c_latch%notfound;
-    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,17) || ' |');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# |' || '         gc blocks lost | ' ||' gc current blocks served |' || '      gc_cr_blocks_served |' || ' ratio% ' || '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  open c_gc_lost;
+    loop fetch c_gc_lost into v_gc_lost;
+    exit when c_gc_lost%notfound;
+    dbms_output.put_line('| ' || lpad(v_gc_lost.inst_id,5) ||' | '|| lpad(v_gc_lost.gc_blocks_lost,22) ||' | '|| lpad(v_gc_lost.gc_current_blocks_served,25) || ' | '|| lpad(v_gc_lost.gc_cr_blocks_served,24) || ' | ' || lpad(v_gc_lost.ratio,6) || ' |');
     end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_latch;
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  close c_gc_lost;
 
-dbms_output.put_line('
- Parameters:
-* P1 = Latch address
-* P2 = Latch number
-* P3 = Tries
-Finding Blockers a hot block (or a hung process) Information');
+  dbms_output.put_line('
+Display gc current block lost and gc cr block lost v\$system_event');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  open c_b;
-    loop fetch c_b into v_b;
-    exit when c_b%notfound;
-    dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
+  dbms_output.put_line('----------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# ' || '|                     event |' || '           total_waits ' || '|        time_waited ' || '|');
+  dbms_output.put_line('----------------------------------------------------------------------------------');
+  open c_lost;
+    loop fetch c_lost into v_lost;
+    exit when c_lost%notfound;
+    dbms_output.put_line('| ' || lpad(v_lost.inst_id,5) ||' | '|| lpad(v_lost.event,25) ||' | '|| lpad(v_lost.total_waits,21) || ' | '|| lpad(v_lost.time_waited,18) || ' |');
     end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  close c_b;
-
+    dbms_output.put_line('----------------------------------------------------------------------------------');
+  close c_lost;
 end;
 /
-
-SELECT * FROM v\$latchname WHERE latch# = (select REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) from dual);
-
     $ECHO
     spool off
 !
   exit 0
-
 
 elif [ "$event_name" = "gc buffer busy acquire" -o "$event_name" = "gc buffer busy release" ]; then
     echo ""
@@ -10719,7 +10700,6 @@ sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     set linesize 500 pagesize 300
     set trimspool on
     spool ora_gc_buffer_busy_acquire.log
-
     set timing off
     set serveroutput on
     set feedback off
