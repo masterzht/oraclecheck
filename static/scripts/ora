@@ -10602,7 +10602,7 @@ elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block l
     echo 'WAITEVENT: "gc current/cr block lost" Reference Note (Doc ID 2296681.1)'
     echo 'RAC 环境中 gc block lost 和私网通信性能问题的诊断 (Doc ID 1674865.1)	'
     echo """
-    Common Causes:
+Common Causes:
 
  Network Interconnect Hardware issues
  Misconfiguration in Network parameters and settings
@@ -10611,8 +10611,8 @@ elif [ "$event_name" = "gc current block lost" -o "$event_name" = "gc cr block l
  High CPU consumption on Servers Causing Delay in Network Packet Processing
  Known Bug
 
- AWR Reports
-Sections to check for :
+See AWR Reports：
+
 Top 10 Foreground Events by Total Wait Time : Check the Average Wait time for Network Related Waits
 Wait Classes by Total Wait Time : Check the Average Wait time in Network Layer
 Interconnect Stats
