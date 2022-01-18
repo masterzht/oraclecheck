@@ -10613,7 +10613,8 @@ Common Causes:
  Known Bug
 
 See AWR Reports：
-
+See gc cr block lost and gc current block lost in Wait Event Histogram and Background Wait Events!!!
+======================
 Top 10 Foreground Events by Total Wait Time : Check the Average Wait time for Network Related Waits
 Wait Classes by Total Wait Time : Check the Average Wait time in Network Layer
 Interconnect Stats
