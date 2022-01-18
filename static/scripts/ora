@@ -9146,9 +9146,7 @@ if [ "$1" = "alert" ]; then
   echo "****display alert log in recent $days days****"
   exit 0
 fi
-
-#################################################################################################
-
+#######################################
 if [ "$1" = "users" -o  "$1" = "user" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -9164,6 +9162,7 @@ if [ "$1" = "users" -o  "$1" = "user" ]; then
     undefine username
     var username varchar2(100);
     alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+    SET TRIMSPOOL ON
     spool ora_user_$filedate.log
 begin
   :username :=upper('$2');
@@ -9217,19 +9216,18 @@ User Information');
 end;
 /
 
-prompt ***************
-prompt Current User DBA ROLE PRIVS from dba_role_privs
-prompt ***************
+pro Current User DBA ROLE PRIVS from dba_role_privs
+pro ======================
 select 'grant '||granted_role||' to '||grantee||decode(admin_option, 'YES', ' WITH ADMIN OPTION;',';') as command
 from dba_role_privs where upper(grantee) = :username;
-prompt ***************
-prompt Current User DBA SYS PRIVS from dba_sys_privs
-prompt ***************
+
+pro Current User DBA SYS PRIVS from dba_sys_privs
+pro ======================
 select 'grant '||privilege||' to '||grantee||decode(admin_option, 'YES', ' WITH ADMIN OPTION;',';') as command
 from dba_sys_privs where upper(grantee) = :username;
-prompt ***************
-prompt Current User DBA TAB PRIVS from dba_tab_privs
-prompt ***************
+
+pro Current User DBA TAB PRIVS from dba_tab_privs
+pro ======================
 select 'grant '||privilege||' on '||owner||'.'||table_name||' to '||grantee||decode(grantable, 'YES', ' WITH GRANT OPTION;',';') as command
 from dba_tab_privs where upper(grantee) = :username;
 
