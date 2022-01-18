@@ -179,7 +179,6 @@ fi
 if [ "$ORA_TMP" = "" ]; then
   ORA_TMP="/tmp"
 fi
-
 ###################################
 #very important init parameter
 #filedate=`date +"%Y%m%d_%H%M%S"`
@@ -6560,7 +6559,7 @@ if [ "$1" = "undo" ]; then
     ON C.USN = D.USN
  ORDER BY A.INSTANCE_NUM, A.TABLESPACE_NAME, A.SEGMENT_NAME;
 
-pro search rollback segments online and offline cnt
+pro Search rollback segments online and offline cnt
 pro ======================
     select tablespace_name,status,sum(bytes)/1024/1024 sum_size_mb,sum(blocks) sum_blocks
     from DBA_UNDO_EXTENTS
@@ -6573,10 +6572,10 @@ pro ======================
                  case when status='ONLINE' then count(*) over (partition by status) end online_cnt
           from DBA_ROLLBACK_SEGS aa)
     bb;
-    set   serveroutput   on   size   1000000
+    set serveroutput on size  1000000
 
-prompt Shows undo usage every 10 minutes since 24 hours ago...
-
+pro Shows UNDO Usage Every 10 minutes since 24 hours ago
+pro ======================
 col undo_used_mb for a20
 col name for a30
 col END_TIME for a24
@@ -12435,16 +12434,47 @@ FROM   (SELECT tablespace_name,
                round(SUM(bytes) / ( 1024 * 1024 ), 1) free
         FROM   dba_free_space
         GROUP BY tablespace_name) a,
-       (SELECT tablespace_name,
+       (select tablespace_name,
                round(SUM(bytes) / ( 1024 * 1024 ), 1) total,
                count(*)                               cnt,
                max(autoextensible)                  autoextensible,
                sum(decode(autoextensible, 'YES', floor(maxbytes/1048576), floor(bytes / 1048576 ))) maxsize
         FROM   dba_data_files
-        GROUP  BY tablespace_name) b,
+        group by tablespace_name) b,
        dba_tablespaces c
 WHERE  a.tablespace_name = b.tablespace_name
        AND a.tablespace_name = c.tablespace_name
+UNION ALL
+-- undo
+SELECT a.tablespace_name || '*REAL_USED' as tablespace_name,
+       round((used) / maxsize * 100, 1) || '%' as used_pct,
+       rpad(lpad('#',ceil((nvl(used,0)/b.maxsize)*20),'#'),20,' ') as used,
+       b.autoextensible,
+       round(total/1024,1) as TOTAL_GB,
+       round(used/1024,1) as USED_GB,
+       round((total - used)/1024,1) as FREE_GB,
+       b.cnt DATAFILE_COUNT,
+       c.status,
+       c.CONTENTS,
+       c.extent_management,
+       c.allocation_type,
+       b.maxsize
+FROM   (SELECT tablespace_name,
+               round(sum(bytes) / ( 1024 * 1024 ), 1) used
+        FROM dba_undo_extents
+        where status in ('UNEXPIRED','ACTIVE')
+         and  tablespace_name in (select tablespace_name from dba_tablespaces where contents = 'UNDO')
+        GROUP BY tablespace_name) a,
+       (SELECT tablespace_name,
+               round(SUM(bytes) / ( 1024 * 1024 ), 1) total,
+               count(*)                               cnt,
+               max(autoextensible)                  autoextensible,
+               sum(decode(autoextensible, 'YES', floor(maxbytes/1048576), floor(bytes / 1048576 ))) maxsize
+        FROM dba_data_files where tablespace_name in (select tablespace_name from dba_tablespaces where contents = 'UNDO')
+        GROUP BY tablespace_name) b,
+       dba_tablespaces c
+ WHERE a.tablespace_name = b.tablespace_name
+   AND a.tablespace_name = c.tablespace_name
 UNION ALL
 SELECT /*+ NO_MERGE */
   a.tablespace_name,
@@ -12484,6 +12514,9 @@ FCNT Means DATAFILE_CNT
 Used% Means PCT_USED%
 AUTO? Means AUTOEXTEND
 MANAGE? Means EXTENT_MANAGEMENT
+UNDO%*REAL_USED Means The Count undo segments of UNEXPIRED and ACTIVE
+The undo segment has to wait for smon to be idle and automatically reclaimed
+
 Tablespace Used Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------');
