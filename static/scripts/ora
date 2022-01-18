@@ -10789,7 +10789,29 @@ end;
   exit 0
 
 elif [ "$event_name" = "e7" ]; then
-    echo "Sunday"
+    echo ''
+elif [ "$event_name" = "gc current block busy" -o "$event_name" = "gc cr block busy" ]; then
+    echo ""
+    echo 'WAITEVENT: "gc current/cr block busy" Reference Note (Doc ID 2337631.1)	'
+    echo """
+gc current/cr block busy has no p1p2p3
+======================
+Common Causes:
+======================
+High server load, CPU usage, or heavy paging
+Higher global cache workload
+Slow IO to online redo log files
+Slow lgwr (may need to increase the priority of lgwr)
+
+Troubleshooting:
+======================
+Collect hang analyze and system state dump during the time when wait appear, check for Chain with most wait and blockers if any
+collect few awr, ash reports, check for which block type/s are seeing the most contention from Buffer busy wait statistics
+Check the reason that lgwr is slow or log file switch is occurring too fast
+Perform similar troubleshooting as that of long log file sync waits
+Check if there is high concurrency and block contention
+
+"""
 elif [ "$event_name" = "e7" ]; then
     echo "Sunday"
 elif [ "$event_name" = "e7" ]; then
