@@ -10461,7 +10461,7 @@ bh.dbarfil,
 bh.dbablk,
 bh.tch
 from x\$bh bh
-where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
+where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
 order by bh.hladdr,bh.tch desc,bh.obj;
     v_b c_b%rowtype;
 
@@ -10739,19 +10739,8 @@ declare
     SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
     WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
     v_latch c_latch%rowtype;
-    cursor c_b is select hladdr,
-bh.obj as object_id,
-case when
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-is null then 'None'
-else
-(select object_name from dba_objects where (data_object_id is null and object_id = bh.obj) or data_object_id = bh.obj and rownum = 1)
-end as object_name,
-bh.dbarfil,
-bh.dbablk,
-bh.tch
-from x\$bh bh
-where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR('2023978312,327,21288674','[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
+    cursor c_b is select
+where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
 order by bh.hladdr,bh.tch desc,bh.obj;
     v_b c_b%rowtype;
 
@@ -10766,18 +10755,30 @@ REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
   dbms_output.put_line('
 Common Causes:
-Network Interconnect Hardware issues
-Misconfiguration in Network parameters and settings
-Saturation in Network Due to Load
-Firewall Enabled Over Private Interconnect
-High CPU consumption on Servers Causing Delay in Network Packet Processing
-Known Bug
+  gc buffer busy 是RAC数据库中常见的等待事件,11g开始gc buffer  busy分为gc buffer busy acquire和gc buffer  busy release:
+  gc buffer busy acquire是当session#1尝试请求访问远程实例(remote instance) buffer,但是在session#1之前已经有相同实例上另外一个session#2请求访问了相同的buffer,并且没有完成,那么session#1等待gc buffer busy acquire
+  gc buffer busy release是在session#1之前已经有远程实例的session#2请求访问了相同的buffer,并且没有完成,那么session#1等待gc buffer busy release
+原因/解决方法
+---------------------
+- 热点块(hot block)
+在AWR中Segments by Global Cache Buffer Busy 记录了访问频繁的gc buffer.
+解决方法可以根据热点块的类型采取不同的解决方法，比如采取分区表，分区索引，反向index等等。这点与单机数据库中的buffer busy waits类似。
+
+- 低效SQL语句
+低效SQL语句会导致不必要的buffer被请求访问，增加了buffer busy的机会。在AWR中可以找到TOP SQL。解决方法可以优化SQL语句减少buffer访问。这点与单机数据库中的buffer busy waits类似。
+
+- 数据交叉访问
+RAC数据库，同一数据在不同数据库实例上被请求访问。
+如果应用程序可以实现，那么我们建议不同的应用功能/模块数据分布在不同的数据库实例上被访问，避免同一数据被多个实例交叉访问，可以减少buffer的争用，避免gc等待。
+
+- Oracle bug
+建议安装Oracle推荐的最新Patch Set和PSU
+
 Parameters:
 * P1 File # :'|| v_p1 );
-  dbms_output.put_line('* P2 Block #P3  :'|| v_p2 );
-  dbms_output.put_line('*  Mode requested/mode held/block class :'|| v_p3 );
-  dbms_output.put_line('latch: cache buffers chains Information
-From v\$latch, v\$latch_childern, x\$bh');
+  dbms_output.put_line('* P2 Block#  :'|| v_p2 );
+  dbms_output.put_line('* class# :'|| v_p3 );
+  dbms_output.put_line('latch: cache buffers chains Information');
   dbms_output.put_line('======================');
   dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
