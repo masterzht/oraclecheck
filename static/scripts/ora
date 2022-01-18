@@ -10733,26 +10733,16 @@ declare
     v_p2 number;
     v_p2 number;
     v_p3 number;
-    cursor c_latch is SELECT name, decode('Child '||child#,null,'None','Child '||child#) as child, gets, misses, sleeps,addr FROM v\$latch_children
-    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-    UNION
-    SELECT name, decode('None',null,'None','None') as child, gets, misses, sleeps,addr FROM v\$latch
-    WHERE lower(substr(addr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual);
-    v_latch c_latch%rowtype;
-    cursor c_b is select
-where lower(substr(bh.hladdr,-8)) = (select lower(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx'),-8)) from dual)
-order by bh.hladdr,bh.tch desc,bh.obj;
+
+    cursor c_b is select owner, segment_name
+FROM dba_extents
+WHERE file_id = to_number(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1))
+AND to_number(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2)) BETWEEN block_id AND block_id + blocks - 1
+AND ROWNUM = 1;
     v_b c_b%rowtype;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
-select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
-into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
   dbms_output.put_line('
 Common Causes:
   gc buffer busy 是RAC数据库中常见的等待事件,11g开始gc buffer  busy分为gc buffer busy acquire和gc buffer  busy release:
@@ -10772,47 +10762,27 @@ RAC数据库，同一数据在不同数据库实例上被请求访问。
 如果应用程序可以实现，那么我们建议不同的应用功能/模块数据分布在不同的数据库实例上被访问，避免同一数据被多个实例交叉访问，可以减少buffer的争用，避免gc等待。
 
 - Oracle bug
-建议安装Oracle推荐的最新Patch Set和PSU
-
-Parameters:
-* P1 File # :'|| v_p1 );
-  dbms_output.put_line('* P2 Block#  :'|| v_p2 );
-  dbms_output.put_line('* class# :'|| v_p3 );
-  dbms_output.put_line('latch: cache buffers chains Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| LATCH_NAME                   |' || ' child                | ' ||' gets              |' || ' misses             |'|| ' sleeps             ' || '| addr              ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_latch;
-    loop fetch c_latch into v_latch;
-    exit when c_latch%notfound;
-    dbms_output.put_line('| ' || rpad(v_latch.NAME,28) ||' | '|| rpad(v_latch.child,20)  ||' | '|| lpad(v_latch.gets,18) || ' | '|| lpad(v_latch.misses,18) || ' | ' || lpad(v_latch.sleeps,18) ||' | '|| lpad(v_latch.addr,17) || ' |');
-    end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_latch;
+Install Oracle Newest Patch Set PSU');
 
 dbms_output.put_line('
  Parameters:
-* P1 = Latch address
-* P2 = Latch number
-* P3 = Tries
-Finding Blockers a hot block (or a hung process) Information');
+* P1 = file#
+* P2 = block#
+* P3 = class#
+Finding Blockers a hot block segment Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| x\$bh.hladdr      ' || '| OBJECT ID    |' || ' OBJECT NAME                    ' || '| FILE# |' || ' BLOCK#       ' || '| TCH ' ||'|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------');
+  dbms_output.put_line('| Owner                  ' || '| Segment_name                     ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------');
   open c_b;
     loop fetch c_b into v_b;
     exit when c_b%notfound;
-    dbms_output.put_line('| ' || lpad(v_b.hladdr,16) || ' | '|| lpad(v_b.object_id,12) ||' | '|| rpad(v_b.object_name,30) || ' | '|| lpad(v_b.dbarfil,5) || ' | '|| lpad(v_b.dbablk,12) || ' | '|| lpad(v_b.tch,3) || ' |');
+    dbms_output.put_line('| ' || lpad(v_b.owner,22) || ' | '|| lpad(v_b.segment_name,32) || ' |');
     end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('-------------------------------------------------------------');
   close c_b;
 end;
 /
-
-SELECT * FROM v\$latchname WHERE latch# = (select REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) from dual);
-
     $ECHO
     spool off
 !
