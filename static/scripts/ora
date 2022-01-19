@@ -9274,10 +9274,7 @@ spool off
 !
   exit 0
 fi
-
-
-#################################################################################################
-
+#######################################
 if [ "$1" = "lob" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -9315,8 +9312,7 @@ echo "list biggest 50 lob segment >=10M"
   exit 0
 fi
 
-#################################################################################################
-
+########################
 if [ "$1" = "lobfree" ]; then
 
   if [ "$2" = "" ]; then
@@ -9385,8 +9381,7 @@ end;
   exit 0
 fi
 
-#####################################################################################################
-
+#######################
 if [ "$1" = "cputime" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -9463,8 +9458,7 @@ if [ "$1" = "cputime" ]; then
   exit 0
 fi
 
-#####################################################################################################
-
+#####################
 if [ "$1" = "awr" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -9562,8 +9556,7 @@ echo "generate awr report for snapid $bid - $eid "
   exit 0
 fi
 
-#####################################################################################################
-
+#########################
 if [ "$1" = "awrsqrpt" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -9657,8 +9650,7 @@ echo "generate awrsqrpt report for snapid $bid - $eid sql_id $sql_id"
   exit 0
 fi
 
-#####################################################################################################
-
+#########################
 if [ "$1" = "highparse" ]; then
 
    if [ "$2" = "" ]; then
@@ -9670,15 +9662,11 @@ if [ "$1" = "highparse" ]; then
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     set linesize 250 pagesize 600
-
     col sql_text format a100
     col sql_id format a13
     column FORCE_MATCHING_SIGNATURE format 99999999999999999999999
-
     spool ora_highparse_$filedate.log
-
     WITH c AS
         (SELECT  FORCE_MATCHING_SIGNATURE,
                  COUNT(*) cnt
