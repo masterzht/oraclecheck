@@ -7717,8 +7717,7 @@ if [ "$1" = "degree" -o "$1" = "parallel" ]; then
 exit 0
 fi
 
-########################################################################################################
-
+#########################
 if [ "$1" = "histogram" ]; then
 
   if [ "$2" = "" ]; then
@@ -7760,7 +7759,6 @@ if [ "$1" = "histogram" ]; then
 !
 exit 0
 fi
-
 ######################################################
 if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 
@@ -7831,8 +7829,7 @@ echo "full nodes"
 exit 0
 fi
 
-###################################################################################################
-
+############################################
 if [ "$1" = "awrsnap" -o "$1" = "listsnap" ]; then
 
     if [ "$2" = "" ]; then
@@ -7874,8 +7871,7 @@ echo "display awr snapshots for recent $days days."
 exit 0
 fi
 
-######################################################################################################
-
+######################
 if [ "$1" = "mvsnap" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -7894,8 +7890,7 @@ if [ "$1" = "mvsnap" ]; then
 exit 0
 fi
 
-#################################################################################################
-
+####################
 if [ "$1" = "asm" ]; then
   sqlplus -s  /NOLOG  << ! | egrep -v "Session altered|Connected|rows selected"
   connect $DBUSER
@@ -8027,8 +8022,7 @@ ORDER BY disk_extents_imbalance DESC;
 exit 0
 fi
 
-##################################################################################################
-
+#######################
 if [ "$1" = "params" ]; then
 
   if [ "$2" != "" ]; then
@@ -8945,7 +8939,7 @@ echo "Current instance_number is $INST"
   exit 0
 fi
 
-########################################################################################################
+#########################
 ##duplicate with pga command
 if [ "$1" = "processes" ]; then
 
@@ -8981,10 +8975,7 @@ echo "instance_number=$INST"
 exit 0;
 fi
 
-
-
-#######################################################################################################
-
+#######################
 if [ "$1" = "pga" ]; then
 
      if [ "$2" = "" ]; then
@@ -8997,9 +8988,8 @@ if [ "$1" = "pga" ]; then
 
     connect $DBUSER
 
-    set pagesize 100
+    set pagesize 100 linesize 200
     --set tab      off
-    set linesize 200
     --set echo off
     --repfooter off;
     --set timing off veri off space 1 flush on pause off termout on numwidth 10;
@@ -9021,9 +9011,9 @@ echo "instance_number=$INST"
 exit 0
 fi
 
-################################################
+###########################
 # Detail of pga
-################################################
+###########################
 if [ "$1" = "pga_detail" ]; then
 
   if [ "$2" = "" ]; then
@@ -9702,8 +9692,7 @@ echo "show same FORCE_MATCHING_SIGNATURE with diffrent sql_id,top 50 ,default th
   exit 0
 fi
 
-#####################################################################################################
-
+###########################
 if [ "$1" = "highparse2" ]; then
 
    if [ "$2" = "" ]; then
@@ -9749,8 +9738,7 @@ echo "show same FORCE_MATCHING_SIGNATURE with diffrent sql_id,top 50 ,default th
   exit 0
 fi
 
-#####################################################################################################
-
+#####################################################################
 if [ "$1" = "pc" -o "$1" = "whats_changed" -o "$1" = "plan_changed" ]; then
 
     if [ "$2" = "" ]; then
@@ -9885,10 +9873,8 @@ exit 0
 fi
 
 
-#####################################################################################################
-
+####################
 if [ "$1" = "pc2" ]; then
-
     if [ "$2" = "" ]; then
       awr_his=8
     else
@@ -9967,10 +9953,7 @@ spool off
 echo "full nodes. for recent $awr_his(given) days"
 exit 0
 fi
-
-
-#####################################################################################################
-
+######################
 if [ "$1" = "pc_old" ]; then
 
     if [ "$2" = "" ]; then
