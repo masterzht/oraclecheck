@@ -9178,41 +9178,72 @@ declare
         a.profile,
         a.account_status,
         b.lcount,
-        sum(round(s.bytes/1024/1024/1024)) over(partition by s.owner) as USER_SEGMENT_GB,
+        decode(sum(round(s.bytes/1024/1024)) over(partition by s.owner),null,0,sum(round(s.bytes/1024/1024)) over(partition by s.owner)) as USER_SEGMENT_MB,
         case when p.GRANTED_ROLE = 'DBA' then 'Yes' else 'No' end as DBA_PRIVS
         from
-        dba_users a, user$ b, dba_segments s ,dba_role_privs p,dba_profiles pr
-        where a.user_id = b.USER#
-          and a.username = s.owner
-          and p.grantee = a.username
-          and a.username not in
-          ('SYSTEM','OWBSYS','XS$NULL','FLOWS_FILES','WMSYS','DIP','XDB','SYS','ANONYMOUS','QMONITOR','ORDPLUGINS','OUTLN','ORDSYS','SI_INFORMTN_SCHEMA','ORDDATA','OJVMSYS','SPATIAL_WFS_ADMIN_USR','MDSYS','LBACSYS','SPATIAL_CSW_ADMIN_USR','DVSYS','DBSNMP','APEX_PUBLIC_USER','APPQOSSYS','APEX_040200','ORACLE_OCM','AUDSYS','CTXSYS','MDDATA','APEX_030200','EXFSYS','MGMT_VIEW','OLAPSYS','SYSMAN','OWBSYS_AUDIT','WH_SYNC','GSMADMIN_INTERNAL')
+        dba_users a
+        left join user$ b on a.user_id = b.USER#
+        left join dba_segments s on a.username = s.owner
+        left join dba_role_privs p on p.grantee = a.username
+        inner join dba_profiles pr on pr.profile = a.profile
+        where a.username not in ('SYSTEM','GSMCATUSER','SQLTXPLAIN','REMOTE_SCHEDULER_AGENT','DVF','SYSKM','XS\$NULL','SYSDG','GGSYS','DBSFWUSER','GSMUSER','SYSRAC','SYS\$UMF','SQLTXADMIN','SYSBACKUP','GSMROOTUSER','OWBSYS','XS$NULL','FLOWS_FILES','WMSYS','DIP','XDB','SYS','ANONYMOUS','QMONITOR','ORDPLUGINS','OUTLN','ORDSYS','SI_INFORMTN_SCHEMA','ORDDATA','OJVMSYS','SPATIAL_WFS_ADMIN_USR','MDSYS','LBACSYS','SPATIAL_CSW_ADMIN_USR','DVSYS','DBSNMP','APEX_PUBLIC_USER','APPQOSSYS','APEX_040200','ORACLE_OCM','AUDSYS','CTXSYS','MDDATA','APEX_030200','EXFSYS','MGMT_VIEW','OLAPSYS','SYSMAN','OWBSYS_AUDIT','WH_SYNC','GSMADMIN_INTERNAL')
         order by created;
    v_user c_user%rowtype;
-   cursor c_a is select a.username,
-        CASE B.LIMIT WHEN 'UNLIMITED' THEN NULL
-        ELSE trunc(A.EXPIRY_DATE - SYSDATE)+b.limit END AS EXPIRED_DAYS
-        from dba_users a,dba_profiles b
-        where a.profile=b.profile
-        and a.account_status='OPEN'
-        and b.RESOURCE_NAME='PASSWORD_GRACE_TIME'
-        and a.expiry_date is not null
-        and b.limit <>'UNLIMITED';
-   v_a c_a%rowtype;
+
+   cursor c_a is select a.username,b.profile,
+        CASE WHEN B.LIMIT = 'UNLIMITED' or B.LIMIT = 'DEFAULT' THEN 10000000000
+             WHEN B.LIMIT not in ('UNLIMITED','DEFAULT') and a.EXPIRY_DATE is not null THEN trunc(A.EXPIRY_DATE - SYSDATE)+b.limit
+             WHEN B.LIMIT not in ('UNLIMITED','DEFAULT') and a.EXPIRY_DATE is null THEN 10000000000
+             END AS EXPIRED_DAYS,
+        c.LIMIT as FAILED_LOGIN_ATTEMPTS,
+        d.LIMIT as PASSWORD_LIFE_TIME,
+        e.LIMIT as PASSWORD_GRACE_TIME
+        from dba_users a
+        left join dba_profiles b
+         on a.profile=b.profile and b.RESOURCE_NAME='PASSWORD_GRACE_TIME'
+        left join dba_profiles c
+         on a.profile=c.profile and c.RESOURCE_NAME='FAILED_LOGIN_ATTEMPTS'
+        left join dba_profiles d
+         on a.profile=d.profile and d.RESOURCE_NAME='PASSWORD_LIFE_TIME'
+        left join dba_profiles e
+         on a.profile=e.profile and e.RESOURCE_NAME='PASSWORD_GRACE_TIME'
+        where
+        -- and a.account_status='OPEN'
+        -- a.expiry_date is not null
+        -- and b.limit <>'UNLIMITED'
+        a.username not in ('SYSTEM','GSMCATUSER','SQLTXPLAIN','REMOTE_SCHEDULER_AGENT','DVF','SYSKM','XS\$NULL','SYSDG','GGSYS','DBSFWUSER','GSMUSER','SYSRAC','SYS\$UMF','SQLTXADMIN','SYSBACKUP','GSMROOTUSER','OWBSYS','XS$NULL','FLOWS_FILES','WMSYS','DIP','XDB','SYS','ANONYMOUS','QMONITOR','ORDPLUGINS','OUTLN','ORDSYS','SI_INFORMTN_SCHEMA','ORDDATA','OJVMSYS','SPATIAL_WFS_ADMIN_USR','MDSYS','LBACSYS','SPATIAL_CSW_ADMIN_USR','DVSYS','DBSNMP','APEX_PUBLIC_USER','APPQOSSYS','APEX_040200','ORACLE_OCM','AUDSYS','CTXSYS','MDDATA','APEX_030200','EXFSYS','MGMT_VIEW','OLAPSYS','SYSMAN','OWBSYS_AUDIT','WH_SYNC','GSMADMIN_INTERNAL')
+        order by created;
+  v_a c_a%rowtype;
+
 begin
   dbms_output.put_line('
 User Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| USERNAME           |' || ' DEFAULT_TABLESPACE |' || ' DEFAULT_TEMP_TBS ' || '| USER_ID |' || ' CREATED  ' || '| PROFILE   |' || ' ACCOUNT_STATUS ' || '| LCOUNT ' || '| USER_GB ' || '| DBA PRIV '|| '|');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| USERNAME             |' || ' DEFAULT_TABLESPACE |' || ' DEFAULT_TEMP_TBS ' || '| USER_ID |' || ' CREATED  ' || '| PROFILE   |' || ' ACCOUNT_STATUS ' || '| LCOUNT ' || '|    USER_MB ' || '| DBA PRIV '|| '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_user;
     loop fetch c_user into v_user;
     exit when c_user%notfound;
-    dbms_output.put_line('| ' || rpad(v_user.USERNAME,18) || ' | ' || rpad(v_user.DEFAULT_TABLESPACE,18) ||' | '|| rpad(v_user.TEMP_TBS,16) || ' | ' || lpad(v_user.USER_ID,7) || ' | ' || lpad(v_user.CREATED,8) || ' | ' || rpad(v_user.PROFILE,9) || ' | ' || rpad(v_user.ACCOUNT_STATUS,14) || ' | ' || lpad(v_user.LCOUNT,6) || ' | ' || lpad(v_user.USER_SEGMENT_GB,7) || ' | ' || rpad(v_user.DBA_PRIVS,8) ||' |');
+    dbms_output.put_line('| ' || rpad(v_user.USERNAME,20) || ' | ' || rpad(v_user.DEFAULT_TABLESPACE,18) ||' | '|| rpad(v_user.TEMP_TBS,16) || ' | ' || lpad(v_user.USER_ID,7) || ' | ' || lpad(v_user.CREATED,8) || ' | ' || rpad(v_user.PROFILE,9) || ' | ' || rpad(v_user.ACCOUNT_STATUS,14) || ' | ' || lpad(v_user.LCOUNT,6) || ' | ' || lpad(v_user.USER_SEGMENT_MB,10) || ' | ' || rpad(v_user.DBA_PRIVS,8) ||' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_user;
+
+  dbms_output.put_line('
+User Profile Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| USERNAME             |' || ' PROFILE            |' || '     EXPIRED_DAYS ' || '| FAILED_LOGIN_ATTEMPTS |' || ' PASSWORD_LIFE_TIME ' || '| PASSWORD_GRACE_TIME |' || ' ACCOUNT_STATU ' || '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_a;
+    loop fetch c_a into v_a;
+    exit when c_a%notfound;
+    dbms_output.put_line('| ' || rpad(v_a.USERNAME,20) || ' | ' || rpad(v_a.PROFILE,18) ||' | '|| lpad(v_a.EXPIRED_DAYS,16) || ' | ' || lpad(v_a.FAILED_LOGIN_ATTEMPTS,21) || ' | ' || lpad(v_a.PASSWORD_LIFE_TIME,18) || ' | ' || lpad(v_a.PASSWORD_GRACE_TIME,19) || ' | ' || rpad(v_a.EXPIRED_DAYS,13)  ||' |');
+    end loop;
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_a;
+
 end;
 /
 pro
