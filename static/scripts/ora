@@ -9235,7 +9235,7 @@ pro Generate Grant TAB privs script
 pro ======================
 pro set pages 0
 pro set linesize 1000
-pro select q'[ grant select,insert,update,delete on ]' || owner||'.'||table_name || q'[ to caisf;]' as grant_sql from dba_tables where owner = upper('DSDEMO');
+pro select q'[ grant select,insert,update,delete on ]' || owner||'.'||table_name || q'[ to caisf;]' as grant_sql from dba_tables where owner = upper('DSDEMO');;
 
 set head on feedback on
 spool off
