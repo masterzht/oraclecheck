@@ -6532,9 +6532,9 @@ if [ "$1" = "undo" ]; then
     set trimspool on
     spool ora_undo_$filedate.log
     col owner for a14 trunc
-    col ROLL_NAME for a22
+    col ROLL_NAME for a24
     col SEGMENT_NAME for a22
-    col TABLESPACE_NAME for a22
+    col TABLESPACE_NAME for a20
     SELECT A.INSTANCE_NUM as inst_id,
       A.TABLESPACE_NAME ,
        A.OWNER,
