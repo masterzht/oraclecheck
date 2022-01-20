@@ -6810,17 +6810,16 @@ spool off
 !
 exit 0
 fi
-
 #CURDATE=`date +"%Y%m%d"`
 #echo $CURDATE
-#######################################
+####################
 if [ "$1" = "redo" ]; then
 
- if [ "$2" = "" ]; then
+  if [ "$2" = "" ]; then
    echo "./ora redo \"`date +"%Y/%m/%d %H:%M"`\" 30"
    echo "How to identify the causes of High Redo Generation (DOC ID 2265722.1) "
    exit 1
- fi
+  fi
 
   if [ "$3" = "" ]; then
     dur=30
