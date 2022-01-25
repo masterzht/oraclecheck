@@ -1026,7 +1026,6 @@ echo "ora repeat 10 20 index_creating"
 exit 0
 fi
 #########################
-#  #####################
 if [ "$1" = "expdash" ]; then
 
    ver4=`get_ver 4`
@@ -1038,8 +1037,7 @@ if [ "$1" = "expdash" ]; then
          exit 1
        fi
 
-      expdp \"/ as sysdba\" views_as_tables=sys.DBA_HIST_active_sess_history \
-           query=\"where sample_time between to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\) and to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\)+$3/24\" \
+      expdp \"/ as sysdba\" views_as_tables=sys.DBA_HIST_active_sess_history query=\"where sample_time between to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\) and to_date\(\'$2\',\'yyyy/mm/dd hh24:mi:ss\'\)+$3/24\" \
            file=expdash_$filedate.dmp version=12.1
    else
      echo "only support version 12.2+,current version is $ver4"
@@ -1618,13 +1616,17 @@ SET ECHO OFF;
 !
 exit 0
 fi
-########################################
+###################
 if [ "$1" = "dir" ]; then
 
   echo """
-  export ORACLE_SID=orcl1
-  export NLS_LANG=American_America.AL32UTF8
-  impdp \'/ as sysdba\' directory=EXPDP_DATA dumpfile=expdash_XXXXXX.dmp logfile=expdash_XXXXXX.log remap_schema=sys:tpch table_exists_action=replace
+expdp and impdp example:
+======================
+export ORACLE_SID=orcl1
+export NLS_LANG=American_America.AL32UTF8
+impdp \'/ as sysdba\' directory=EXPDP_DATA dumpfile=expdash_XXXXXX.dmp logfile=expdash_XXXXXX.log remap_schema=sys:tpch table_exists_action=replace
+
+expdp \'/as sysdba\' directory=expdp_data dumpfile=test.dmp schemas=tpch include=table:\"in \(select table_name from dba_tables where table_name like \'%ORD%\'\) \" logfile=test.log compression=all content=metadata_only version=11.2.0.4
   """
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -5262,7 +5264,7 @@ $ECHO
 !
 exit 0
 fi
-######################################
+########################
 if [ "$1" = "ashdump" ]; then
 
   if [ "$2" = "" ]; then
