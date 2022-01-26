@@ -1458,12 +1458,12 @@ ORDER BY
 
     cursor c_slave is select
    decode(px.qcinst_id,NULL,username,' - '||lower(substr(s.program,length(s.program)-4,4) ) ) as username,
-   decode(px.qcinst_id,NULL, 'QC', '(Slave)') "QC_or_Slave" ,
-   to_char( px.server_set) "Slave_Set",
-   to_char(s.sid) "SID",
-   decode(px.qcinst_id, NULL ,to_char(s.sid) ,px.qcsid) "QC_SID",
-   px.req_degree "Requested_DOP",
-   px.degree "Actual_DOP"
+   decode(px.qcinst_id,NULL, 'QC', '(Slave)') as QC_or_Slave ,
+   decode(to_char(px.server_set),null,'None',to_char(px.server_set)) as Slave_Set,
+   to_char(s.sid) as sid,
+   decode(px.qcinst_id, NULL ,to_char(s.sid) ,px.qcsid) as QC_SID,
+   decode(px.req_degree,null,'This is QC',px.req_degree) as Requested_DOP,
+   decode(px.degree,null,'This is QC',px.degree) as Actual_DOP
  from gv\$px_session px,
    gv\$session s
  where px.sid=s.sid (+)
@@ -1490,15 +1490,15 @@ Show current Parallel Execution sessions in RAC cluster');
   dbms_output.put_line('
 Parallel QC and Slave Information)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| USERNAME        |' || ' QC/Slave ' || '| Slave Set |' || ' SID ' || '| QC SID |' || ' Requested DOP ' || '| Actual DOP |' || ' CLUSTERING_FACTOR '  || '|');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| USERNAME       |' || ' QC/Slave  ' || '| Slave Set |' || ' SID    ' || '| QC SID |' || ' Requested DOP ' || '| Actual DOP  ' || '|');
+  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------');
   open c_slave;
     loop fetch c_slave into v_slave;
     exit when c_slave%notfound;
-    dbms_output.put_line('| ' || rpad(v_slave.username,18) ||' | '|| lpad(v_slave.QC_or_Slave,13) || ' | '|| lpad(v_slave.Slave_Set,14) || ' | '|| lpad(v_slave.SID,6) || ' | '|| lpad(v_slave.QC_SID,11) || ' | '|| lpad(v_slave.Requested_DOP,8) ||  ' | '|| lpad(v_slave.Actual_DOP,13) || '|');
+    dbms_output.put_line('| ' || rpad(v_slave.username,14) ||' | '|| rpad(v_slave.QC_or_Slave,9) || ' | '|| lpad(v_slave.Slave_Set,9) || ' | '|| lpad(v_slave.sid,6) || ' | '|| lpad(v_slave.QC_SID,6) || ' | '|| lpad(v_slave.Requested_DOP,13) ||  ' | '|| lpad(v_slave.Actual_DOP,11) || ' |');
     end loop;
-    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
   close c_slave;
 /**
   dbms_output.put_line('
