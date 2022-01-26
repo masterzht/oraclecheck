@@ -8202,13 +8202,15 @@ declare
            when name = 'shared_pool_size' and value = 0 then 'Recommend to set a minimum value eg set 20G'
            when name = 'pga_aggregate_target' and value < 100 then 'According to the business and system memory settings'
            when name = 'fast_start_parallel_rollback' and value = 'FALSE' then '<FALSE> means Parallel rollback is disabled, <LOW> Limits the maximum degree of parallelism to 2 * CPU_COUNT'
-           when name = 'optimizer_adaptive_statistics' and value <> 'FALSE' then 'set <FALSE> see Doc ID 2187449.1' end as adivce
+           when name = 'optimizer_adaptive_statistics' and value <> 'FALSE' then 'set <FALSE> see Doc ID 2187449.1'
+           when name = 'parallel_max_servers' and value <> 0 then 'Some bugs require Disable Parallel Execution on Session/System Level (Doc ID 235400.1)'
+           when name = 'parallel_min_servers' and value <> 0 then 'Some bugs require Disable Parallel Execution on Session/System Level (Doc ID 235400.1)' end as adivce
            from v\$parameter
            where name in (
            'open_cursors', 'control_file_record_keep_time', 'cursor_sharing', 'audit_trail', 'session_cached_cursors', 'deferred_segment_creation',
            'enable_ddl_logging', 'undo_retention', 'large_pool_size', 'statistics_level', 'result_cache_mode', 'result_cache_max_size', 'job_queue_processes',
            'processes', 'db_files', 'shared_pool_size', 'db_cache_size', 'pga_aggregate_target', 'sga_target', 'sga_max_size', 'memory_target',
-           'memory_max_target', 'event', 'archive_lag_target', 'fast_start_parallel_rollback', 'optimizer_adaptive_statistics', 'open_links'
+           'memory_max_target', 'event', 'parallel_max_servers','parallel_min_servers','archive_lag_target', 'fast_start_parallel_rollback', 'optimizer_adaptive_statistics', 'open_links'
           )
            order by name;
     v_para c_para%rowtype;
