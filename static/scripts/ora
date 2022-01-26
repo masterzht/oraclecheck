@@ -1456,6 +1456,21 @@ ORDER BY
   , slaves DESC;
          v_px c_px%rowtype;
 
+    cursor c_slave is select
+   decode(px.qcinst_id,NULL,username,' - '||lower(substr(s.program,length(s.program)-4,4) ) ) as username,
+   decode(px.qcinst_id,NULL, 'QC', '(Slave)') "QC_or_Slave" ,
+   to_char( px.server_set) "Slave_Set",
+   to_char(s.sid) "SID",
+   decode(px.qcinst_id, NULL ,to_char(s.sid) ,px.qcsid) "QC_SID",
+   px.req_degree "Requested_DOP",
+   px.degree "Actual_DOP"
+ from gv\$px_session px,
+   gv\$session s
+ where px.sid=s.sid (+)
+  and px.serial#=  s.serial#
+  and px.inst_id = s.inst_id
+  order by 5, 1 desc;
+  v_slave c_slave%rowtype;
 begin
   dbms_output.enable(buffer_size => NULL);
   dbms_output.put_line('
@@ -1472,71 +1487,20 @@ Show current Parallel Execution sessions in RAC cluster');
     dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_px;
 
-/**
-  dbms_output.put_line('If US? status Is NO!!!');
-  dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||'index_name' ||' rebuild online;');
-  dbms_output.put_line('======================');
-
-   select count(*) into v_part_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES') order by index_name, partition_position;
-if v_part_cnt > 0 then
-    dbms_output.put_line('
-Partition Index Information(if index is Local Index)');
+  dbms_output.put_line('
+Parallel QC and Slave Information)');
   dbms_output.put_line('======================');
   dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME         |' || ' PART_POSITION ' || '| PARTITION_NAME |' || ' BLEVEL ' || '| LEAF_BLOCKS |' || ' NUM_ROWS ' || '| DISTINCT_KEYS |' || ' CLUSTERING_FACTOR '  || '| USABLE |'|| ' HIGH_VALUE                              '|| '|');
+  dbms_output.put_line('| USERNAME        |' || ' QC/Slave ' || '| Slave Set |' || ' SID ' || '| QC SID |' || ' Requested DOP ' || '| Actual DOP |' || ' CLUSTERING_FACTOR '  || '|');
   dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_par_ind;
-    loop fetch c_par_ind into v_part;
-    exit when c_par_ind%notfound;
-    dbms_output.put_line('| ' || rpad(v_part.INDEX_NAME,18) ||' | '|| lpad(v_part.PART_POSITION,13) || ' | '|| lpad(v_part.PARTITION_NAME,14) || ' | '|| lpad(v_part.BLEVEL,6) || ' | '|| lpad(v_part.LEAF_BLOCKS,11) || ' | '|| lpad(v_part.NUM_ROWS,8) ||  ' | '|| lpad(v_part.DISTINCT_KEYS,13) || ' | '|| lpad(v_part.CLUSTERING_FACTOR,17) || ' | '|| lpad(v_part.USABLE,6) || ' | '|| lpad(v_part.HIGH_VALUE,40)||'|');
+  open c_slave;
+    loop fetch c_slave into v_slave;
+    exit when c_slave%notfound;
+    dbms_output.put_line('| ' || rpad(v_slave.username,18) ||' | '|| lpad(v_slave.QC_or_Slave,13) || ' | '|| lpad(v_slave.Slave_Set,14) || ' | '|| lpad(v_slave.SID,6) || ' | '|| lpad(v_slave.QC_SID,11) || ' | '|| lpad(v_slave.Requested_DOP,8) ||  ' | '|| lpad(v_slave.Actual_DOP,13) || '|');
     end loop;
     dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_par_ind;
-end if;
-
-  select count(*) into v_foreign_key_cnt from (select b.owner,
-             b.table_name,
-             b.constraint_name,
-             max(decode(position, 1, column_name, null)) cname1,
-             max(decode(position, 2, column_name, null)) cname2,
-             max(decode(position, 3, column_name, null)) cname3,
-             max(decode(position, 4, column_name, null)) cname4,
-             max(decode(position, 5, column_name, null)) cname5,
-             max(decode(position, 6, column_name, null)) cname6,
-             max(decode(position, 7, column_name, null)) cname7,
-             max(decode(position, 8, column_name, null)) cname8,
-             count(*)                                    col_cnt
-      from (select owner,
-                   constraint_name,
-                   column_name,
-                   position
-            from dba_cons_columns
-            where owner not in
-                  ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR',
-                   'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
-                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS',
-                   'DBSNMP', 'APEX_PUBLIC_USER',
-                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS',
-                   'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT',
-                   'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
-           dba_constraints b
-      where a.constraint_name = b.constraint_name
-        and b.constraint_type = 'R'
-        and a.owner = b.owner
-      group by b.owner, b.table_name, b.constraint_name
-     ) cons
-where col_cnt > ALL
-      (select count(*)
-       from dba_ind_columns i
-       where i.table_name = cons.table_name
-         and i.column_name in (cname1, cname2, cname3, cname4,
-                               cname5, cname6, cname7, cname8)
-         and i.column_position <= cons.col_cnt
-         and i.INDEX_OWNER = cons.owner
-       group by i.index_name
-      );
-
-if v_foreign_key_cnt > 0 then
+  close c_slave;
+/**
   dbms_output.put_line('
 Foreign Key Without Index Information');
   dbms_output.put_line('======================');
