@@ -1130,6 +1130,7 @@ if [ "$1" = "trc" ]; then
 !
 exit 0
 fi
+
 ####################################
 if [ "$1" = "index" -o "$1" = "ind" ]; then
 
@@ -1389,7 +1390,191 @@ $ECHO
 exit 0
 fi
 
-###########################################
+####################################
+if [ "$1" = "px" -o "$1" = "parallel" ]; then
+
+  if [ "$2" = ""  ]; then
+   read -p "Please input sql_id:" sql_id
+    if [ -z "${sql_id}" ];then
+         echo "no input , exit"
+         exit 1
+    fi
+  else
+    sql_id=$2
+  fi
+
+   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+
+    connect $DBUSER
+    set linesize 250 pages 0
+    set serveroutput on
+    set verify off
+    set timing off
+    set trimspool on
+    spool ora_px_of_${sql_id}.log
+undefine sql_id
+var sql_id varchar2(100);
+
+begin
+  :sql_id :=upper('sql_id');
+end;
+/
+
+declare
+    cursor c_px is SELECT
+    pxs.qcsid||','||pxs.qcserial# px_qcsid
+  , pxs.qcinst_id
+  , ses.username
+  , ses.sql_id
+  , pxs.degree
+  , pxs.req_degree
+  , COUNT(*) slaves
+  , COUNT(DISTINCT pxs.inst_id) inst_cnt
+  , MIN(pxs.inst_id) min_inst
+  , MAX(pxs.inst_id) max_inst
+  , LISTAGG ( TO_CHAR(pxs.inst_id) , ' ' ) WITHIN GROUP (ORDER BY pxs.inst_id) px_instances
+FROM
+    gv\$px_session pxs
+  , gv\$session    ses
+  , gv\$px_process p
+WHERE
+    ses.sid     = pxs.sid
+AND ses.serial# = pxs.serial#
+AND p.sid     = pxs.sid
+AND pxs.inst_id = ses.inst_id
+AND ses.inst_id = p.inst_id
+AND pxs.req_degree IS NOT NULL -- qc
+GROUP BY
+    pxs.qcsid||','||pxs.qcserial#
+  , pxs.qcinst_id
+  , ses.username
+  , ses.sql_id
+  , pxs.degree
+  , pxs.req_degree
+ORDER BY
+    pxs.qcinst_id
+  , slaves DESC;
+         v_px c_px%rowtype;
+
+begin
+  dbms_output.enable(buffer_size => NULL);
+  dbms_output.put_line('
+Show current Parallel Execution sessions in RAC cluster');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| PX_QC_SID        |' || ' QC_INST# ' || '| USERNAME      ' || '| SQL_ID        |' || ' DEGREE ' || '| req_degree |' || ' slaves ' || '| INST# |' || ' MIN_INST ' || '| MAX_INST |'  || '                           px_instances ' || '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_px;
+    loop fetch c_px into v_px;
+    exit when c_px%notfound;
+    dbms_output.put_line('| ' || rpad(v_px.px_qcsid,16) ||' | '|| lpad(v_px.qcinst_id,8) || ' | ' ||rpad(v_px.username,13) ||' | '|| lpad(v_px.sql_id,13) || ' | '|| lpad(v_px.degree,6) || ' | '|| lpad(v_px.req_degree,10) || ' | '|| lpad(v_px.slaves,6) ||  ' | '|| lpad(v_px.inst_cnt,5) || ' | '|| lpad(v_px.min_inst,8) || ' | '|| lpad(v_px.max_inst,8) || ' | ' || lpad(v_px.px_instances,38) ||' |');
+    end loop;
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_px;
+
+/**
+  dbms_output.put_line('If US? status Is NO!!!');
+  dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||'index_name' ||' rebuild online;');
+  dbms_output.put_line('======================');
+
+   select count(*) into v_part_cnt from dba_ind_partitions where index_name in (select index_name from dba_indexes where table_name = UPPER(:table_name) and INDEX_OWNER = upper(:owner) and partitioned = 'YES') order by index_name, partition_position;
+if v_part_cnt > 0 then
+    dbms_output.put_line('
+Partition Index Information(if index is Local Index)');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME         |' || ' PART_POSITION ' || '| PARTITION_NAME |' || ' BLEVEL ' || '| LEAF_BLOCKS |' || ' NUM_ROWS ' || '| DISTINCT_KEYS |' || ' CLUSTERING_FACTOR '  || '| USABLE |'|| ' HIGH_VALUE                              '|| '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_par_ind;
+    loop fetch c_par_ind into v_part;
+    exit when c_par_ind%notfound;
+    dbms_output.put_line('| ' || rpad(v_part.INDEX_NAME,18) ||' | '|| lpad(v_part.PART_POSITION,13) || ' | '|| lpad(v_part.PARTITION_NAME,14) || ' | '|| lpad(v_part.BLEVEL,6) || ' | '|| lpad(v_part.LEAF_BLOCKS,11) || ' | '|| lpad(v_part.NUM_ROWS,8) ||  ' | '|| lpad(v_part.DISTINCT_KEYS,13) || ' | '|| lpad(v_part.CLUSTERING_FACTOR,17) || ' | '|| lpad(v_part.USABLE,6) || ' | '|| lpad(v_part.HIGH_VALUE,40)||'|');
+    end loop;
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_par_ind;
+end if;
+
+  select count(*) into v_foreign_key_cnt from (select b.owner,
+             b.table_name,
+             b.constraint_name,
+             max(decode(position, 1, column_name, null)) cname1,
+             max(decode(position, 2, column_name, null)) cname2,
+             max(decode(position, 3, column_name, null)) cname3,
+             max(decode(position, 4, column_name, null)) cname4,
+             max(decode(position, 5, column_name, null)) cname5,
+             max(decode(position, 6, column_name, null)) cname6,
+             max(decode(position, 7, column_name, null)) cname7,
+             max(decode(position, 8, column_name, null)) cname8,
+             count(*)                                    col_cnt
+      from (select owner,
+                   constraint_name,
+                   column_name,
+                   position
+            from dba_cons_columns
+            where owner not in
+                  ('SYSTEM', 'OWBSYS', 'XS$NULL', 'FLOWS_FILES', 'WMSYS', 'DIP', 'XDB', 'SYS', 'ANONYMOUS', 'QMONITOR',
+                   'ORDPLUGINS', 'OUTLN', 'ORDSYS', 'SI_INFORMTN_SCHEMA',
+                   'ORDDATA', 'OJVMSYS', 'SPATIAL_WFS_ADMIN_USR', 'MDSYS', 'LBACSYS', 'SPATIAL_CSW_ADMIN_USR', 'DVSYS',
+                   'DBSNMP', 'APEX_PUBLIC_USER',
+                   'APPQOSSYS', 'APEX_040200', 'ORACLE_OCM', 'AUDSYS', 'CTXSYS', 'MDDATA', 'APEX_030200', 'EXFSYS',
+                   'MGMT_VIEW', 'OLAPSYS', 'SYSMAN', 'OWBSYS_AUDIT',
+                   'WH_SYNC', 'GSMADMIN_INTERNAL')) a,
+           dba_constraints b
+      where a.constraint_name = b.constraint_name
+        and b.constraint_type = 'R'
+        and a.owner = b.owner
+      group by b.owner, b.table_name, b.constraint_name
+     ) cons
+where col_cnt > ALL
+      (select count(*)
+       from dba_ind_columns i
+       where i.table_name = cons.table_name
+         and i.column_name in (cname1, cname2, cname3, cname4,
+                               cname5, cname6, cname7, cname8)
+         and i.column_position <= cons.col_cnt
+         and i.INDEX_OWNER = cons.owner
+       group by i.index_name
+      );
+
+if v_foreign_key_cnt > 0 then
+  dbms_output.put_line('
+Foreign Key Without Index Information');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| CONSTRAINT_NAME         |' || ' COLUMNS                                                                              ' || '|');
+  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_foreign_key_without_index;
+    loop fetch c_foreign_key_without_index into v_f;
+    exit when c_foreign_key_without_index%notfound;
+    dbms_output.put_line('| ' || rpad(v_f.OWNER,20) ||' | '|| rpad(v_f.TABLE_NAME,21) || ' | '|| rpad(v_f.CONSTRAINT_NAME,23) || ' | ' || rpad(v_f.cols,85) || '|');
+    end loop;
+    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_foreign_key_without_index;
+end if;
+
+  dbms_output.put_line('
+Show The Table Constraints');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| INDEX_NAME                  |' || ' constraint_name |' || ' column_name    ' || '| constraint_type |' || ' STATUS  ' || '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_constraints;
+    loop fetch c_constraints into v_constraints;
+    exit when c_constraints%notfound;
+    dbms_output.put_line('| ' || rpad(v_constraints.owner,20) ||' | '|| rpad(v_constraints.table_name,21) || ' | '|| rpad(v_constraints.index_name,27) || ' | '|| rpad(v_constraints.constraint_name,15) || ' | '|| rpad(v_constraints.column_name,14) || ' | '|| rpad(v_constraints.constraint_type,15) ||  ' | '|| rpad(v_constraints.status,7) || ' |');
+    end loop;
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_constraints;
+**/
+end;
+/
+
+$ECHO
+  spool off
+!
+exit 0
+fi
+######################
 if [ "$1" = "resize" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -8269,8 +8454,7 @@ end;
 exit 0
 fi
 
-##################################################
-
+##############################
 if [ "$1" = "session_event" ]; then
 
   if [ "$2" = "px" ]; then
