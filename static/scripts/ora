@@ -1490,15 +1490,15 @@ Show current Parallel Execution sessions in RAC cluster');
   dbms_output.put_line('
 Parallel QC and Slave Information)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------------');
   dbms_output.put_line('| USERNAME       |' || ' QC/Slave  ' || '| Slave Set |' || ' SID    ' || '| QC SID |' || ' Requested DOP ' || '| Actual DOP  ' || '|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('------------------------------------------------------------------------------------------');
   open c_slave;
     loop fetch c_slave into v_slave;
     exit when c_slave%notfound;
     dbms_output.put_line('| ' || rpad(v_slave.username,14) ||' | '|| rpad(v_slave.QC_or_Slave,9) || ' | '|| lpad(v_slave.Slave_Set,9) || ' | '|| lpad(v_slave.sid,6) || ' | '|| lpad(v_slave.QC_SID,6) || ' | '|| lpad(v_slave.Requested_DOP,13) ||  ' | '|| lpad(v_slave.Actual_DOP,11) || ' |');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('------------------------------------------------------------------------------------------');
   close c_slave;
 /**
   dbms_output.put_line('
