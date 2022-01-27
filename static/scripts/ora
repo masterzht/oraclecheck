@@ -1419,7 +1419,7 @@ PCWP: Parallel Combine with Parent.
 PCWC: Parallel Combine wth Child.
 P->S: Parallel to Serial.
 S->P: Serial to Parallel.
-P->P: Parallel to Parallel. Inter-operationparallism.
+P->P: Parallel to Parallel. Inter-operation parallism.
 PQ Distrib列：
 QC(Rand): 所有生产者以random分发方式将它们的行发送到查询协调器QC；
 HASH: 生产者并行进程使用HASH方式向并行消费者分发数据；
