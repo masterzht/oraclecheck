@@ -1402,7 +1402,28 @@ if [ "$1" = "px" -o "$1" = "parallel" ]; then
   else
     sql_id=$2
   fi
+echo """
+TQ:Table Queues的缩写, TQ用以PX进程之间或者是PX与QC之间的通信连接。生产者通过 table queue 分发数据, 消费者从 table queue 接收数据。不同的 table queue 编号, 代表了不同的数据分发Table Queue。
+DFOs (data flow operations)：DFO 代表 Data Flow Operator, 表示一个可以并行执行的操作。
+DFO Trees：一个DFO Tree可以包含一个或者多个相互联系的DFO；同一个DFO Tree中所有的DFO NUMBER都相同；值得注意的是不同的 DFO Tree间的DFO可以并行执行。
+QC: 负责给PX进程分配工作，对PX进程进行统一的管理和调度。
 
+Id 1-8: 表示由两个DFO组成的DFO Tree，DFONUMBER为3。第一个DFO（TQ=0）一组PX进程进行LJL1表的并行扫描通过(:TQ30000)虚拟表向另外一组PX进程分发数据（Id 5-8）。第二个DFO（TQ=1）一组PX进程通过读取(:TQ30000)虚拟表的数据（Id 4）并进行HASH UNIOUE操作后通过写入虚拟表（:TQ30001）向查询协调器QC发送数据集。
+Id 9-14: 代表第二颗DFO Tree，它包含一个DFO；Name列中的TQ10000可以理解为DFO NUMBER=1，TQ=0。
+Id15-20: 代表第三颗DFO Tree，DFO NUMBER=2，TQ=0表示也由单个DFO操作组成。
+
+除此之外我们我们发现上述执行计划多了TQ列，IN-OUT列，PQ Distrib列。TQ列我们上面已经解释过不再赘述；
+
+IN-OUT列表示数据的流动和传递方式：
+PCWP: Parallel Combine with Parent.
+PCWC: Parallel Combine wth Child.
+P->S: Parallel to Serial.
+S->P: Serial to Parallel.
+P->P: Parallel to Parallel. Inter-operationparallism.
+PQ Distrib列：
+QC(Rand): 所有生产者以random分发方式将它们的行发送到查询协调器QC；
+HASH: 生产者并行进程使用HASH方式向并行消费者分发数据；
+"""
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -1416,7 +1437,7 @@ undefine sql_id
 var sql_id varchar2(100);
 
 begin
-  :sql_id :=upper('sql_id');
+  :sql_id :='$sql_id';
 end;
 /
 
@@ -1439,11 +1460,12 @@ FROM
   , gv\$px_process p
 WHERE
     ses.sid     = pxs.sid
-AND ses.serial# = pxs.serial#
-AND p.sid     = pxs.sid
-AND pxs.inst_id = ses.inst_id
-AND ses.inst_id = p.inst_id
-AND pxs.req_degree IS NOT NULL -- qc
+and ses.sql_id = :sql_id
+and ses.serial# = pxs.serial#
+and p.sid     = pxs.sid
+and pxs.inst_id = ses.inst_id
+and ses.inst_id = p.inst_id
+and pxs.req_degree IS NOT NULL -- qc
 GROUP BY
     pxs.qcsid||','||pxs.qcserial#
   , pxs.qcinst_id
@@ -1469,6 +1491,7 @@ ORDER BY
  where px.sid=s.sid (+)
   and px.serial#=  s.serial#
   and px.inst_id = s.inst_id
+  and s.sql_id = :sql_id
   order by 5, 1 desc;
   v_slave c_slave%rowtype;
 begin
