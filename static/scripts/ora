@@ -6591,7 +6591,7 @@ $ECHO
 exit 0
 fi
 
-###############################get_ddl#################################################
+######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"

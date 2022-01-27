@@ -143,19 +143,17 @@ order by
   , pxs.server_group
   , pxs.server_set
   , pxs.qcinst_id
-  , pxs.server#
-/
+  , pxs.server#;
 
 COL px_qcsid HEAD QC_SID FOR A13
-
 
 break on dfo_number nodup on tq_id nodup on server_type skip 1 nodup on instance nodup
 
 compute sum label Total of num_rows on server_type
 
 select
-        /*dfo_number
-      , */tq_id
+        dfo_number
+      , tq_id
       , cast(server_type as varchar2(10)) as server_type
       , instance
       , cast(process as varchar2(8)) as process
@@ -163,7 +161,7 @@ select
       , round(ratio_to_report(num_rows) over (partition by dfo_number, tq_id, server_type) * 100) as "%"
       , cast(rpad('#', round(num_rows * 10 / nullif(max(num_rows) over (partition by dfo_number, tq_id, server_type), 0)), '#') as varchar2(10)) as graph
       , round(bytes / 1024 / 1024) as mb
-      , round(bytes / nullif(num_rows, 0)) as "bytes/row"
+      , num_rows
 from
         v$pq_tqstat
 order by
@@ -174,12 +172,3 @@ order by
       , process
 ;
 select sid,pq_QUEUED,PQ_STATUS,PQ_ACTIVE,dop,pq_servers from v$rsrc_session_info where pq_queued>0;
-col server_type for A13
-col process for A10
-
-SELECT
-    dfo_number, tq_id, server_type, instance, process, num_rows
-FROM
-    V$PQ_TQSTAT
-ORDER BY
-    dfo_number DESC, tq_id, server_type desc, instance, process;
