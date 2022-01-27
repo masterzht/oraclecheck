@@ -161,7 +161,7 @@ select
       , round(ratio_to_report(num_rows) over (partition by dfo_number, tq_id, server_type) * 100) as "%"
       , cast(rpad('#', round(num_rows * 10 / nullif(max(num_rows) over (partition by dfo_number, tq_id, server_type), 0)), '#') as varchar2(10)) as graph
       , round(bytes / 1024 / 1024) as mb
-      , num_rows
+      , round(bytes / nullif(num_rows, 0)) as "bytes/row"
 from
         v$pq_tqstat
 order by

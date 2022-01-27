@@ -1421,8 +1421,31 @@ P->S: Parallel to Serial.
 S->P: Serial to Parallel.
 P->P: Parallel to Parallel. Inter-operation parallism.
 PQ Distrib列：
-QC(Rand): 所有生产者以random分发方式将它们的行发送到查询协调器QC；
+QC (RAND): 所有生产者以random分发方式将它们的行发送到查询协调器QC；
 HASH: 生产者并行进程使用HASH方式向并行消费者分发数据；
+
+Run Following SQL to See Customers and Consumers
+======================
+select
+        dfo_number
+      , tq_id
+      , cast(server_type as varchar2(10)) as server_type
+      , instance
+      , cast(process as varchar2(8)) as process
+      , num_rows
+      , round(ratio_to_report(num_rows) over (partition by dfo_number, tq_id, server_type) * 100) as \"%\"
+      , cast(rpad('#', round(num_rows * 10 / nullif(max(num_rows) over (partition by dfo_number, tq_id, server_type), 0)), '#') as varchar2(10)) as graph
+      , round(bytes / 1024 / 1024) as mb
+      , round(bytes / nullif(num_rows, 0)) as \"bytes/row\"
+from
+        v\$pq_tqstat
+order by
+        dfo_number
+      , tq_id
+      , server_type desc
+      , instance
+      , process
+;
 """
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
