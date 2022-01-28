@@ -1,8 +1,5 @@
 set serveroutput on size 100000
 REM --------------------------------------------------------------------------------------------------
-REM Author: Riyaj Shamsudeen @OraInternals, LLC
-REM         www.orainternals.com
-REM
 REM Functionality: This script is to print GC processing timing for the past N seconds or so
 REM **************
 REM   
