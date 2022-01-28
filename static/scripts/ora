@@ -157,7 +157,7 @@ usage()
       - xo  <sql_id> [phv]                     xplan.display_awr for given sql_id (add execution order column)
 
   NOTE
-  ================
+  =======================
     - Set environment variable DBUSER to change default connect string which  is \"/ as sysdba\"
     - Set environment variable ORA_TMP to the default temp directory (default if /tmp when not set)
 "
@@ -310,6 +310,11 @@ if [ "$1" = "s" -o "$1" = "S" ]; then
 fi
 ###########################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
+  echo '''
+alter database recover managed standby database cancel;
+alter database recover managed standby database using current logfile disconnect from session;
+=======================
+  '''
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
