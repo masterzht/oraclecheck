@@ -45,36 +45,7 @@ Display SQL Plan Baseline Information from dba_sql_plan_baselines');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_spm;
-/**
 
-  dbms_output.put_line('
-Shared Pool Sub Pool Size Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------');
-  dbms_output.put_line('| SUBPOOL                |' || ' SUBPOOL_BYTES         ' || '| SUBPOOL_MB ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------');
-  open c_sub;
-    loop fetch c_sub into v_sub;
-    exit when c_sub%notfound;
-    dbms_output.put_line('| ' || rpad(v_sub.subpool,22) ||' | '|| lpad(v_sub.bytes,21) || ' | '|| lpad(v_sub.MB,10) || ' |');
-    end loop;
-    dbms_output.put_line('---------------------------------------------------------------');
-  close c_sub;
-
-  dbms_output.put_line('
-Shared Pool Sub Pool components Detail Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| RANK |' || ' SUBPOOL                |' || ' COMPONENT_NAME                     ' || '| CURRENT_SIZE_MB |' || ' CURRENT_PCT% ' || '|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------');
-  open c_subcom;
-    loop fetch c_subcom into v_subcom;
-    exit when c_subcom%notfound;
-    dbms_output.put_line('| ' || lpad(v_subcom.RANK,4)|| ' | ' || rpad(v_subcom.SUBPOOL,22) ||' | '|| rpad(v_subcom.NAME,34) || ' | '|| lpad(v_subcom.MB || ' M',15) || ' | '|| lpad(v_subcom.pct || '%',12) || ' |');
-    end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------------');
-  close c_subcom;
-**/
 end;
 /
 
