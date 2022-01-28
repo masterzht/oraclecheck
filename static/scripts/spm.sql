@@ -30,9 +30,7 @@ declare
   FROM DBA_SQL_PLAN_BASELINES s
   WHERE s.PARSING_SCHEMA_NAME = :owner order by s.SQL_HANDLE,s.OPTIMIZER_COST desc;
     v_spm c_spm%rowtype;
-
 begin
-
 
     dbms_output.put_line('
 Display SQL Plan Baseline Information from dba_sql_plan_baselines');
