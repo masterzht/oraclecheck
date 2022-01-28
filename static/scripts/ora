@@ -1446,6 +1446,7 @@ order by
       , instance
       , process
 ;
+select sid,pq_QUEUED,PQ_STATUS,PQ_ACTIVE,dop,pq_servers from v\$rsrc_session_info where PQ_STATUS is not null;
 """
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
