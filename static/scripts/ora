@@ -1511,7 +1511,7 @@ ORDER BY
    decode(px.req_degree,null,'This is QC',px.req_degree) as Requested_DOP,
    decode(px.degree,null,'This is QC',px.degree) as Actual_DOP
  from gv\$px_session px,
-   gv\$session s
+      gv\$session s
  where px.sid=s.sid (+)
   and px.serial#=  s.serial#
   and px.inst_id = s.inst_id
@@ -1547,36 +1547,7 @@ Parallel QC and Slave Information)');
     end loop;
     dbms_output.put_line('------------------------------------------------------------------------------------------');
   close c_slave;
-/**
-  dbms_output.put_line('
-Foreign Key Without Index Information');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| CONSTRAINT_NAME         |' || ' COLUMNS                                                                              ' || '|');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_foreign_key_without_index;
-    loop fetch c_foreign_key_without_index into v_f;
-    exit when c_foreign_key_without_index%notfound;
-    dbms_output.put_line('| ' || rpad(v_f.OWNER,20) ||' | '|| rpad(v_f.TABLE_NAME,21) || ' | '|| rpad(v_f.CONSTRAINT_NAME,23) || ' | ' || rpad(v_f.cols,85) || '|');
-    end loop;
-    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_foreign_key_without_index;
-end if;
 
-  dbms_output.put_line('
-Show The Table Constraints');
-  dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| OWNER                |' || ' TABLE_NAME            ' || '| INDEX_NAME                  |' || ' constraint_name |' || ' column_name    ' || '| constraint_type |' || ' STATUS  ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  open c_constraints;
-    loop fetch c_constraints into v_constraints;
-    exit when c_constraints%notfound;
-    dbms_output.put_line('| ' || rpad(v_constraints.owner,20) ||' | '|| rpad(v_constraints.table_name,21) || ' | '|| rpad(v_constraints.index_name,27) || ' | '|| rpad(v_constraints.constraint_name,15) || ' | '|| rpad(v_constraints.column_name,14) || ' | '|| rpad(v_constraints.constraint_type,15) ||  ' | '|| rpad(v_constraints.status,7) || ' |');
-    end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------');
-  close c_constraints;
-**/
 end;
 /
 
