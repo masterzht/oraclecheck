@@ -346,7 +346,7 @@ declare
   cursor c_dest_error is select inst_id,dest_name,
   decode(regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),null,destination,'Exception') as destination,
   decode(error,null,'None',error) as error
-  from gv\$archive_dest where destination is not null order by dest_id;
+  from gv\$archive_dest where destination is not null order by dest_id,inst_id;
   v_dest_error c_dest_error%rowtype;
 
   cursor c_standby_lag is select inst_id,lpad(name,14) as name , value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
