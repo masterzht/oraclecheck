@@ -2,13 +2,7 @@
 #
 # Copyright (c) 2018, 2028, YanKu IT HangZhou Ltd.  All rights reserved.
 # Author: chongzi
-# 2021-11-15 3.7.5 add s or S to logon on database
-# 2021-10-21 3.7.5 add 4030 sqlmon
-# 2021-10-13 3.7.4 modify table/tab
-# 2021-10-13 3.7.4 modify ddl/get_ddl
-# 2021-10-13 3.7.4 add active , Show Active Session and SQL For Current Node.
-# 2021-10-13 3.7.4 add ORA/ora <ErrorNumber>
-# 2021-06-18 3.7.3 add awrsqrpt
+
 usage()
 {
   echo "
@@ -262,7 +256,7 @@ if [ "$1" = "test" ]; then
 !
 exit 0
 fi
-###########################################
+######################
 if [ "$1" = "logon" ]; then
    if [ "$2" = "" -o "$3" = "" ]; then
      echo ""
@@ -310,11 +304,7 @@ if [ "$1" = "s" -o "$1" = "S" ]; then
 fi
 ###########################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
-  echo '''
-alter database recover managed standby database cancel;
-alter database recover managed standby database using current logfile disconnect from session;
-=======================
-  '''
+
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -4401,9 +4391,7 @@ echo "Filter: min_segsize_M=$min_segsize_M  (analyzed / blocks >100 / extents >1
 echo usage : ora sparse_table 10
 exit 0
 fi
-
-
-################################################################################
+#######################################
 if [ "$1" = "hintname" -o "$1" = "hint" ]; then
 
  if [ "$2" = "" ]; then
@@ -4415,8 +4403,7 @@ if [ "$1" = "hintname" -o "$1" = "hint" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
     col name format a35 trunc
     col inverse format a35 trunc
     col version format a10
@@ -4428,9 +4415,7 @@ if [ "$1" = "hintname" -o "$1" = "hint" ]; then
 !
 exit 0
 fi
-
-################################################################################
-
+#######################
 if [ "$1" = "sharing" ]; then
 
   if [ "$2" = "" ]; then
@@ -4442,8 +4427,7 @@ if [ "$1" = "sharing" ]; then
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 150
+    set pagesize 30 linesize 150
 
     Pro group by reason(summary or special sql_id):
     select reason_not_shared, count(*) Reasons
