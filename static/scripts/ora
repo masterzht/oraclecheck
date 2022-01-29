@@ -123,8 +123,6 @@ usage()
       - systemdump/hanganalyze                 hanganalyze 3 + systemdump 266
 
       - table/tab  <tab_name> [owner]          show detail info for given table
-      - tbs_last                               fast show tablespace info from dba_hist_tbspc_space_usage last snapshot
-      - tbs_usage                              fast get tablespace usage
       - tbs                                    view all tablespace detail info
       - tbsinc                                 display total tablespace size by day
       - temp                                   view detail usage of temp tablespace
@@ -4494,8 +4492,6 @@ if [ "$1" = "top_seg" -o "$1" = "topseg" ]; then
     eid=$3
   fi
 
-
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -4676,8 +4672,7 @@ echo "instance_number=$INST"
 echo "top_seg for snapshot $bid $eid"
 exit 0
 fi
-
-################################################################################
+#########################################
 if [ "$1" = "load" -o "$1" = "batch_load" ]; then
 
  ##if [ "$2" = "" ]; then
@@ -4697,13 +4692,11 @@ if [ "$1" = "load" -o "$1" = "batch_load" ]; then
        eid=$3
     fi
 
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 200
+    set pagesize 30 linesize 200
     set trims on
     col inst_id format 999
     col bid format 99999
@@ -4826,75 +4819,7 @@ echo "instance_number=$INST"
 echo "ora load [<bid> <eid>]  (default value is recent 48 snaps)"
 exit 0
 fi
-
-
-
-################################################################################
-if [ "$1" = "tbs_last" ]; then
-
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
-    col tablespace_name format a20 trunc
-    col rtime format a25
-      select a.rtime,b.name as tablespace_name,
-         round(a.tablespace_size*c.block_size/1024/1024) as total_size_M,
-         round(a.tablespace_usedsize*c.block_size/1024/1024) as used_size_M,
-         -- ,c.block_size
-         round(a.tablespace_usedsize/a.tablespace_size*100,1) as used_percent
-     from dba_hist_tbspc_space_usage a,v\$tablespace b,dba_tablespaces c
-     where a.snap_id=(select max(snap_id) from dba_hist_snapshot)
-     and b.ts#=A.TABLESPACE_ID and b.name=c.tablespace_name
-     order by used_percent;
-     $ECHO
-!
-echo get  tablespace_usedsize from dba_hist_tbspc_space_usage
-exit 0
-fi
-
-
-
-################################################################################
-if [ "$1" = "tbs_usage" ]; then
-#undo tablespace maybe not displayed in DBA_TABLESPACE_USAGE_METRICS
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 40
-    set linesize 150
-    col tablespace_name format a20 trunc
-    SELECT a.tablespace_name,
-         --round(tablespace_size * b.block_size / 1024/1024) AS total_space_M ===> a.tablespace_size not suitable for autoextensible
-         b.total_size_M,
-         ROUND (a.used_space * b.block_size  / 1024 /1024) AS used_space_M,
-         ROUND (a.used_space * b.block_size  / 1024 /1024/ total_size_M*100,1 ) as used_pct,
-         --ROUND (a.used_percent,1) AS used_pct =====> a.used_percent not suitable for autoextensible
-         b.autoext
-    FROM DBA_TABLESPACE_USAGE_METRICS a, ---only get its used_space column
-    (select tablespace_name,round(sum(bytes)/1024/1024) as total_size_M
-           ,max(autoextensible) as autoext,max(bytes/blocks) as block_size from dba_data_files
-           group by tablespace_name
-    union all
-          select tablespace_name,round(sum(bytes)/1024/1024) as total_size_M
-         ,max(autoextensible) as autoext,max(bytes/blocks) as block_size from dba_temp_files
-         group by tablespace_name
-    )    b
-    where a.tablespace_name=b.tablespace_name
-    ORDER BY 4 ;
-    $ECHO
-
-!
-echo get  tablespace_usedsize from DBA_TABLESPACE_USAGE_METRICS
-exit 0
-fi
-
-################################################################################
+##########################################
 if [ "$1" = "4031" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
