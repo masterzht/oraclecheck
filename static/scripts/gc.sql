@@ -2,22 +2,20 @@ set serveroutput on size 100000
 REM --------------------------------------------------------------------------------------------------
 REM Functionality: This script is to print GC processing timing for the past N seconds or so
 REM **************
-REM   
+REM
 REM Source  : gv$sysstat
 REM
 REM Note : 1. Keep window 160 columns for better visibility.
 REM
 REM Exectution type: Execute from sqlplus or any other tool.  Modify sleep as needed. Default is 60 seconds
 REM
-REM Parameters: 
+REM Parameters:
 REM No implied or explicit warranty
 REM
 REM Please send me an email to rshamsud@orainternals.com for any question..
 REM  NOTE   1. Querying gv$ tables when there is a GC performance issue is not exactly nice. So, don t run this too often.
 REM         2. Until 11g, gv statistics did not include PQ traffic.
 REM         3. Of course, this does not tell any thing about root cause :-)
-REM @copyright : OraInternals, LLC. www.orainternals.com
-REM Version	Change
 REM ----------	--------------------
 REM --------------------------------------------------------------------------------------------------
 PROMPT
@@ -104,7 +102,7 @@ declare
 	l_sleep number:=60;
 	l_cr_blks_served number :=0;
 	l_cur_blks_served number :=0;
-	
+
 	i number:=1;
 	ind varchar2(32);
 begin
@@ -120,7 +118,7 @@ begin
 		b_CR_BLOCK_TIME (c1.indx) := c1.cr_block_time;
 		b_CR_2HOP   (c1.indx) := c1.cr_2hop;
 		b_CR_2HOP_TIME (c1.indx) := c1.cr_2hop_time;
-		b_CR_3HOP  (c1.indx) := c1.cr_3hop;  
+		b_CR_3HOP  (c1.indx) := c1.cr_3hop;
 		b_CR_3HOP_TIME (c1.indx) := c1.cr_3hop_time;
 		b_CR_BUSY  (c1.indx) := c1.cr_busy;
 		b_CR_BUSY_TIME  (c1.indx) := c1.cr_busy_time;
@@ -132,13 +130,13 @@ begin
 		b_CURRENT_2HOP_TIME (c1.indx) := c1.current_2hop_time;
 		b_CURRENT_3HOP  (c1.indx) := c1.current_3hop;
 		b_CURRENT_3HOP_TIME  (c1.indx) := c1.current_3hop_time;
-		b_CURRENT_BUSY     (c1.indx) := c1.current_busy; 
+		b_CURRENT_BUSY     (c1.indx) := c1.current_busy;
 		b_CURRENT_BUSY_TIME (c1.indx) := c1.current_busy_time;
 		b_CURRENT_CONGESTED (c1.indx) := c1.current_congested;
 		b_CURRENT_CONGESTED_TIME (c1.indx) := c1.current_congested_time;
 		i := i+1;
 	end loop;
- 
+
           select upper(nvl('&sleep',60)) into l_sleep from dual;
 	  dbms_lock.sleep(l_sleep);
 
@@ -153,7 +151,7 @@ begin
 		e_CR_BLOCK_TIME (c1.indx) := c1.cr_block_time;
 		e_CR_2HOP   (c1.indx) := c1.cr_2hop;
 		e_CR_2HOP_TIME (c1.indx) := c1.cr_2hop_time;
-		e_CR_3HOP  (c1.indx) := c1.cr_3hop;  
+		e_CR_3HOP  (c1.indx) := c1.cr_3hop;
 		e_CR_3HOP_TIME (c1.indx) := c1.cr_3hop_time;
 		e_CR_BUSY  (c1.indx) := c1.cr_busy;
 		e_CR_BUSY_TIME  (c1.indx) := c1.cr_busy_time;
@@ -165,7 +163,7 @@ begin
 		e_CURRENT_2HOP_TIME (c1.indx) := c1.current_2hop_time;
 		e_CURRENT_3HOP  (c1.indx) := c1.current_3hop;
 		e_CURRENT_3HOP_TIME  (c1.indx) := c1.current_3hop_time;
-		e_CURRENT_BUSY     (c1.indx) := c1.current_busy; 
+		e_CURRENT_BUSY     (c1.indx) := c1.current_busy;
 		e_CURRENT_BUSY_TIME (c1.indx) := c1.current_busy_time;
 		e_CURRENT_CONGESTED (c1.indx) := c1.current_congested;
 		e_CURRENT_CONGESTED_TIME (c1.indx) := c1.current_congested_time;
@@ -195,7 +193,7 @@ begin
 				 lpad(to_char(case when e_current_3hop(ind) - b_current_3hop(ind)=0 then 0
 						else trunc ((e_current_3hop_time (ind) - b_current_3hop_time(ind))/(e_current_3hop(ind) - b_current_3hop(ind))/1000,2)
 						end
-					      ),11)   
+					      ),11)
                                 );
 	 end if;
 	 end loop;
@@ -226,7 +224,7 @@ begin
 				 lpad(to_char(case when e_current_3hop(ind) - b_current_3hop(ind)=0 then 0
 						else trunc ((e_current_3hop_time (ind) - b_current_3hop_time(ind))/(e_current_3hop(ind) - b_current_3hop(ind))/1000,2)
 						end
-					      ),11)   
+					      ),11)
                                 );
 	 end if;
 	 end loop;
@@ -250,7 +248,7 @@ begin
 				 lpad(to_char(case when e_cr_block_time (ind) - b_cr_block_time(ind)=0 then 0
 						else trunc (100*(e_cr_congested_time (ind) - b_cr_congested_time(ind))/(e_cr_block_time (ind) - b_cr_block_time(ind)),2)
 						end
-					      ),11) || '|'  
+					      ),11) || '|'
                                 );
 	 end if;
 	 end loop;
@@ -274,12 +272,12 @@ begin
 				 lpad(to_char(case when e_current_block_time (ind) - b_current_block_time(ind)=0 then 0
 						else trunc (100*(e_current_congested_time (ind) - b_current_congested_time(ind))/(e_current_block_time (ind) - b_current_block_time(ind)),2)
 						end
-					      ),11) || '|'  
+					      ),11) || '|'
                                 );
 	 end if;
 	 end loop;
 	dbms_output.put_line ( '----------------------------------------------------------------------------------------------|');
 end;
 /
-set verify on 
+set verify on
 

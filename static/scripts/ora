@@ -2230,9 +2230,8 @@ echo "instance_number=$INST"
 exit 0
 fi
 
-##################################################
+###################
 if [ "$1" = "gc" ]; then
-
  if [ "$2" = "" ]; then
    echo 'Usage: ./ora gc "gc cr block 2-way" 60'
    exit 1
@@ -2280,15 +2279,6 @@ select * from (select inst#,event, owner, object_name,object_type, cnt
  from ash_gc a
  where a.current_obj#=-1
  ) order by cnt desc;
-
-with ash_gc as
-(select * from (
-select /*+ materialize */ INSTANCE_NUMBER as inst#, event, current_file#, current_block#, count(*) cnt
-from dba_hist_active_sess_history where event like '%'||lower('$2') ||'%'
-and sample_time> sysdate- $dur/60/24
-group by INSTANCE_NUMBER,event, current_file#, current_block#
-))
-select * from ash_gc order by cnt desc;
 
     $ECHO
     spool off
