@@ -6019,8 +6019,11 @@ echo "instance_number=$INST"
 exit 0
 fi
 #################################
-if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
-
+if [ "$1" = "coe" ]; then
+echo ""
+echo "coe xfr binds a good one of multiple plan hash values of the same sql_id"
+echo "sql load binds a new sql_id from the original one"
+echo "======================"
      if [ "$2" = "" ]; then
       sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -6036,12 +6039,12 @@ if [ "$1" = "sql_profile" -o "$1" = "coe_profile" -o "$1" = "coe" ]; then
            from dba_sql_profiles order by created desc
      ) where rownum<=20;
 !
-    echo "ora sql_profile sql_id_1 sql_id_2 phv"
+    echo "Usage:./ora coe sql_id_1 sql_id_2 phv"
     exit 1
   fi
 
   if [ "$2" = "" -o  "$3" = "" -o "$4" = "" ]; then
-    echo "ora sql_profile sql_id_1 sql_id_2 phv"
+    echo "Usage:./ora coe sql_id_1 sql_id_2 phv"
     exit 1
   fi
 
