@@ -5631,7 +5631,7 @@ fi
 echo ora sql_patch sql_id  hint_info
 exit 0
 fi
-##############################################
+######################
 if [ "$1" = "sqlhc" ]; then
 
   if [ "$2" = "" ]; then
@@ -5660,7 +5660,7 @@ done
 echo "need ora_sqlhc.sql in the curret directory!"
 exit 0
 fi
-##########################################################
+#######################
 if [ "$1" = "tophis" ]; then
 
    if [ "$2" = "" -o "$2" = "cpu" -o "$2" = "CPU" ]; then
