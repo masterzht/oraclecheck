@@ -3633,8 +3633,8 @@ machine||'@'||program||'@'||module as "machine@program@module" ,
 from gv\$active_session_history
 where sample_time between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
                       and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60
-group by inst_id,event,sql_id,machine||'@'||program||'@'||module order by inst_id, 5 desc,event
-) where cnt > 1;
+group by inst_id,event,sql_id,machine||'@'||program||'@'||module order by 5 desc,inst_id,event
+) where rownum < 20;
 
 
 prompt top sql From v\$sql_area
