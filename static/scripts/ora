@@ -3725,7 +3725,7 @@ echo "snapper group by sql_id,event ,from $btime, last $dur ,top 20 sql with eve
 echo "./ora snapper <begin_time> <duration> [30]"
   exit 0
 fi
-##########################################
+############################
 if [ "$1" = "batch_event" ]; then
 echo ""
 echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
