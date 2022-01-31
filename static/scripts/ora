@@ -3618,7 +3618,7 @@ FROM tmp GROUP BY sql_id ORDER BY COUNT(*) DESC
 ) x where rownum < 20;
 
 col "machine@program@module" for a90
-col i# for 99
+col inst# for 99
 col cnt for 999
 col event for a40
 prompt
@@ -3626,7 +3626,7 @@ prompt Start From $2 last $dur mintutes gv\$active_session_history
 prompt Show event and sql
 prompt ======================
 select * from (
-select inst_id as i#,
+select inst_id as inst#,
 decode(event,null,'ON CPU',event) as event, sql_id,
 machine||'@'||program||'@'||module as "machine@program@module" ,
  count(*) as cnt
