@@ -3639,7 +3639,7 @@ group by inst_id,event,sql_id,machine||'@'||program||'@'||module order by 5 desc
 
 prompt top sql From v\$sql_area
 prompt ======================
-    col db_user forsmat a10 trunc
+    col db_user format a10 trunc
     col "wait/elap" format a10
     col sql_text format a25
     col rank format 9999
