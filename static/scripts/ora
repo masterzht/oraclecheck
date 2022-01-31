@@ -103,8 +103,7 @@ usage()
 
       - seq                                    show sequences have bad setting (order_flag='Y' or cache_size<=20)
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
-      - session_event [all]|<noidle>|<px>      ora session_event | ora session_event px | ora session_event noidle
-      - snapper \"12:10\" 40                     AAS
+      - snapper \"12:10\" 40                     AAS and session event
       - sh                                     Run a shell command. E.g.  ora repeat 2 5 sh 'ps -edf | grep DESC'
       - sharing <sql_id>                       print why cursors are not shared ; high_version diag
       - sga                                    tell how much sga memory is used and dynamically used
@@ -1443,6 +1442,36 @@ select sid,pq_QUEUED,PQ_STATUS,PQ_ACTIVE,dop,pq_servers from v\$rsrc_session_inf
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
+
+
+      set pagesize 6000 linesize 150
+      col SID format 99999
+      col QCSID format 99999
+      col PID format 9999
+      col SPID format 9999999
+      col Inst format 999999
+      col Group format 999999
+      col Set format 999999
+      col Degree format 999999
+      col "Req Degree" format 999999
+      col "Wait Event" format A30
+      col sql_hash format A15
+
+      select px.qcsid, px.SID "SID", p.PID, p.SPID "SPID", px.INST_ID "Inst",
+             px.SERVER_GROUP "Group", px.SERVER_SET "Set",
+             px.DEGREE "Degree", px.REQ_DEGREE "Req Degree",
+             w.event "Wait Event", s.SQL_HASH_VALUE hash_value
+      from GV\$SESSION s, GV\$PX_SESSION px, GV\$PROCESS p, GV\$session_wait w
+      where s.sid (+) = px.sid
+        and s.inst_id (+) = px.inst_id
+        and s.sid = w.sid (+)
+        and s.inst_id = w.inst_id (+)
+        and s.paddr = p.addr (+)
+        and s.inst_id = p.inst_id (+)
+      ORDER BY decode(px.QCINST_ID, NULL, px.INST_ID, px.QCINST_ID), px.QCSID,
+               decode(px.SERVER_GROUP, NULL, 0, px.SERVER_GROUP),
+               px.SERVER_SET, px.INST_ID;
+
     set linesize 250 pages 0
     set serveroutput on
     set verify off
@@ -1542,6 +1571,7 @@ Parallel QC and Slave Information)');
 
 end;
 /
+
 
 $ECHO
   spool off
@@ -3587,6 +3617,16 @@ max(top_level_sql_id) as procedure_sql_id
 FROM tmp GROUP BY sql_id ORDER BY COUNT(*) DESC
 ) x where rownum < 20;
 
+prompt
+prompt Start From $2 last $dur mintutes gv\$active_session_history
+prompt Show event and sql
+prompt ======================
+select inst_id as inst#, decode(event,null,'ON CPU',event) as event, sql_id, machine, count(*)
+from gv\$active_session_history
+where sample_time between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
+                      and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60
+group by inst_id,event,sql_id,machine order by inst_id, 5 desc,event;
+
 
 prompt top sql from v\$sql_area
     col db_user format a10 trunc
@@ -4990,7 +5030,7 @@ WHERE b.spid=$2
 echo "instance_number=$INST"
 exit 0
 fi
-################################################################################
+########################
 if [ "$1" = "event2sqlid" ]; then
 
   if [ "$2" = "" -o "$3" = "" -o "$4" = "" ]; then
@@ -5019,7 +5059,7 @@ echo "then login sqlplus and run @cursor"
 exit 0
 fi
 
-################################################################################
+######################
 if [ "$1" = "gather" ]; then
 
   if [ "$2" = "" -o "$3" = "" ]; then
@@ -5038,7 +5078,7 @@ if [ "$1" = "gather" ]; then
    echo "dbms_stats.gather_table_stats('$2','$3',cascade=>true,no_invalidate=>false); command executed"
 exit 0
 fi
-################################################
+###################
 if [ "$1" = "top" ]; then
     if [ "$2" = "" ]; then
       dur=10
@@ -5774,7 +5814,7 @@ echo "Get top sql ,ordered by $orderby . Begin snap_id=$bid ; End snap_id=$eid "
 echo "instance_number=$INST"
 exit 0
 fi
-#########################################
+#####################
 if [ "$1" = "purge" ]; then
 
   if [ "$2" = "" ]; then
@@ -5818,7 +5858,7 @@ if [ "$1" = "purge" ]; then
 echo "instance_number=$INST"
 exit 0
 fi
-#################################
+###############################
 if [ "$1" = "coe" -a "$2" = "" ]; then
 echo ""
 echo "coe xfr binds a good one of multiple plan hash values of the same sql_id"
@@ -7899,66 +7939,6 @@ end;
 !
 exit 0
 fi
-##############################
-if [ "$1" = "session_event" ]; then
-
-  if [ "$2" = "px" ]; then
-
-    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-      connect $DBUSER
-
-      set pagesize 6000 linesize 150
-      col SID format 99999
-      col QCSID format 99999
-      col PID format 9999
-      col SPID format 9999999
-      col Inst format 999999
-      col Group format 999999
-      col Set format 999999
-      col Degree format 999999
-      col "Req Degree" format 999999
-      col "Wait Event" format A30
-      col sql_hash format A15
-
-      select px.qcsid, px.SID "SID", p.PID, p.SPID "SPID", px.INST_ID "Inst",
-             px.SERVER_GROUP "Group", px.SERVER_SET "Set",
-             px.DEGREE "Degree", px.REQ_DEGREE "Req Degree",
-             w.event "Wait Event", s.SQL_HASH_VALUE hash_value
-      from GV\$SESSION s, GV\$PX_SESSION px, GV\$PROCESS p, GV\$session_wait w
-      where s.sid (+) = px.sid
-        and s.inst_id (+) = px.inst_id
-        and s.sid = w.sid (+)
-        and s.inst_id = w.inst_id (+)
-        and s.paddr = p.addr (+)
-        and s.inst_id = p.inst_id (+)
-      ORDER BY decode(px.QCINST_ID, NULL, px.INST_ID, px.QCINST_ID), px.QCSID,
-               decode(px.SERVER_GROUP, NULL, 0, px.SERVER_GROUP),
-               px.SERVER_SET, px.INST_ID;
-      $ECHO
-!
-  else
-
-     SQLSTRING="select inst_id, event, count(*) from gv\$session_wait where wait_time = 0"
-
-     if [ "$2" = "noidle" ]; then
-       SQLSTRING=${SQLSTRING}" and wait_class <> 'Idle'"
-     fi
-
-     SQLSTRING=${SQLSTRING}" group by inst_id, event order by inst_id, event"
-     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-      connect $DBUSER
-
-      set pagesize 10000
-      set linesize 150
-
-      ${SQLSTRING};
-!
-  fi
-echo "instance_number=$INST"
-exit 0
-fi
 ####################################
 if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
 
@@ -8116,8 +8096,7 @@ if [ "$1" = "event_set"  ]; then
 echo "display all events setted in the system,e.g. Alter system set events=..."
   exit 0
 fi
-###############################################
-
+####################
 if [ "$1" = "sga" ]; then
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
