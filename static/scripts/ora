@@ -3617,19 +3617,26 @@ max(top_level_sql_id) as procedure_sql_id
 FROM tmp GROUP BY sql_id ORDER BY COUNT(*) DESC
 ) x where rownum < 20;
 
+col "machine@program@module" for a100
+col inst# for 999
+col event for a40
 prompt
 prompt Start From $2 last $dur mintutes gv\$active_session_history
 prompt Show event and sql
 prompt ======================
-select inst_id as inst#, decode(event,null,'ON CPU',event) as event, sql_id, machine, count(*)
+select inst_id as inst#,
+decode(event,null,'ON CPU',event) as event, sql_id,
+machine||'@'||program||'@'||module as "machine@program@module" ,
+ count(*)
 from gv\$active_session_history
 where sample_time between to_date('$2'||'00','yyyy/mm/dd hh24:mi:ss')
                       and to_date('$2'||'59','yyyy/mm/dd hh24:mi:ss')+$dur/24/60
-group by inst_id,event,sql_id,machine order by inst_id, 5 desc,event;
+group by inst_id,event,sql_id,machine||'@'||program||'@'||module order by inst_id, 5 desc,event;
 
 
-prompt top sql from v\$sql_area
-    col db_user format a10 trunc
+prompt top sql From v\$sql_area
+promit ======================
+    col db_user forsmat a10 trunc
     col "wait/elap" format a10
     col sql_text format a25
     col rank format 9999
