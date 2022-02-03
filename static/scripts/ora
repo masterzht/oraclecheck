@@ -36,6 +36,7 @@ usage()
 
       - cputime                                cputime by day / by top
       - cursor_summary                         summarize stats about (un)pinned cursors
+      - coe                                    Usage: ./ora coe <original_sql_id> <modified_sql_id> <plan hash value>
 
       - dblink/db_link/link                    show dblink Information
       - dbtime                                 dbtime by day / by top
