@@ -5871,8 +5871,7 @@ fi
 ###############################
 if [ "$1" = "coe" -a "$2" = "" ]; then
 echo ""
-echo "coe xfr binds a good one of multiple plan hash values of the same sql_id"
-echo "coe load binds a new sql_id from the original one"
+echo "coe load binds a new sql_id from the original one and binds a good one of multiple plan hash values of the same sql_id"
 echo "======================"
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -5906,13 +5905,10 @@ echo "======================"
            from dba_sql_plan_baselines order by created desc
      ) where rownum<=20;
 !
-    echo "Usage:./ora coe load/xfr"
+    echo "Usage:./ora coe load"
     exit 1
   elif [ "$1" = "coe" -a "$2" = "load" ]; then
   echo "run coe_load_sql_profile.sql to bind a new sql_id from the original one"
-  exit 1
-  elif [ "$1" = "coe" -a "$2" = "xfr" ]; then
-  echo "run coe_xfr_sql_profile.sql to bind a good one of multiple plan hash values of the same sql_id"
   exit 1
 fi
 ##########################################
@@ -11373,7 +11369,6 @@ if [ "$1" = "x" ]; then
 fi
 ###################
 if [ "$1" = "xp" ]; then
-
   if [ "$2" = "" ]; then
     echo  "ora xp <sql_id in mem>"
     exit 1
@@ -11794,9 +11789,13 @@ if [ "$1" = "app" ]; then
     col SEQUENCE_NAME for a32
     set linesize 220
     set pages 100
+    set trimspool on
     spool ora_app_${filedate}.log
     prompt Show The Sequence That No Cache...
-    SELECT s.SEQUENCE_OWNER,SEQUENCE_NAME,CACHE_SIZE from dba_sequences s
+    col alter_sequence_cache_sql for a100
+    SELECT
+    q'[alter sequence ]' || s.SEQUENCE_OWNER ||'.'|| SEQUENCE_NAME || ' cache ' ||CACHE_SIZE ||';' as alter_sequence_cache_sql
+    from dba_sequences s
     where s.sequence_owner not in ('ANONYMOUS','APEX_030200','APEX_040000','APEX_040200','DVSYS','LBACSYS','OJVMSYS','APEX_SSO','APPQOSSYS','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','MDSYS','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','SI_INFORMTN_SCHEMA','SQLTXADMIN','SQLTXPLAIN','SYS','SYSMAN','SYSTEM','TRCANLZR','WMSYS','XDB','XS$NULL','PERFSTAT','STDBYPERF')
     and s.max_value > 0
     and s.CACHE_SIZE < 100;
