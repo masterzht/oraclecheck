@@ -5357,7 +5357,7 @@ if [ "$1" = "outline" ]; then
 echo "show outline hint for given sql profile or sql patch name".
 exit 0
 fi
-############################################
+###############################
 if [ "$1" = "top_level" ]; then
 
   if [ "$2" = "" ]; then
