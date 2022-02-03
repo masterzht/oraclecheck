@@ -11661,7 +11661,7 @@ if [ "$1" = "x" ]; then
     Pro Display sql execution plan in AWR:
     select * from table(dbms_xplan.display_awr('$sqlid',format=>'advanced -PROJECTION'));
 
-    prompt Display current sql dba_his_sqlstat Information
+    prompt Display current sql dba_hist_sqlstat Information
     prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
@@ -11706,7 +11706,7 @@ if [ "$1" = "xp" ]; then
     Pro Display sql execution plan in Cursor (memory) :
     select * from table(dbms_xplan.display_cursor('$2', null, 'advanced -bytes -PROJECTION allstats last'));
 
-    prompt Display current sql dba_his_sqlstat Information
+    prompt Display current sql dba_hist_sqlstat Information
     prompt =======================
     col parsing_schema for a16
     select  instance_number as inst#,
@@ -11838,7 +11838,7 @@ if [ "$1" = "xpo" ]; then
              )
     order by r;
 
-    prompt Display current sql dba_his_sqlstat Information
+    prompt Display current sql dba_hist_sqlstat Information
     prompt =======================
     col snap_time for a12
     col PARSING_SCHEMA for a16
@@ -11983,7 +11983,7 @@ if [ "$1" = "xo" ]; then
              )
     order by r;
 
-    prompt Display current sql dba_his_sqlstat Information
+    prompt Display current sql dba_hist_sqlstat Information
     prompt =======================
     col snap_time for a12
     col PARSING_SCHEMA for a16
