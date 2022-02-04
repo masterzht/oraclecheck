@@ -2063,11 +2063,10 @@ fi
 
 ###################
 if [ "$1" = "gc" ]; then
- if [ "$2" = "" ]; then
-   echo 'Usage: ./ora gc "gc cr block 2-way" 60'
-   exit 1
- fi
-
+  if [ "$2" = "" ]; then
+    echo 'Usage: ./ora gc "gc cr block 2-way" 60'
+    exit 1
+  fi
   if [ "$3" = "" ]; then
     dur=30
   else
@@ -2118,8 +2117,7 @@ echo "instance_number=$INST"
 echo "./ora gc [event_name] [30]"
   exit 0
 fi
-##############################snapper_ash##############################
-
+#######################snapper_ash#############
 if [ "$1" = "snapper_ash" -o "$1" = "snapper" ]; then
 
   if [ "$2" = "" ]; then
