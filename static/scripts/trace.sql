@@ -52,18 +52,9 @@ exec DBMS_MONITOR.SERV_MOD_ACT_TRACE_ENABLE('SYS$USERS', module_name=>'CCM',wait
 exec DBMS_MONITOR.SERV_MOD_ACT_TRACE_DISABLE('SYS$USERS', module_name=>'CCM');
 
 
---oradebug 10046
-oradebug setospid &1
-oradebug unlimit
-oradebug event 10046 trace name context forever, level 12
 
-oradebug event 10046 trace name context off;
-oradebug tracefile_name
 
--- trace 10053, level 1 more info
-Alter session set events '10053 trace name context forever[,level {1/2}]'
-explain plan for you_select_query;
-Alter session set events '10053 trace name context off';
+
 
 -- SPM tracing
 alter session set events 'trace [SQL_PlanManagement.*]';
