@@ -3882,7 +3882,7 @@ echo "get batch awr top event for recent $snaps snapshots"
 echo "./ora -i 2 batch_event <begin_snap_id> <end_snap_id>"
 exit 0
 fi
-#########################################
+###########################
 if [ "$1" = "big_by_tbs" ]; then
 
  if [ "$2" = "" ]; then
@@ -3930,7 +3930,7 @@ if [ "$1" = "big_by_tbs" ]; then
 !
 exit 0
 fi
-########################################
+########################
 if [ "$1" = "dpr_risk" ]; then
 
   if [ "$2" = "" ]; then
@@ -4794,17 +4794,14 @@ if [ "$1" = "4031" ]; then
 echo "current instance only"
 exit 0
 fi
-#######################################4030 ####################################################
-
+#############4030 ########
 if [ "$1" = "4030" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
 
-    set pagesize 30
-    set linesize 180
-
+    set pagesize 30 linesize 180
     col COMPONENT format a30
     set trimspool on
     spool ora_4030_$filedate.log
@@ -5067,7 +5064,6 @@ echo "usage: ora event2sqlid \"direct path read\" 8888 8890"
 echo "then login sqlplus and run @cursor"
 exit 0
 fi
-
 ######################
 if [ "$1" = "gather" ]; then
 
