@@ -1270,15 +1270,15 @@ UN? Means UNIQUE Index?
 G OR L? Means Global OR Local Indexes
 Index Information(contains Global and Local index See the Last Column)');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| INDEX_NAME             |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE        ' || '| C# |' || ' TABLESPACE_NAME ' || '| IND_TYPE |' || ' DE? ' || '| I_MB |' || ' DES? ' || '| US? |'  || ' LAST_ANALYZE '|| '| VI? |'  || ' UN? ' || '| CLUS_FACTOR '|| '| G OR L? ' ||'|');
-  dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| INDEX_NAME               |' || ' COLUMN_NAME    ' || '| COLUMN_TYPE        ' || '| C# |' || ' TABLESPACE_NAME ' || '| IND_TYPE |' || ' DE? ' || '| I_MB |' || ' DES? ' || '| US? |'  || ' LAST_ANALYZE '|| '| VI? |'  || ' UN? ' || '| CLUS_FACTOR '|| '| G OR L? ' ||'|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_i;
     loop fetch c_i into v_i;
     exit when c_i%notfound;
-    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,22) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,18) ||' | '|| lpad(v_i.COLUMN_POSITION,2) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,8) || ' | '|| lpad(v_i.DEGREE,3) ||  ' | '|| lpad(v_i.INDEX_MB,4) || ' | '|| lpad(v_i.DESCEND,4) || ' | '|| lpad(v_i.USABLE,3) || ' | '|| lpad(v_i.LAST_ANALYZED,12) || ' | '|| lpad(v_i.visibility,3) || ' | '|| lpad(v_i.UNIQUENESS,3)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,11) || ' | ' || lpad(v_i.INDEX_PARTITION,7) ||' |');
+    dbms_output.put_line('| ' || rpad(v_i.INDEX_NAME,24) ||' | '|| rpad(v_i.COLUMN_NAME,14) || ' | ' ||rpad(v_i.col_type,18) ||' | '|| lpad(v_i.COLUMN_POSITION,2) || ' | '|| lpad(v_i.TABLESPACE_NAME,15) || ' | '|| lpad(v_i.INDEX_TYPE,8) || ' | '|| lpad(v_i.DEGREE,3) ||  ' | '|| lpad(v_i.INDEX_MB,4) || ' | '|| lpad(v_i.DESCEND,4) || ' | '|| lpad(v_i.USABLE,3) || ' | '|| lpad(v_i.LAST_ANALYZED,12) || ' | '|| lpad(v_i.visibility,3) || ' | '|| lpad(v_i.UNIQUENESS,3)|| ' | '|| lpad(v_i.CLUSTERING_FACTOR,11) || ' | ' || lpad(v_i.INDEX_PARTITION,7) ||' |');
     end loop;
-    dbms_output.put_line('-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_i;
   dbms_output.put_line('If US? status Is NO!!!');
   dbms_output.put_line('Please Execute: alter index ' ||:owner ||'.' ||'index_name' ||' rebuild online;');
