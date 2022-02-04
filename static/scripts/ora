@@ -11727,21 +11727,18 @@ if [ "$1" = "xp" ]; then
     $ECHO
 !
 exit 0
-
 fi
-####################################
+####################
 if [ "$1" = "xpo" ]; then
-
   if [ "$2" = "" ]; then
     echo  "ora xpo <sql_id> <child_number>"
     exit 1
   fi
-
-    if [ "$3" = "" ]; then
-      childno=0
-    else
-      childno=$3
-    fi
+  if [ "$3" = "" ]; then
+    childno=0
+  else
+    childno=$3
+  fi
 
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -11866,12 +11863,10 @@ exit 0
 fi
 ####################
 if [ "$1" = "xo" ]; then
-
    if [ "$2" = "" ]; then
     echo "ora xo <sql_id> [phv]"
     exit 1
    fi
-
    if [ "$3" = "" ]; then
      phv=null
    else
@@ -12037,6 +12032,7 @@ if [ "$1" = "offload" ]; then
     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
+    set trimspool on
     spool ora_offload_$2_${filedate}.log
     prompt ##########################################
     prompt Display Exadata SQL Offloading Information
