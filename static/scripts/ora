@@ -5895,7 +5895,7 @@ echo "======================"
     set pagesize 30 linesize 200
     col plan_name format a30
     col signature format 99999999999999999999
-    col created format a20
+    col created format a17
     col sql_handle format a20
     col description format a40 trunc
     col creator format a10 trunc
@@ -5903,7 +5903,7 @@ echo "======================"
     col ORIGIN format a12 trunc
     select * from
     (select plan_NAME,enabled, accepted, fixed--,signature,sql_handle
-           ,to_char(CREATED,'yyyy-mm-dd hh24:mi:ss') as created
+           ,to_char(CREATED,'yyyymmdd hh24:mi:ss') as created
             ,creator,origin, DESCRIPTION,SQL_TEXT
            from dba_sql_plan_baselines order by created desc
      ) where rownum<=20;
@@ -11678,7 +11678,7 @@ if [ "$1" = "x" ]; then
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
-    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID, inst#;
     prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
@@ -11723,7 +11723,7 @@ if [ "$1" = "xp" ]; then
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
-    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID, inst#;
     prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
@@ -11856,7 +11856,7 @@ if [ "$1" = "xpo" ]; then
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
-    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID, inst#;
     prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
@@ -12001,7 +12001,7 @@ if [ "$1" = "xo" ]; then
     trunc(buffer_gets_delta/decode(executions_delta,0,1,executions_delta)) "gets/per",
     trunc(disk_reads_delta/decode(executions_delta,0,1,executions_delta)) "reads/per"
     from
-    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID;
+    dba_hist_sqlstat x where x.SQL_ID = '$2' order by x.SNAP_ID, inst#;
     prompt =======================
     prompt !!! Also see ./ora awrsqrpt or (v\$sqlstats and v\$sql) for more Information...
     $ECHO
