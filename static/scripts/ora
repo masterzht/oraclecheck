@@ -341,7 +341,13 @@ declare
   from gv\$archive_dest where destination is not null order by dest_id,inst_id;
   v_dest_error c_dest_error%rowtype;
 
-  cursor c_standby_lag is select inst_id,lpad(name,14) as name , value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
+  cursor c_standby_lag is select inst_id,lpad(name,14) as name,
+  decode(value,null,'None',value) as value,
+  decode(datum_time,null,'None',datum_time) as datum_time,
+  decode(time_computed,null,'None',time_computed) as time_computed
+  from gv\$dataguard_stats
+  where name like '%lag%' order by inst_id,name;
+
   v_standby_lag c_standby_lag%rowtype;
   cursor c_standby_max_seq is select thread#, max(sequence#) as mseq from v\$archived_log where applied='YES' group by thread#;
   v_standby_max_seq c_standby_max_seq%rowtype;
@@ -463,12 +469,13 @@ else
   dbms_output.put_line('
 Standby Current Apply Lag Information');
   dbms_output.put_line('=======================');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# |' || ' NAME           ' || '| VALUE         |' || ' datum_time     ' || '| time_computed        ' || '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
   open c_standby_lag;
     loop fetch c_standby_lag into v_standby_lag;
     exit when c_standby_lag%notfound;
-    dbms_output.put_line('DEST_ID                  :   '|| v_standby_lag.inst_id);
-    dbms_output.put_line('DEST_NAME                :   '|| rpad(ltrim(v_standby_lag.name),20));
-    dbms_output.put_line('VALUE                    :   '|| rpad(ltrim(v_standby_lag.value),20));
+    dbms_output.put_line('| '|| lpad(v_standby_lag.inst_id,5) || ' | ' || rpad(v_standby_lag.name,14) || ' | ' || lpad(v_standby_lag.value,14) || ' | ' || lpad(v_standby_lag.datum_time,19) || '|' || lpad(v_standby_lag.time_computed,20) ||' |');
     end loop;
   close c_standby_lag;
 
