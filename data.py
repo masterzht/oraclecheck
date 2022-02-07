@@ -363,4 +363,4 @@ def get_local_info(oracle_home, sqlplus_path):
            big_table_no_index, block_corruption, alert_check
 
 
-print(get_local_all('/home/oracle','/home/oracle/bin/sqlplus', "sga"))
+# print(get_local_all('/home/oracle','/home/oracle/bin/sqlplus', "sga"))

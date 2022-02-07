@@ -7,5 +7,5 @@
 ## 测试19g环境
 
 # 82.156.115.176  root Ss8866@123 22 system Ss8866@123 1521 yao 测试库oracle19c
-/ oracle/app/product/19.3.0/db_1  /oracle/app/product/19.3.0/db_1/bin/sqlplus  人事OA系统
+/oracle/app/product/19.3.0/db_1  /oracle/app/product/19.3.0/db_1/bin/sqlplus  人事OA系统
 

@@ -131,4 +131,4 @@ def get_local_doc(company_name, engineer_name, customer_name, customer_name2, or
     tpl.render(context)
     tpl.save(f'./{business_name}巡检报告{current_time}.docx')
 
-get_local_doc('杭州woqu科技', '姚崇', '王骏', '王天田', '/home/oracle', '/home/oracle/bin/sqlplus', 'ODS系统')
+# get_local_doc('杭州woqu科技', '姚崇', '王骏', '王天田', '/home/oracle', '/home/oracle/bin/sqlplus', 'ODS系统')
