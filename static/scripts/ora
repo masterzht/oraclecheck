@@ -467,16 +467,18 @@ Primary Dest_id Error Information');
   close c_dest_error;
 else
   dbms_output.put_line('
+datum_time Means The last time the standby database receive redo log
 Standby Current Apply Lag Information');
   dbms_output.put_line('=======================');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| inst# |' || ' NAME           ' || '| VALUE         |' || ' datum_time     ' || '| time_computed        ' || '|');
-  dbms_output.put_line('--------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------');
+  dbms_output.put_line('| inst# |' || ' NAME           ' || '| VALUE        |' || ' datum_time           ' || '| time_computed        ' || '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------');
   open c_standby_lag;
     loop fetch c_standby_lag into v_standby_lag;
     exit when c_standby_lag%notfound;
-    dbms_output.put_line('| '|| lpad(v_standby_lag.inst_id,5) || ' | ' || rpad(v_standby_lag.name,14) || ' | ' || lpad(v_standby_lag.value,14) || ' | ' || lpad(v_standby_lag.datum_time,19) || '|' || lpad(v_standby_lag.time_computed,20) ||' |');
+    dbms_output.put_line('| '|| lpad(v_standby_lag.inst_id,5) || ' | ' || rpad(v_standby_lag.name,14) || ' | ' || lpad(v_standby_lag.value,12) || ' | ' || lpad(v_standby_lag.datum_time,20) || ' | ' || lpad(v_standby_lag.time_computed,20) ||' |');
     end loop;
+  dbms_output.put_line('---------------------------------------------------------------------------------------');
   close c_standby_lag;
 
   dbms_output.put_line('
