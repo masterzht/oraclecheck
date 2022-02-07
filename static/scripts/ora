@@ -295,11 +295,11 @@ if [ "$1" = "logon" ]; then
    fi
 exit 0
 fi
-###########################################
+#####################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
   $ORACLE_HOME/bin/sqlplus / as sysdba
 fi
-###########################################
+#####################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -5911,15 +5911,15 @@ echo "======================"
     set pagesize 30 linesize 200
     col plan_name format a30
     col signature format 99999999999999999999
-    col created format a17
+    col created format a15
     col sql_handle format a20
-    col description format a40 trunc
+    col description format a30 trunc
     col creator format a10 trunc
-    col sql_text format a50 trunc
-    col ORIGIN format a12 trunc
+    col sql_text format a30 trunc
+    col ORIGIN format a22 trunc
     select * from
     (select plan_NAME,enabled, accepted, fixed--,signature,sql_handle
-           ,to_char(CREATED,'yyyymmdd hh24:mi:ss') as created
+           ,to_char(CREATED,'yymmdd hh24:mi:ss') as created
             ,creator,origin, DESCRIPTION,SQL_TEXT
            from dba_sql_plan_baselines order by created desc
      ) where rownum<=20;
