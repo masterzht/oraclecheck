@@ -5919,9 +5919,9 @@ echo "======================"
     col ORIGIN format a22 trunc
     select * from
     (select plan_NAME,enabled, accepted, fixed--,signature,sql_handle
-           ,to_char(CREATED,'yymmdd hh24:mi:ss') as created
-            ,creator,origin, DESCRIPTION,SQL_TEXT
-           from dba_sql_plan_baselines order by created desc
+    ,to_char(CREATED,'yymmdd hh24:mi:ss') as created
+    ,creator,origin, DESCRIPTION,SQL_TEXT
+    from dba_sql_plan_baselines order by created desc
      ) where rownum<=20;
 !
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> TO Find the best plan hash value of modified_sql_id"
