@@ -3,15 +3,11 @@ set verify off
 set timing off
 set linesize 500
 set pages 0
-
-undefine table_name
 undefine owner
-var table_name varchar2(100);
 var owner varchar2(100);
 
 begin
   :owner :=upper('&owner');
-  :table_name := upper('&table_name');
 end;
 /
 
@@ -28,7 +24,7 @@ declare
        decode(to_char(s.last_verified,'yyyymmdd hh24:mi:ss'),null,'None',to_char(s.last_verified,'yyyymmdd hh24:mi:ss') ) as last_verified,
        s.SQL_TEXT
   FROM DBA_SQL_PLAN_BASELINES s
-  WHERE s.PARSING_SCHEMA_NAME = :owner order by s.SQL_HANDLE,s.OPTIMIZER_COST desc;
+  WHERE s.PARSING_SCHEMA_NAME = :owner order by s.created desc,s.OPTIMIZER_COST desc;
     v_spm c_spm%rowtype;
 begin
 

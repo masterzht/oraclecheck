@@ -5918,10 +5918,19 @@ echo "======================"
     col sql_text format a30 trunc
     col ORIGIN format a22 trunc
     select * from
-    (select plan_NAME,enabled, accepted, fixed--,signature,sql_handle
-    ,to_char(CREATED,'yymmdd hh24:mi:ss') as created
-    ,creator,origin, DESCRIPTION,SQL_TEXT
-    from dba_sql_plan_baselines order by created desc
+    ( SELECT
+       s.SQL_HANDLE,
+       s.PLAN_NAME,
+       s.ENABLED,
+       s.ACCEPTED,
+       s.FIXED,
+       s.OPTIMIZER_COST,
+       to_char(s.CREATED,'yymmdd hh24:mi:ss') as created,
+       decode(to_char(s.last_verified,'yymmdd hh24:mi:ss'),null,'None',to_char(s.last_verified,'yymmdd hh24:mi:ss') ) as last_verified,
+       s.origin,
+       -- s.DESCRIPTION,
+       s.SQL_TEXT
+  FROM DBA_SQL_PLAN_BASELINES s order by s.created desc
      ) where rownum<=20;
 !
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> TO Find the best plan hash value of modified_sql_id"
