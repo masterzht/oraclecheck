@@ -5913,10 +5913,13 @@ echo "======================"
     col signature format 99999999999999999999
     col created format a15
     col sql_handle format a20
+    col ENABLED for a7
+    col ACCEPTED for a8
+    col FIXED for a5
     col description format a30 trunc
     col creator format a10 trunc
     col sql_text format a30 trunc
-    col ORIGIN format a22 trunc
+    col ORIGIN format a23 trunc
     select * from
     ( SELECT
        s.SQL_HANDLE,
