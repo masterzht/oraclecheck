@@ -4945,7 +4945,12 @@ if [ "$1" = "sqlt" ]; then
 # cd sqlt/install
 # sqlplus / as sysdba
 SQL> START sqcreate.sql
-
+2、Execute
+# cd sqlt/run
+# sqlplus apps
+SQL> START sqltxtract.sql [SQL_ID]|[HASH_VALUE] [sqltxplain_password]
+SQL> START sqltxtract.sql 0w6uydn50g8cx sqltxplain_password
+SQL> START sqltxtract.sql 2524255098 sqltxplain_password
 
   """
 exit 1
