@@ -4940,7 +4940,8 @@ if [ "$1" = "sqlt" ]; then
   echo "All About the SQLT Diagnostic Tool (Doc ID 215187.1)"
   echo "SQLT Usage Instructions (Doc ID 1614107.1)	"
   echo "======================"
-  echo"""
+  echo """
+1、Execute installation script sqlt/install/sqcreate.sql connected as SYS.
 # cd sqlt/install
 # sqlplus / as sysdba
 SQL> START sqcreate.sql
