@@ -9684,19 +9684,31 @@ end;
 /
 
 DECLARE
-  l_sql_tune_task_id  VARCHAR2(100);
+  v_sql_tune_task_name  VARCHAR2(100);
 BEGIN
-
+dbms_output.put_line('');
 dbms_output.put_line('Tuning task created for specific a statement from the AWR.');
 dbms_output.put_line('======================');
-  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
                           begin_snap  => :bid,
                           end_snap    => :eid,
                           sql_id      => :sql_id,
                           scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          task_name   => :sql_id || '_tuning_task',
-                          description => 'Tuning task for statement || :sql_id || in AWR.');
-  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
+                          description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
+  DBMS_OUTPUT.put_line('sql_tune_task_name: ' || v_sql_tune_task_name);
+
+dbms_output.put_line('');
+dbms_output.put_line('Running the tuning task');
+dbms_output.put_line('======================');
+exec DBMS_SQLTUNE.execute_tuning_task(task_name => v_sql_tune_task_name);
+
+SELECT task_name, status FROM dba_advisor_log WHERE task_name like v_sql_tune_task_name;
+
+SET LONG 10000;
+SET PAGESIZE 1000
+SET LINESIZE 200
+SELECT DBMS_SQLTUNE.report_tuning_task(v_sql_tune_task_name) AS recommendations FROM dual;
 
 END;
 /
