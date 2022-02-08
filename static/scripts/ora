@@ -5896,14 +5896,17 @@ echo "======================"
 
     connect $DBUSER
     set pagesize 30 linesize 200
-    col name format a30
-    col created format a20
-    col description format a50
+    col SQL_PROFILE_NAME format a27
+    col created format a15
+    col description format a61
+    col FORCE_MATCHING for a14
     col sql_text format a50 trunc
     pro
+    pro exec dbms_sqltune.drop_sql_profile('SQL_PROFILE_NAME');;
     pro dba_sql_profiles Information
     pro ======================
-    select * from (select NAME,to_char(CREATED,'yyyy-mm-dd hh24:mi:ss') as created ,STATUS,FORCE_MATCHING, DESCRIPTION,SQL_TEXT
+    select * from (select NAME as SQL_PROFILE_NAME,
+    to_char(CREATED,'yymmdd hh24:mi:ss') as created ,STATUS,FORCE_MATCHING, DESCRIPTION,SQL_TEXT
            from dba_sql_profiles order by created desc) where rownum<=20;
     pro
     pro sql_plan_baseline Information
