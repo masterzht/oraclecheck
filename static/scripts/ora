@@ -9610,6 +9610,105 @@ echo "generate awrsqrpt report for snapid $bid - $eid sql_id $sql_id"
 fi
 
 #########################
+if [ "$1" = "sqltune" ]; then
+
+   if [ "$2" = "" -o "$3" = "" ]; then
+     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+     connect $DBUSER
+    set linesize 150 pagesize 30
+    col begin_interval_time format a20
+    col end_interval_time format a20
+    col startup_time format a20
+
+    break on startup_time
+    select  instance_number,snap_id-1 as begin_snapid,snap_id as end_snapid
+            ,to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss') as begin_interval_time
+            ,to_char(end_interval_time,'mm-dd hh24:mi:ss') as end_interval_time
+            ,to_char(startup_time,'yyyy-mm-dd hh24:mi:ss') as startup_time
+            ,round((cast(end_interval_time as date)-cast(begin_interval_time as date))*24*60) as interval_min
+     from dba_hist_snapshot
+     where end_interval_time>sysdate-7
+     order by instance_number,snap_id;
+     $ECHO
+!
+   defbid=`echo "select trim(12345||max(snap_id)-1) as bid from dba_hist_snapshot;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-15`
+   let defeid=defbid+1
+   read -p "Please input begin snap_id[$defbid]:" bid
+    if [ -z "${bid}" ];then
+         bid=$defbid
+    fi
+   read -p "Please input end   snap_id[$defeid]:" eid
+    if [ -z "${eid}" ];then
+         eid=$defeid
+    fi
+   read -p "Please input        sql_id$defsql_id: " sql_id
+    if [ -z "${sql_id}" ];then
+         sql_id=$defsql_id
+    fi
+
+   if [ ${bid} -ge ${eid} ];then
+      echo begin_snap_id:$bid end_snap_id:$eid  input error!
+      exit 1
+   fi
+   else
+    bid=$2
+    eid=$3
+  fi
+
+  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+
+    connect $DBUSER
+
+SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
+SET TERMout off ECHO OFF feedback off
+set trims on
+SPOOL create_sqltune_task.log
+
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    set linesize 500
+    undefine bid
+    undefine eid
+    undefine sql_id
+    var bid varchar2(100);
+    var eid varchar2(100);
+    var sql_id varchar2(100);
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+begin
+    :bid :='$bid';
+    :eid :='$eid';
+    :sql_id := '$sql_id';
+end;
+/
+
+DECLARE
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+
+dbms_output.put_line('Tuning task created for specific a statement from the AWR.');
+dbms_output.put_line('======================');
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          begin_snap  => :bid,
+                          end_snap    => :eid,
+                          sql_id      => :sql_id,
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          task_name   => :sql_id || '_tuning_task',
+                          description => 'Tuning task for statement || :sql_id || in AWR.');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+
+END;
+/
+
+    $ECHO
+    spool off
+!
+echo "create sql tuning task for snapid $bid - $eid sql_id $sql_id"
+  exit 0
+fi
+
+#########################
 if [ "$1" = "highparse" ]; then
 
    if [ "$2" = "" ]; then
