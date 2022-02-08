@@ -1,0 +1,2 @@
+REM Open CBO trace. Just execute "@10053.sql" from sqlplus.
+ALTER SESSION SET EVENTS '10053 TRACE NAME CONTEXT FOREVER, LEVEL 1';

@@ -1,0 +1,726 @@
+
+<!-- saved from url=(0098) -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>sqlt_instructions</title>
+
+<style type="text/css">
+body {font:10pt Arial, Helvetica, Verdana, Geneva, sans-serif; color:Black; background:White;}
+a {font-weight:bold; font-size:10pt; color:#663300;}
+a.h1 {font-weight:bold; font-size:16pt; color:#663300;}
+pre {font:8pt Monaco, "Courier New", Courier, monospace; margin:1em 8em 1.5em 4em; padding:1em 0 1em 4em; border:1px solid #336699; background-color:#fcfcf0; overflow:auto;}
+code {font:10pt Monaco, "Courier New", Courier, monospace; font-weight:bold;}
+h1 {color:#336699; font-weight:bold; font-size:16pt;}
+h2 {color:#336699; font-weight:bold; font-size:14pt;}
+h3 {color:#336699; font-weight:bold; font-size:12pt;}
+h4 {color:#336699; font-weight:bold; font-size:10pt;}
+table {font-size:8pt; color:Black; background:White;}
+th {font-weight:bold; background:#cccc99; color:#336699; vertical-align:bottom; padding:0.25em 0.25em 0.25em 0.25em;}
+td {text-align:center; background:#fcfcf0; vertical-align:top; padding:0.25em 0.25em 0.25em 0.25em;}
+td.lw {text-align:left; background:white;}
+li {color:#336699; font-weight:bold; font-size:10pt; padding:0.1em 0 0 0;}
+</style>
+
+</head>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<body>
+<h1><a class="h1" target="MOS" href="https://support.oracle.com/CSP/main/article?cmd=show&type=NOT&id=215187.1">215187.1</a> SQLTXPLAIN (SQLT) 10g_11g_12c_18c_19c_5th_June_2020 <br>
+Tool that helps to diagnose SQL statements performing poorly</h1>
+
+<table border="0">
+<tbody><tr>
+<td class="lw">
+<ul>
+<li><a href="#overview"><code>SQLT</code> Overview</a></li>
+<li><a href="#security">Security Model</a></li>
+<li><a href="#install">Installing <code>SQLT</code></a></li>
+<li><a href="#uninstall">Uninstalling <code>SQLT</code></a></li>
+<li><a href="#upgrade">Upgrading <code>SQLT</code></a></li>
+<li><a href="#faq">FAQ</a></li>
+<li><a href="doc/sqlt_changes.html" target="sqlt">What is NEW!</a></li>
+</ul>
+</td>
+<td> </td>
+<td class="lw">
+<a href="#methods1">Main Methods</a>
+<ul>
+<li><a href="#xtract">XTRACT</a></li>
+<li><a href="#xecute">XECUTE</a></li>
+<li><a href="#xtrxec">XTRXEC</a></li>
+<li><a href="#xplain">XPLAIN</a></li>
+<li><a href="#xtrsby">XTRSBY</a></li>
+<li><a href="#xprext">XPREXT</a></li>
+<li><a href="#xprexc">XPREXC</a></li>
+</ul>
+</td>
+<td> </td>
+<td class="lw">
+<a href="#methods2">Special Methods</a>
+<ul>
+<li><a href="#compare">COMPARE</a></li>
+<li><a href="#trcanlzr">TRCANLZR</a></li>
+<li><a href="#trcaxtr">TRCAXTR</a></li>
+<li><a href="#trcasplit">TRCASPLIT</a></li>
+<li><a href="#xtrset">XTRSET</a></li>
+</ul>
+</td>
+<td> </td>
+<td class="lw">
+<a href="#methods3">Advanced Methods and Modules</a>
+<ul>
+<li><a href="#profile">PROFILE</a></li>
+<li><a href="#xgram">XGRAM</a></li>
+<li><a href="#xplore">XPLORE</a></li>
+<li><a href="#xhume">XHUME</a></li>
+</ul>
+</td>
+</tr>
+</tbody></table>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="overview"></a>
+<hr size="3">
+<h3><code>SQLT</code> Overview</h3>
+
+<p><code>SQLTXPLAIN</code>, also known as <code>SQLT</code>, is a tool provided by Oracle Server Technologies Center of Expertise - ST CoE. <code>SQLT</code> <a href="#methods1">main methods</a> input one SQL statement and output a set of diagnostics files. These files are commonly used to diagnose SQL statements performing poorly or those which generate wrong results.</p>
+
+<p>Once <a href="#install">installed</a>, you can use <code>SQLT</code> to analyze a SQL statement by passing its text within a script (including bind variables), or by providing its <code>SQL_ID</code>.The SQL_ID can be found in AWR and ASH reports and the HASH_VALUE in SQL_TRACE output (above the SQL text and identified by the "hv=" token). You can also find these columns in the V$SQL view. Please refer to the following document for example selects: <a class="h3" target="MOS" href="https://support.oracle.com/CSP/main/article?cmd=show&type=NOT&id=1627387.1">Document 1627387.1</a> How to Determine the SQL_ID for a SQL Statement</p>
+
+<p><code>SQLT</code> <a href="#methods1">main methods</a> connect to the database and collect execution plans, Cost-based Optimizer CBO statistics, schema objects metadata, performance statistics, configuration parameters, and other elements that influence the performance of the one SQL being analyzed.</p>
+
+<p><code>SQLT</code> may use the Oracle Diagnostic and/or the Oracle Tuning Packs if your site has a license for them. These two provide enhanced functionality to the <code>SQLT</code> tool. During <code>SQLT</code> installation you can specify if one of these two packages is licensed by your site. If none, <code>SQLT</code> still provides some basic information that can be used for initial SQL  diagnostics.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="security"></a>
+<hr size="3">
+<h3>Security Model</h3>
+
+<p>During the <a href="#install">installation</a> of this <code>SQLT</code> tool, 2 users and one role are created. These users and role have fixed names.</p>
+
+<p>The <code>SQLT</code> repository is owned by user <code>SQLTXPLAIN</code>. <code>SQLT</code> users need to provide the <code>SQLTXPLAIN</code> password everytime they use any of the <a href="#methods1">main methods</a>. User <code>SQLTXPLAIN</code> is granted the following system privileges:</p>
+
+<ul>
+<li>CREATE SESSION</li>
+<li>CREATE TABLE</li>
+</ul>
+
+<p>The <code>SQLT</code> set of PL/SQL packages and Views is owned by user <code>SQLTXADMIN</code>. This <code>SQLTXADMIN</code> user is locked and identified by a random password. <code>SQLTXADMIN</code> is granted the following system privileges:</p>
+
+<ul>
+<li>ADMINISTER SQL MANAGEMENT OBJECT</li>
+<li>ADMINISTER SQL TUNING SET</li>
+<li>ADVISOR</li>
+<li>ALTER SESSION</li>
+<li>ANALYZE ANY</li>
+<li>SELECT ANY DICTIONARY</li>
+<li>SELECT_CATALOG_ROLE</li>
+</ul>
+
+<p>All <code>SQLT</code> users must be granted the <code>SQLT_USER_ROLE</code> before they can use any of the <a href="#methods1">main methods</a>. This <code>SQLT_USER_ROLE</code> role is granted the following system privileges:</p>
+
+<ul>
+<li>ADVISOR</li>
+<li>SELECT_CATALOG_ROLE</li>
+</ul>
+<!- Bug 22759140 additional instruction to avoid using SYS with collection methods.>
+<b>it is NOT recommended</b> to use SYS or other DBA accounts to run the <a href="#methods1">main methods</a> as collections may fail.<br>
+The best user to grant the <code>SQLT_USER_ROLE</code> and run the <a href="#methods1">main methods</a> is the owner of the application.<br>
+<br>
+If it becomes imperative to use SYS or another DBA account then, in 12c it is necessary to do additional grants manually due to a change in the security model for PL/SQL.<br>
+<br>
+To address this change <code>SQLTXADMIN</code> needs to be granted <code>INHERIT PRIVILEGES</code> on SYS or the DBA account.<br>
+<code>GRANT INHERIT PRIVILEGES ON USER SYS TO SQLTXADMIN</code><br>
+You can find more details in Oracle® Database PL/SQL Language Reference 12c Release 1 (12.1) - Invoker's Rights and Definer's Rights (AUTHID Property)
+and in Oracle® Database Security Guide 12c Release 1 (12.1) - Managing Security for Definer's Rights and Invoker's Rights</p>
+
+Again, <b>it is NOT recommended</b> to use SYS or DBA accounts to run the <a href="#methods1">main methods</a>.
+
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="install"></a>
+<hr size="3">
+<h3>Installing <code>SQLT</code></h3>
+
+<p><code>SQLT</code> installs under its own schemas <code>SQLTXPLAIN</code> and <code>SQLTXADMIN</code>. It does not install any objects into the application schema(s). You can install this version of <code>SQLT</code> in Oracle databases 10.2, 11.1, 11.2 and higher, on UNIX, Linux or Windows platforms.</p>
+
+<p>Installation steps:</p>
+
+<ol>
+
+<li><a href="#uninstall">Uninstall</a> a prior version (optional).</li>
+
+<p>This optional step removes all obsolete <code>SQLTXPLAIN</code>/<code>SQLTXADMIN</code> schema objects and prepares the environment for a fresh install. Skip this step if you want to preserve the existing content of the <code>SQLT</code> repository (recommended).</p>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqdrop.sql
+</pre>
+
+<li>Execute installation script <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcreate.sql" target="sqlt">sqcreate.sql</a></code> connected as <code>SYS</code>.</li>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqcreate.sql
+</pre>
+
+</ol>
+
+<p>During the installation you will be asked to enter values for these parameters:</p>
+
+<ol>
+
+<li>Optional Connect Identifier (mandatory when installing in a Pluggable Database)</li>
+
+<p>In some restricted-access systems you may need to specify a connect identifier like <code>@PROD</code>. If a connect identifier is not needed, enter nothing and just hit the "Enter" key. Entering nothing is the most common setup.<br>The Connect Identifier is a mandatory parameter when installing SQLT in a Pluggable Database.</p>
+
+<li><code>SQLTXPLAIN</code> password.</li>
+
+<p>Case sensitive in most systems.</p>
+
+<li><code>SQLTXPLAIN</code> Default Tablespace.</li>
+
+<p>Select from a list of available permanent tablespaces which one should be used by <code>SQLTXPLAIN</code> for the <code>SQLT</code> repository. It must have more than 50MB of free space.</p>
+
+<li><code>SQLTXPLAIN</code> Temporary Tablespace.</li>
+
+<p>Select from a list of available temporary tablespaces which one should be used by <code>SQLTXPLAIN</code> for volatile operations and objects.</p>
+
+<li>Optional Application User.</li>
+
+<p>This is the user that issued the SQL statement to be analyzed. For example, if this were an EBS system specify <code>APPS</code>, on Siebel you would specify <code>SIEBEL</code> and on People Soft <code>SYSADM</code>. You won't be asked to enter the password for this user. You can add additional <code>SQLT</code> users after the tool is installed, by granting them role <code>SQLT_USER_ROLE</code>.</p>
+
+<li>Licensed Oracle Pack. (T, D or N)</li>
+
+<p>You can specify <code>T</code> for Oracle Tuning, <code>D</code> for Oracle Diagnostic or <code>N</code> for none. If <code>T</code> or <code>D</code> is selected, <code>SQLT</code> may include licensed content within the diagnostics files it produces. Default is <code>T</code>. If <code>N</code> is selected, <code>SQLT</code> installs with limited functionality.</p>
+
+</ol>
+
+<p>If a silent installation is desired, there are three options to pass all 6 installation parameters:</p>
+
+<ol>
+
+<li>In a file.</li>
+
+<p>Executing first a script with pre-defined values, similar to sample script <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqdefparams.sql" target="sqlt">sqdefparams.sql</a></code>. Then use <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcsilent.sql" target="sqlt">sqcsilent.sql</a></code> instead of <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcreate.sql" target="sqlt">sqcreate.sql</a></code>.</p>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqdefparams.sql
+SQL&gt; START sqcsilent.sql
+</pre>
+
+<li>In-line.</li>
+
+<p>Executing <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcsilent2.sql" target="sqlt">sqcsilent2.sql</a></code> instead of <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcreate.sql" target="sqlt">sqcreate.sql</a></code>. The former inputs the same 6 installation parameters but in-line.</p>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqcsilent2.sql '' sqltxplain USERS TEMP '' T
+</pre>
+
+<li>Silent Installation on a PDB</li>
+
+<p>First go to the "install" directory of SQLT</p>
+<pre>cd "<installation-root-for-SQLT>"/install
+sqlplus / as sysdba
+SQL> alter session set container=PDB-NAME;
+SQL> @sqcsilet2 @NET_SERVICE_NAME_FOR_PDB PASSWORD DEFAULT_TABLESPACE_NAME TEMPORARY_TABLESPACE_NAME MAIN_APPLICATION_SCHEMA LICENSE_PACK_SETTING
+</pre>
+
+<li>Internal installation at Oracle.</li>
+
+<p>Executing <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcinternal.sql" target="sqlt">sqcinternal.sql</a></code> instead of <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcreate.sql" target="sqlt">sqcreate.sql</a></code>. The former executes <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqdefparams.sql" target="sqlt">sqdefparams.sql</a></code> followed by <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqcsilent.sql" target="sqlt">sqcsilent.sql</a></code>.</p>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqcinternal.sql
+</pre>
+
+</ol>
+
+<p>If you need further help with install issues, you can get help in the following community thread: <a href="https://community.oracle.com/thread/3161473">SQLTXPLAIN: SQLT Installation Issues</a></p>
+<p>If you have an installation error you can refer to Stelios Charalambides - stelios.charalambides@oracle.com (primary contact)</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="uninstall"></a>
+<hr size="3">
+<h3>Uninstalling <code>SQLT</code></h3>
+
+<p>Uninstalling <code>SQLT</code> removes the <code>SQLT</code> repository and all <code>SQLTXPLAIN</code>/<code>SQLTXADMIN</code> schema objects. <code>SQLTXPLAIN</code> and <code>SQLTXADMIN</code> users also gets dropped. To uninstall <code>SQLT</code> simply execute <code>sqlt/install/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/install/sqdrop.sql" target="sqlt">sqdrop.sql</a></code> connected as <code>SYS</code>.</p>
+
+<pre># cd sqlt/install
+# sqlplus / as sysdba
+SQL&gt; START sqdrop.sql
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="upgrade"></a>
+<hr size="3">
+<h3>Upgrading <code>SQLT</code></h3>
+
+<p>If you have a prior version of <code>SQLT</code> already installed in your system, you can upgrade <code>SQLT</code> to its latest version while partially preserving most objects of your existing <code>SQLT</code> repository. The new migrated <code>SQLT</code> repository can then be used to restore CBO statistics or to perform a <a href="#compare">COMPARE</a> between old and new executions of <code>SQLT</code>.</p>
+
+<p>To upgrade <code>SQLT</code>, simply do an <a href="#install">installation</a> without performing the optional <a href="#uninstall">uninstall</a> step.</p>
+
+<p>If the upgrade fails, then it is possible the prior <code>SQLT</code> version was too old to be upgraded. In such case please proceed to <a href="#uninstall">uninstall</a> <code>SQLT</code> first, followed by a clean <a href="#install">installation</a>.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="faq"></a>
+<hr size="3">
+<h3>Frequently Asked Questions</h3>
+
+<p>Refer to MOS Doc ID:<a target="MOS" href="https://support.oracle.com/CSP/main/article?cmd=show&type=NOT&id=1454160.1">1454160.1</a>.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="methods1"></a>
+<hr size="3">
+<h2>Main Methods</h2>
+
+<p>Before attempting using any of the <code>SQLT</code> main methods, be sure <code>SQLT</code> has been <a href="#install">installed</a> and that your <code>SQLT</code> user has been granted the <code>SQLT_USER_ROLE</code>.</p>
+<p>If SQLT has been installed bypassing SQL*Net (meaning that you did not input any value for the Connect Identifier during the installation), then prior to running any of the SQLT main methods from a remote client, you will need to manually set the connect_identifier parameter.
+Ie. if you connected using sqlplus scott/tiger@myprod then you will need to execute:  EXEC sqltxadmin.sqlt$a.set_sess_param('connect_identifier', '@myprod'); </p>
+
+<p><code>SQLT</code> provides 7 main methods that generate diagnostics details for one SQL statement: <a href="#xtract">XTRACT</a>, <a href="#xecute">XECUTE</a>, <a href="#xtrxec">XTRXEC</a>, <a href="#xtrsby">XTRSBY</a>, <a href="#xplain">XPLAIN</a>, <a href="#xprext">XPREXT</a> and <a href="#xprexc">XPREXC</a>. While <a href="#xtract">XTRACT</a>, <a href="#xecute">XECUTE</a>, <a href="#xtrxec">XTRXEC</a>, <a href="#xtrsby">XTRSBY</a>, <a href="#xprext">XPREXT</a> and <a href="#xprexc">XPREXC</a> handle bind variables and understand about bind peeking, <a href="#xplain">XPLAIN</a> does not. This is because <a href="#xplain">XPLAIN</a> is based on the <code>EXPLAIN PLAN FOR</code> command which is blind to bind peeking. For this reason avoid using <a href="#xplain">XPLAIN</a> if possible.</p>
+
+<p>Besides the bind peeking limitation on <a href="#xplain">XPLAIN</a> all 7 main methods provide enough diagnostics details to make an initial assessment of a SQL performing poorly or generating wrong results. If the SQL still resides in memory or in the Automatic Workload Repository (<code>AWR</code>) use then <a href="#xtract">XTRACT</a> or <a href="#xtrxec">XTRXEC</a>, else use <a href="#xecute">XECUTE</a>. For Data Guard or standby read-only databases use <a href="#xtrsby">XTRSBY</a>. Use <a href="#xplain">XPLAIN</a> only if the other methods are not feasible. <a href="#xprext">XPREXT</a> and <a href="#xprexc">XPREXC</a> are similar to <a href="#xtract">XTRACT</a> and <a href="#xecute">XECUTE</a> but they disable some <code>SQLT</code> features in order to improve <code>SQLT</code> performance.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xtract"></a>
+<hr size="3">
+<h3>XTRACT Method</h3>
+
+<p>Use this method if you know the <code>SQL_ID</code> or the <code>HASH_VALUE</code> of the SQL to be analyzed, else use <a href="#xecute">XECUTE</a>. The <code>SQL_ID</code> can be found on an <code>AWR</code> report, and the <code>HASH_VALUE</code> on any SQL Trace (above the SQL text and identified by the "hv=" token).</p>
+
+<p>If the SQL is still in memory, or it has been captured by <code>AWR</code>, then XPREXT finds it and provides a set of diagnostics files, else XPREXT errors out.</p>
+
+<p>Important performance statistics, like actual number of rows per execution plan operation, will be available if the SQL was parsed while parameter <code>STATISTICS_LEVEL</code> was set to <code>ALL</code> when the SQL was hard-parsed. You can also produce same valuable performance statistics by including the following CBO hint in your SQL: <code>/*+ GATHER_PLAN_STATISTICS */</code>. On 11g you may want your SQL to contain the following CBO Hints for enhanced diagnostics: <code>/*+ GATHER_PLAN_STATISTICS MONITOR */</code>. Please remember that adding those hints will change the SQL ID and it will prevent SQLT from being able to extract valuable historical information. If it's acceptable to run the SQL then method <a href="#xprexc">XPREXC</a> should be used instead.</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XPREXT.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use this XPREXT method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxtract.sql" target="sqlt">sqltxtract.sql</a></code> script passing the <code>SQL_ID</code> or <code>HASH_VALUE</code>.</p>
+
+<pre># cd sqlt/run
+# sqlplus apps
+SQL&gt; START sqltxtract.sql [SQL_ID]|[HASH_VALUE] [sqltxplain_password]
+SQL&gt; START sqltxtract.sql 0w6uydn50g8cx sqltxplain_password
+SQL&gt; START sqltxtract.sql 2524255098 sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xecute"></a>
+<hr size="3">
+<h3>XECUTE Method</h3>
+
+<p>This method provides more detail than <a href="#xtract">XTRACT</a>. As the name XECUTE implies, it executes the SQL being analyzed, then it produces a set of diagnostics files. Its major drawback is that if the SQL being analyzed takes long to execute, this method will also take long.</p>
+
+<p>As a rule of thumb, use this method only if the SQL takes less than 1hr to execute, else use <a href="#xtract">XTRACT</a>.</p>
+
+<p>Before you can use this XECUTE method, you have to create a text file that contains your SQL text. If the SQL includes bind variables, your file must contain the bind variable declaration and assignment. Use <code>sqlt/input/sample/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/input/sample/script1.sql" target="sqlt">script1.sql</a></code> as an example. Your SQL should contain the token <code>/* ^^unique_id */</code> which should be spelled out exactly as it shows here. In other words: please do not change it.</p>
+
+<p>If your SQL requires binds with data types not allowed by SQL*Plus, or if it uses collections, you may be restricted to embed your SQL into an anonymous PL/SQL block. In such case use <code>sqlt/input/sample/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/input/sample/plsql1.sql" target="sqlt">plsql1.sql</a></code> as an input example to this method.</p>
+
+<p>For statements that modify data, i.e. INSERT/UPDATE/DELETE, a savepoint is created prior to statement execution and the transaction is rolled back to the savepoint at the conclusion of the session.  For further information regarding SAVEPOINT please consult the Oracle Concepts reference manual.</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XECUTE.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use the XECUTE method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxecute.sql" target="sqlt">sqltxecute.sql</a></code> script passing the name of the text file that contains your SQL text and its bind variables. You may want to place this file into the <code>sqlt/input</code> directory and run XECUTE while standing on the sqlt main directory, as shown below.</p>
+
+<pre># cd sqlt
+# sqlplus apps
+SQL&gt; START [path]sqltxecute.sql [path]scriptname [sqltxplain_password]
+SQL&gt; START run/sqltxecute.sql input/sample/script1.sql sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xtrxec"></a>
+<hr size="3">
+<h3>XTRXEC Method</h3>
+
+<p>This method combines the features of <a href="#xtract">XTRACT</a> and <a href="#xecute">XECUTE</a>. Actually, XTRXEC executes both methods serially. The <a href="#xtract">XTRACT</a> phase generates a script that contains the extracted SQL together with the binds declaration and assignment for an expensive plan found for the requested SQL statement. XTRXEC then executes the <a href="#xecute">XECUTE</a> phase using the script created by the first.</p>
+
+<p>The selection of the values of the bind variables used by <a href="#xtract">XTRACT</a> to create the script is based on the peeked values at the moment the most expensive plans in memory were generated. Expensive plans are selected according to their average elapsed time.</p>
+
+<p>If XTRXEC errors out having executed only the 1st phase (<a href="#xtract">XTRACT</a>), you may need to review the script used during the 2nd phase (<a href="#xecute">XECUTE</a>) and adjust the bind variables accordingly. This is specially true when uncommon data types are used.</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XTRXEC.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use this XTRXEC method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxtrxec.sql" target="sqlt">sqltxtrxec.sql</a></code> script passing the <code>SQL_ID</code> or <code>HASH_VALUE</code>.</p>
+
+<pre># cd sqlt/run
+# sqlplus apps
+SQL&gt; START sqltxtrxec.sql [SQL_ID]|[HASH_VALUE] [sqltxplain_password]
+SQL&gt; START sqltxtrxec.sql 0w6uydn50g8cx sqltxplain_password
+SQL&gt; START sqltxtrxec.sql 2524255098 sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xtrsby"></a>
+<hr size="3">
+<h3>XTRSBY Method</h3>
+
+<p>Use this method if you need to analyze a SQL executed on a Data Guard or stand-by read-only database. You need to know the <code>SQL_ID</code> or the <code>HASH_VALUE</code> of the SQL to be analyzed.</p>
+
+<p>Create on Primary database a link to read-only database connecting as any user that has access to the data dictionary. A DBA account would be fine:<br>
+<br>
+<code>CREATE PUBLIC DATABASE LINK V1123
+CONNECT TO mydba IDENTIFIED by mydba_password<br>
+USING '(DESCRIPTION = (ADDRESS=(PROTOCOL=TCP)<br>
+(HOST=coesrv14.us.oracle.com)(PORT=1521))(CONNECT_DATA=(SID = V1123)))';</code></p>
+
+<p>If the remote account cannot be a DBA account you will have to add additional grants as per document "Required Grants for the DB Link to Standby for SQLT XTRSBY Method (Doc ID 2450388.1)" (Internal document)
+<p>If the SQL is still in memory in the read-only database, then XTRSBY finds it and provides a set of diagnostics files, else XTRSBY errors out.</p>
+
+<p>Important performance statistics, like actual number of rows per execution plan operation, will be available if the SQL was parsed while parameter <code>STATISTICS_LEVEL</code> was set to <code>ALL</code> when the SQL was hard-parsed in the read-only database. You can also produce same valuable performance statistics by including the following CBO hint in your SQL: <code>/*+ GATHER_PLAN_STATISTICS */</code>. On 11g you may want your SQL to contain the following CBO Hints for enhanced diagnostics: <code>/*+ GATHER_PLAN_STATISTICS MONITOR */</code></p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XTRSBY.</p>
+
+<p>XTRSBY takes 3 parameters: the SQL id, the DB_LINK id, and the <code>SQLTXPLAIN</code> password.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use this XTRSBY method, be sure <code>SQLT</code> has been <a href="#install">installed</a> on the Primary first, and replicated into the read-only database. Then connect into SQL*Plus in Primary and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxtrsby.sql" target="sqlt">sqltxtrsby.sql</a></code> script passing the <code>SQL_ID</code> or <code>HASH_VALUE</code> followed by the <code>DB_LINK</code>.</p>
+
+<pre># cd sqlt/run
+# sqlplus apps
+SQL&gt; START sqltxtrsby.sql [SQL_ID]|[HASH_VALUE] [sqltxplain_password] [DB_LINK]
+SQL&gt; START sqltxtrsby.sql 0w6uydn50g8cx sqltxplain_password V1123
+SQL&gt; START sqltxtrsby.sql 2524255098 sqltxplain_password v1123
+</pre>
+
+<p>In addition to XTRSBY you may want to execute <code>sqlt/utl/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/sqlhc.sql" target="sqlt">sqlhc.sql</a></code> or <code>sqlt/utl/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/sqlhcxec.sql" target="sqlt">sqlhcxec.sql</a></code> directly from the read-only database. These two read-only scripts do not install anything on the database nor they execute DML commands. They provide additional information that is not available in XTRSBY.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xplain"></a>
+<hr size="3">
+<h3>XPLAIN Method</h3>
+
+<p>This method is based on the <code>EXPLAIN PLAN FOR</code> command, therefore it is blind to bind variables referenced by your SQL statement. Use this method only if <a href="#xtract">XTRACT</a> or <a href="#xecute">XECUTE</a> are not possible.</p>
+
+<p>Before using the XPLAIN method, you have to create a text file that contains your SQL text. If the SQL includes bind variables, you have two options: leave the SQL text "as is", or carefully replace the binds with literals of the same datatype. Use <code>sqlt/input/sample/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/input/sample/sql1.sql" target="sqlt">sql1.sql</a></code> as an example.</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XPLAIN.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use this XPLAIN method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxplain.sql" target="sqlt">sqltxplain.sql</a></code> script passing the name of the text file that contains your SQL text. You may want to place this file into the sqlt/input directory and run XPLAIN while standing on the sqlt main directory, as shown below.</p>
+
+<pre># cd sqlt
+# sqlplus apps
+SQL&gt; START [path]sqltxplain.sql [path]filename [sqltxplain_password]
+SQL&gt; START run/sqltxplain.sql input/sample/sql1.sql sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xprext"></a>
+<hr size="3">
+<h3>XPREXT Method</h3>
+
+<p>Use this method if you have used <a href="#xtract">XTRACT</a> and you need a faster execution of <code>SQLT</code> while disabling some <code>SQLT</code> features. Script <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltcommon11.sql" target="sqlt">sqltcommon11.sql</a></code> shows which features are disabled.</p>
+
+<p>Use this method if you know the <code>SQL_ID</code> or the <code>HASH_VALUE</code> of the SQL to be analyzed, else use <a href="#xprexc">XPREXC</a>. The <code>SQL_ID</code> can be found on an <code>AWR</code> report, and the <code>HASH_VALUE</code> on any SQL Trace (above the SQL text and identified by the "hv=" token).</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XPREXT.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use this XPREXT method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxprext.sql" target="sqlt">sqltxprext.sql</a></code> script passing the <code>SQL_ID</code> or <code>HASH_VALUE</code>.</p>
+
+<pre># cd sqlt/run
+# sqlplus apps
+SQL&gt; START sqltxprext.sql [SQL_ID]|[HASH_VALUE] [sqltxplain_password]
+SQL&gt; START sqltxprext.sql 0w6uydn50g8cx sqltxplain_password
+SQL&gt; START sqltxprext.sql 2524255098 sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xprexc"></a>
+<hr size="3">
+<h3>XPREXC Method</h3>
+
+<p>Use this method if you have used <a href="#xecute">XECUTE</a> and you need a faster execution of <code>SQLT</code> while disabling some <code>SQLT</code> features. Script <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltcommon11.sql" target="sqlt">sqltcommon11.sql</a></code> shows which features are disabled.</p>
+
+<p>As a rule of thumb, use this method only if the SQL takes less than 1hr to execute, else use <a href="#xprext">XPREXT</a>.</p>
+
+<p>Before you can use this XPREXC method, you have to create a text file that contains your SQL text. If the SQL includes bind variables, your file must contain the bind variable declaration and assignment. Use <code>sqlt/input/sample/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/input/sample/script1.sql" target="sqlt">script1.sql</a></code> as an example. Your SQL should contain the token <code>/* ^^unique_id */</code> which should be spelled out exactly as it shows here. In other words: please do not change it.</p>
+
+<p>If your SQL requires binds with data types not allowed by SQL*Plus, or if it uses collections, you may be restricted to embed your SQL into an anonymous PL/SQL block. In such case use <code>sqlt/input/sample/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/input/sample/plsql1.sql" target="sqlt">plsql1.sql</a></code> as an input example to this method.</p>
+
+<p>For statements that modify data, i.e. INSERT/UPDATE/DELETE, a savepoint is created prior to statement execution and the transaction is rolled back to the savepoint at the conclusion of the session.  For further information regarding SAVEPOINT please consult the Oracle Concepts reference manual.</p>
+
+<p>When this method is used, it asks for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository corresponding to this execution of XPREXC.</p>
+
+<p>This method requires the application user executing <code>SQLT</code> to be granted the <code>SQLT_USER_ROLE</code> role.</p>
+
+<p>To use the XPREXC method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first, then connect into SQL*Plus as the application user that executed the SQL to be analyzed and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxprexc.sql" target="sqlt">sqltxprexc.sql</a></code> script passing the name of the text file that contains your SQL text and its bind variables. You may want to place this file into the <code>sqlt/input</code> directory and run XPREXC while standing on the sqlt main directory, as shown below.</p>
+
+<pre># cd sqlt
+# sqlplus apps
+SQL&gt; START [path]sqltxprexc.sql [path]scriptname [sqltxplain_password]
+SQL&gt; START run/sqltxprexc.sql input/sample/script1.sql sqltxplain_password
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="methods2"></a>
+<hr size="3">
+<h2>Special Methods</h2>
+
+<p>Besides the <a href="#methods1">main methods</a> <code>SQLT</code> provides some special methods.</p>
+
+<p>The most popular special method is <a href="#compare">COMPARE</a>. This method takes as input two prior executions of <code>SQLT</code> (any of the <a href="#methods1">main methods</a>) and produces a report with a gap analysis.</p>
+
+<p>The other special methods are: <a href="#trcanlzr">TRCANLZR</a>, <a href="#trcaxtr">TRCAXTR</a>, <a href="#trcasplit">TRCASPLIT</a> and <a href="#xtrset">XTRSET</a>. The first three act on a SQL Trace and the latter on a set of SQL statements.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="compare"></a>
+<hr size="3">
+<h3>COMPARE Method</h3>
+
+<p>Use this COMPARE method when you have two similar systems (SOURCES) and the same SQL statement performs fine in one of them but not in the other. This method helps to pin-point the differences between the two SOURCES in terms of plans, metadata, CBO statistics, initialization parameters and bug fix-control. <code>SQLT</code> has to be <a href="#install">installed</a> first in both, and any of the <a href="#methods1">main methods</a> must have been used on the same SQL in both systems.</p>
+
+<p>The compare can take place on any of the two SOURCES or on a 3rd COMPARE system. The latter should contain the <code>SQLT</code> repositories of the two SOURCES. To import a <code>SQLT</code> repository use the syntax provided in the sqlt_*_readme.html file generated by any of the <a href="#methods1">main methods</a>.</p>
+
+<p>Once the COMPARE system contains the repositories from both SOURCES, execute <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltcompare.sql" target="sqlt">sqltcompare.sql</a></code> connecting as <code>SYS</code> or the application user. A list of <code>STATEMENT_ID</code> is presented, from which you choose which two <code>SQLT</code> stored executions you want to compare. Once you indicate the two <code>STATEMENT_ID</code> you are asked next for particular <code>PLAN_HASH_VALUE</code> from both SOURCES.</p>
+
+<pre># cd sqlt
+# sqlplus sqltxplain
+SQL&gt; START [path]sqltcompare.sql [STATEMENT_ID 1] [STATEMENT_ID 2]
+SQL&gt; START run/sqltcompare.sql 92263 72597
+SQL&gt; START run/sqltcompare.sql
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="trcanlzr"></a>
+<hr size="3">
+<h3>TRCANLZR Method</h3>
+
+<p>This method takes as input a SQL Trace filename and proceeds to analyze this file. The actual trace must be located in the <code>TRCA$INPUT1</code> directory, which defaults to the <code>USER_DUMP_DEST</code> directory during <a href="#install">installation</a>.</p>
+
+<p>The TRCANLZR method also has the capability of analyzing simultaneously several related traces, treating them as a set. This functionality is needed when analyzing parallel execution PX traces. In such case, create a <code>control.txt</code> file with a list of traces (one filename per line and without path specification) and place this <code>control.txt</code> into the <code>TRCA$INPUT1</code> or <code>TRCA$INPUT2</code> directories. These two directories default to <code>USER_DUMP_DEST</code> and <code>BACKGROUND_DUMP_DEST</code> respectively during <a href="#install">installation</a>. TRCANLZR will then read the <code>control.txt</code> file from one of the two input directories, and it will find the set of traces in either one of those two directories.</p>
+
+<p>TRCANLZR is like <code>TKPROF</code> but with extended functionality. When it analyzes a trace or a set of traces, it also includes schema object characteristics like CBO statistics and some other valuable performance metrics.</p>
+
+<p>To use this TRCANLZR method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first. Then, start SQL*Plus connecting as the application user that generated the trace and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltrcanlzr.sql" target="sqlt">sqltrcanlzr.sql</a></code> script passing the name of the trace to be analyzed, or the name of the <code>control.txt</code> file populated with filenames. Do not include any path specification.</p>
+
+<pre># cd sqlt
+# sqlplus [application_user]
+SQL&gt; START [path]sqltrcanlzr.sql [SQL Trace filename|control.txt]
+SQL&gt; START run/sqltrcanlzr.sql V1122_ora_24292.trc
+SQL&gt; START run/sqltrcanlzr.sql control.txt
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="trcaxtr"></a>
+<hr size="3">
+<h3>TRCAXTR Method</h3>
+
+<p>This method does the same than <a href="#trcanlzr">TRCANLZR</a> but when the trace analysis completes, it continues with a <a href="#xtract">XTRACT</a> for the Top SQL found in the trace. Basically it consolidates all the generated reports by <a href="#trcanlzr">TRCANLZR</a> and <a href="#xtract">XTRACT</a> on the Top SQL.</p>
+
+<p>To use this TRCAXTR method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first. Then, navigate to the <code>sqlt/run</code> directory and start SQL*Plus connecting as the application user that generated the trace. From there, execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltrcaxtr.sql" target="sqlt">sqltrcaxtr.sql</a></code> script passing the name of the trace to be analyzed, or the name of the <code>control.txt</code> file populated with filenames. Do not include any path specification.</p>
+
+<pre># cd sqlt/run
+# sqlplus [application_user]
+SQL&gt; START sqltrcaxtr.sql [SQL Trace filename|control.txt]
+SQL&gt; START sqltrcaxtr.sql V1122_ora_24292.trc
+SQL&gt; START sqltrcaxtr.sql control.txt
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="trcasplit"></a>
+<hr size="3">
+<h3>TRCASPLIT Method</h3>
+
+<p>This method takes as input a SQL Trace filename which was created by EVENT 10046 and some other EVENT(s) (usually 10053). Then it proceeds to split this input trace file into two output files. One with the trace lines corresponding to EVENT 10046 and the other with its complement. In other words, the second file contains those trace lines that are not part of the EVENT 10046 grammar. So if the input trace was created using simultaneously EVENT 10046 and EVENT 10053, the resulting output files would be the 10046 trace and the 10053 trace. The actual input trace must be located in the <code>TRCA$INPUT1</code> directory, which defaults to the <code>USER_DUMP_DEST</code> directory during <a href="#install">installation</a>.</p>
+
+<p>To use this TRCASPLIT method, be sure <code>SQLT</code> has been <a href="#install">installed</a> first. Then, start SQL*Plus connecting as any <code>SQLT</code> user and execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltrcasplit.sql" target="sqlt">sqltrcasplit.sql</a></code> script passing the name of the trace to be splitted. Do not include any path specification.</p>
+
+<pre># cd sqlt
+# sqlplus [sqlt_user]
+SQL&gt; START [path]sqltrcasplit.sql [SQL Trace filename]
+SQL&gt; START run/sqltrcasplit.sql V1122_ora_24292.trc
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xtrset"></a>
+<hr size="3">
+<h3>XTRSET Method</h3>
+
+<p>The XTRSET extracts from memory or <code>AWR</code> a list of SQL statements identified by their <code>SQL_ID</code> or <code>HASH_VALUE</code> then it executes the <a href="#xtract">XTRACT</a> on each of the SQL statements. At the end it consolidates all the <code>SQLT</code> files into a single compressed file. This XTRSET is used when benchmarking the same set of SQL statements over a series of tests.</p>
+
+<p>When this method is used, it asks once for the <code>SQLTXPLAIN</code> password, which is needed to export the <code>SQLT</code> repository for each execution of <a href="#xtract">XTRACT</a> on the list of SQL statements.</p>
+
+<p>To use this XTRSET method, <code>SQLT</code> has to be <a href="#install">installed</a> first. Navigate to the <code>sqlt/run</code> directory and start SQL*Plus connecting as the application user that issued all or most of the SQL statements. From there, execute the <code>sqlt/run/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/run/sqltxtrset.sql" target="sqlt">sqltxtrset.sql</a></code> script. When asked, pass the comma-separated list of SQL statements identified by their <code>SQL_ID</code> or <code>HASH_VALUE</code>, and the password for <code>SQLTXPLAIN</code>.</p>
+
+<pre># cd sqlt/run
+# sqlplus [application_user]
+SQL&gt; START sqltxtrset.sql
+List of SQL_IDs or HASH_VALUEs: 2yas208zgt5cv, 6rczmqdtg99mu, 8w8tjgac6tv12
+</pre>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="methods3"></a>
+<hr size="3">
+<h2>Advanced Methods and Modules</h2>
+
+<p><code>SQLT</code> provides some additional functionality beyond the <a href="#methods1">main methods</a> and the <a href="#methods2">special methods</a>. Use these advanced methods and modules only if requested by Oracle Support: <a href="#profile">PROFILE</a>, <a href="#xgarm">XGRAM</a>, <a href="#xplore">XPLORE</a> and <a href="#xhume">XHUME</a>. The latter is for exclusive use of Oracle Support and only in an internal testing environment.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="profile"></a>
+<hr size="3">
+<h3>PROFILE Method</h3>
+
+<p>This PROFILE method allows a quick fix on 10g when a SQL performing poorly happens to have a known better-performing plan. This better plan can be in memory in the same or different system, or in <code>AWR</code> in the same or different system. In other words, if a better plan is available, this method allows "pinning" this plan using a custom SQL Profile. Before you use this method you have to use any of the <a href="#methods1">main methods</a> on the SQL for which you want to extract and pin its plan. On 11g or higher you want to use SQL Plan Management (SPM) instead of this method.</p>
+
+<p>Be aware that PROFILE uses a <code>DBMS_SQLTUNE</code> API, which is part of the SQL Tuning Advisor, therefore licensed through the Oracle Tuning pack. Use this PROFILE method only if your site has a license for the Oracle Tuning pack.</p>
+
+<p>To use this PROFILE method, be sure <code>SQLT</code> has been <a href="#install">installed</a> and used in the SOURCE system, then connect into SQL*Plus as <code>SYS</code> or <code>SQLTXPLAIN</code> and execute the <code>sqlt/utl/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/sqltprofile.sql" target="sqlt">sqltprofile.sql</a></code> script. It will ask for the <code>STATEMENT_ID</code> out of a list of prior <code>SQLT</code> executions. After a <code>STATEMENT_ID</code> is selected, it will ask for a <code>PLAN_HASH_VALUE</code> out of a list of available plans. These plans were captured and stored by <code>SQLT</code> when <a href="#xtract">XTRACT</a> or <a href="#xecute">XECUTE</a> were used on the SQL of concern.</p>
+
+<p><code>SQLT</code> does not have to be installed in the TARGET system where the custom SQL Profile is implemented.</p>
+
+<p>There are basically 4 steps in this PROFILE method.</p>
+<ol>
+<li>Use <a href="#xtract">XTRACT</a> or <a href="#xecute">XECUTE</a> on the SOURCE system.</li>
+<li>Execute <code>sqlt/utl/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/sqltprofile.sql" target="sqlt">sqltprofile.sql</a></code> in SOURCE to generate a script with the custom SQL Profile.</li>
+<li>Review the generated script and adjust the SQL text if needed. For example, to remove the comment caused by the <code>/* ^^unique_id */</code> if <a href="#xecute">XECUTE</a> was used.</li>
+<li>Execute the generated script in the TARGET system where the plan will be pinned.</li>
+</ol>
+
+<pre># cd sqlt/utl
+# sqlplus sqltxplain
+SQL&gt; START sqltprofile.sql [statement id] [plan hash value];
+SQL&gt; START sqltprofile.sql 32263 923669362;
+SQL&gt; START sqltprofile.sql 32263;
+SQL&gt; START sqltprofile.sql;
+</pre>
+
+<p>The custom SQL Profile created by this method is based on the plan outline data and not in scaling factors, therefore it is more steady. If you later want to drop this custom SQL Profile, you can find the drop command within the script that PROFILE generated.</p>
+
+<p>If you don't have <code>SQLT</code> installed in the SOURCE system, or you cannot execute <a href="#xtract">XTRACT</a> or <a href="#xecute">XECUTE</a> for the SQL of concern, you can achieve the same functionality offered by the PROFILE method by using <code>sqlt/utl/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/coe_xfr_sql_profile.sql" target="sqlt">coe_xfr_sql_profile.sql</a></code> instead. This script also uses <code>DBMS_SQLTUNE</code>; therefore a license for the Oracle Tuning pack is required.</p>
+
+<p>If your system is 11g and you are considering using this PROFILE method, review the dynamic readme generated by any of the <a href="#methods1">main methods</a> and look for "Create SQL Plan Baseline from SQL Set". You may want to consider using SQL Plan Management SPM through a SQL Set as documented in the dynamic readme.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xgram"></a>
+<hr size="3">
+<h3>XGRAM Module</h3>
+
+<p>The XGRAM module provides functionality to modify CBO Histograms either to enhance CBO Statistics for some columns or as part of a Test Case. With this module you can insert, update or delete Histograms or individual Buckets.</p>
+
+<p>Alphabetical list of scripts that implement the XGRAM module:</p>
+
+<ol>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_delete_column_hgrm.sql" target="sqlt">sqlt_delete_column_hgrm.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_delete_hgrm_bucket.sql" target="sqlt">sqlt_delete_hgrm_bucket.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_delete_schema_hgrm.sql" target="sqlt">sqlt_delete_schema_hgrm.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_delete_table_hgrm.sql" target="sqlt">sqlt_delete_table_hgrm.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_display_column_stats.sql" target="sqlt">sqlt_display_column_stats.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_insert_hgrm_bucket.sql" target="sqlt">sqlt_insert_hgrm_bucket.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_set_bucket_size.sql" target="sqlt">sqlt_set_bucket_size.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_set_column_hgrm.sql" target="sqlt">sqlt_set_column_hgrm.sql</a></code></li>
+<li><code>sqlt/utl/xgram/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xgram/sqlt_set_min_max_values.sql" target="sqlt">sqlt_set_min_max_values.sql</a></code></li>
+</ol>
+
+<p>The XGRAM module is installed automatically when <code>SQLT</code> is installed. If you ever need to install and use this XGRAM module outside <code>SQLT</code> you would only need to install one package and use the list of scripts above (removing <code>SQLTXADMIN</code> dependencies).</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xplore"></a>
+<hr size="3">
+<h3>XPLORE Module</h3>
+
+<p>The XPLORE module helps when after a database upgrade a SQL starts to perform poorly or it may produce apparent wrong results. If switching <code>optimizer_features_enable</code> (OFE) to the database release prior to the upgrade the SQL performs fine again, or it produces different results, you can use this XPLORE module to try to identify which particular Optimizer feature or fix introduced the undesired behavior. Identifying the particular culprit can help to troubleshoot further or do more research on this particular feature and/or fix.</p>
+
+<p>This module toggles initialization and fix control parameters to discover plans.</p>
+
+<p>Use XPLORE only when ALL these conditions are met:</p>
+
+<ol>
+<li>SQL performs poorly or returns wrong results while using a "bad" plan.</li>
+<li>The bad plan can be reproduced on a test system (no data is preferred).</li>
+<li>A "good" plan can be reproduced on the test system by switching OFE.</li>
+<li>You need to narrow reason to specific parameter or bug fix control.</li>
+<li>You have full access to the test system, including <code>SYS</code> access.</li>
+</ol>
+
+<p>Do not use XPLORE when ANY of these conditions is true:</p>
+
+<ol>
+<li>The SQL statement may cause corruption or update data.</li>
+<li>There is high volume of data in tables referenced by SQL.</li>
+<li>The execution of the SQL may take longer than a few seconds.</li>
+</ol>
+
+<p>To install and use this XPLORE module, read corresponding <code>sqlt/utl/xplore/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xplore/readme.txt" target="sqlt">readme.txt</a></code>.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<a name="xhume"></a>
+<hr size="3">
+<h3>XHUME Module</h3>
+
+<p>This module is for the exclusive use of Oracle Support. It must be used only in an Oracle internal system. It updates the data dictionary and this operation is not supported by Oracle.</p>
+
+<p>XHUME can be used to discover plans that are only possible with older version of schema object statistics related to one SQL. After a Test Case (<code>TC</code>) is created using <code>SQLT</code>, this XHUME module restores systematically prior versions of the statistics and generates plans by executing the SQL being studied. It captures the plan that each version of the statistics can generate. Then produces a report, which can be used to understand the plan instability, or to find an elusive plan that can be used to create a SQL Profile or SQL Plan Baseline.</p>
+
+<p>This module should never be used in a Production system because it modifies the data dictionary. Use only on an Oracle internal Test enviornment.</p>
+
+<p>As an alternative to modify the creation date of the Test Case (<code>TC</code>) schema objects, you can change the date on the server prior to the <code>TC</code> implementation, and reset to current date after the <code>TC</code> is created. This temporary prior date must be at least one month old, so all history of schema object statistics would have a save time newer than the <code>TC</code> object creation time.</p>
+
+<p>Use XHUME only when ALL these conditions are met:</p>
+
+<ol>
+<li>SQL is known to generate more than one plan, and one or more perform poorly.</li>
+<li>Bind peeking has been ruled out as the culprit of the plan instability.</li>
+<li>Changes to CBO parameters has been ruled out as the culprit of the plan instability.</li>
+<li>You have a <code>SQLT</code> <code>TC</code> where a known plan is generated (a "good" or a "bad" one).</li>
+<li>You need to understand the plan instability, or you are looking for an elusive known "good" plan.</li>
+<li>You have full access to the Oracle internal test system, including <code>SYS</code> access.</li>
+</ol>
+
+<p>Do not use XHUME when ANY of these conditions is true:</p>
+
+<ol>
+<li>The SQL statement may cause corruption or update data.</li>
+<li>You only have a <code>TC</code> on a Production environment.</li>
+<li>You do not have <code>TC</code> created with <code>SQLT</code>.</li>
+<li>You do not have SYS access to the Oracle internal test system that contains your <code>TC</code>.</li>
+<li>Bind peeking or CBO parameters have not been ruled out as culprit of the plan instability.</li>
+</ol>
+
+<p>To install and use this XHUME module, read corresponding <code>sqlt/utl/xhume/<a href="file:///C:/Users/mpagano/Desktop/SQLT/CoE%20Scripts/CoE%20Scripts/SQLT/sqlt/utl/xhume/readme.txt" target="sqlt">readme.txt</a></code>.</p>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<hr size="3">
+
+
+</body></html>

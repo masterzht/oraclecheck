@@ -1,0 +1,26 @@
+REM $Header: 215187.1 sqltcommon11.sql 11.4.5.7 2013/04/05 carlos.sierra $
+-- begin common
+SET TERM OFF;
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('addm_reports', '0');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('ash_reports_source', 'NONE');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('ash_reports', '0');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('awr_reports', '0');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('bde_chk_cbo', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('c_dba_hist_parameter', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('c_gran_cols', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('c_gran_hgrm', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('c_gran_segm', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('distributed_queries', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('domain_index_metadata', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('r_gran_cols', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('r_gran_hgrm', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('r_gran_segm', 'GLOBAL');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('search_sql_by_sqltext', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('sql_monitor_reports', '1');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('sql_monitoring', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('sql_tuning_advisor', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('sql_tuning_set', 'N');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('sqldx_reports_format', 'NONE');
+EXEC ^^tool_administer_schema..sqlt$a.set_sess_param('test_case_builder', 'N');
+SET TERM ON;
+-- end common

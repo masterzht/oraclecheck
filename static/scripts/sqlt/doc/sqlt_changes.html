@@ -1,0 +1,1198 @@
+<html>
+<head>
+<title>sqlt_changes</title>
+
+<style type="text/css">
+body {font:10pt Arial, Helvetica, Verdana, Geneva, sans-serif; color:Black; background:White;}
+a {font-weight:bold; color:#663300;}
+pre {font:8pt Monaco, "Courier New", Courier, monospace; margin:1em 8em 1.5em 4em; padding:1em 0 1em 4em; border:1px solid #336699; background-color:#fcfcf0; overflow:auto;}
+code {font:10pt Monaco, "Courier New", Courier, monospace; font-weight:bold;}
+h1 {color:#336699; font-weight:bold; font-size:16pt;}
+h2 {color:#336699; font-weight:bold; font-size:14pt;}
+h3 {color:#336699; font-weight:bold; font-size:12pt;}
+h4 {color:#336699; font-weight:bold; font-size:10pt;}
+table {font-size:8pt; color:Black; background:White;}
+th {font-weight:bold; background:#cccc99; color:#336699; vertical-align:bottom; padding:0.25em 0.25em 0.25em 0.25em;}
+td {text-align:center; background:#fcfcf0; vertical-align:top; padding:0.25em 0.25em 0.25em 0.25em;}
+td.lw {text-align:left; background:white;}
+</style>
+
+</head>
+<body>
+<h2><a target="MOS" href="https://support.oracle.com/CSP/main/article?cmd=show&type=NOT&id=215187.1">215187.1</a> SQLTXPLAIN (SQLT) Changes Log</h2>
+<hr size="1">
+
+<h3> 5th June 2020 </h3>
+<ol>
+<li> ENH: Miscellaneous bug fixes and spelling errors.
+</ol>
+
+
+<h3> 26th February 2020 </h3>
+<ol>
+<li> ENH: Reduce the action threshold for the SQL Tuning Advisor from 1800 seconds to 900 seconds, thus reducing the overhead of running SQLT.
+</ol>
+
+
+<h3> 29th January 2020 </h3>
+<ol>
+<li> ENH: Priority Codes ordered by priority in Observations, for improvement in SQL Tuning Automation scripts. 
+</ol>
+
+<h3> 7th August 2019 </h3>
+<ol>
+<li> ADM: Various administrative changes to correctly reflect release dates and support information
+</ol>
+
+<h3> 5th June 2019 </h3>
+<ol>
+<li> ENH: ZIP file name format for SQLTXTRACT changed to enable automation. File name changed from SQLT_S[nnnnn]_XTRACT_[sql_id] to SQLT_[YYYYMMDD]_[HH24MI]_[SQL_ID]_[C] where [C] can be F, S (default), H, N or C, representing FAST, SLOW, HASH, NL or COLUMN HISTOGRAM.
+</ol>
+
+
+<h3> 15th May 2019 </h3>
+<ol>
+<li> ENH: Internal adjustments for future enhancements and spelling corrections.
+</ol>
+
+<h3> 10th February 2019 </h3>
+<ol>
+<li> ENH: Observations section has expanded observation text, reference to MOS notes and new Priority field.
+</ol>
+
+<h3> 28th October 2018 </h3>
+<ol>
+<li> BUG: Amend string length of variable to allow XTRSBY to work with long link names (<500 characters).
+</ol>
+
+<h3> 26th August 2018 </h3>
+<ol>
+<li> ENH: - On hold while development assesses excluding SQLTXPLAIN from user-mode partitioning license. Allow users to declare that they have no Oracle Partitioning License so that dba_feature_usage_statistics is correct (sqcreate.sql). This feature is NOT supported for silent installations.
+</ol>
+
+
+
+<h3> 25th August 2018 </h3>
+<ol>
+<li> BUG: report_level value 'TYPICAL' changed to 'BASIC+PARALLEL' due to bug 28051732 in sqcpkga.pkb / sqcpkga.pks
+</ol>
+
+<h3> 23rd August 2018 </h3>
+<ol>
+<li> BUG: Observation for Calibrate I/O does not apply to Exadata
+</ol>
+
+<h3> 12.2.180725 2018/07/25 </h3>
+<ol>
+<li> BUG: Fixed Stale observations not getting generated
+<li> ENH: Added Average Elapsed/exec & Average Buffer gets/exec for each snap duration in the SQLT reports
+<li> ENH: Added Average Elapsed/exec & Average Buffer gets/exec for each snap duration in the SQLHC  reports
+</ol>
+
+<h3> 12.2.180331 31st March 2018</h3>
+<ol>
+<li> 180331 Bug Fix related to MREADTIM when using Basis and Synthesized values
+</ol>
+
+<h3> 12.2.171004 October 4th, 2017 </h3>
+<ol>
+<li> 171004 Extensive replacement of variables to varchar2(257)
+<li> 171003 Minor consmetic changes.
+<li> 171002 Addition of 18.1 columns
+</ol>
+
+<h3> 12.2.170914 September 14,2017 </h3>
+<ol>
+<li> 170914 to prevent xtrxec to fail on standard edition ORA-02097/ORA-00439 for inmemory
+<li> 170912 ORA-01427 on "SQLTXADMIN.SQLT$D" on UPDATE in collect_gv$im_column_level
+<li> 170910 RDBMS 18.1 does not has DBMS_OUTLN_EDIT
+<li> 170909 Corrections to TC,TCX,TCB to Allow multi-schema import and correct version
+<li> 170908 Correct ORA-01403: no data found in xplore
+<li> 160622 changes to spooled information
+<li> 22759168 addition to this fix for run/sqltcompare.sql
+</ol>
+
+<h3>12.1.160429  April 29,2016</h3>
+<ol>
+<li> 160426 Make optional the dba_free_space query (bug 19125876)
+<li> 160420 use NATIVE if possible, else INTERPRETED (NATIVE performs better. INTERPRETED avoids some errors in some systems.)
+<li> 160415 Reword some offloading observations as just reminders because they check for limited evidence.
+<li> 160403 Add perfhub for 12c
+<li> 160121 WA:ORA-1403 on tacpkgt.pkb
+<li> Bug 19332407 Made Exadata statistics collection optional.
+<li> Bug 22759168 Provide purge script at the end of collection for user convenience.
+<li> Bug 22759140 additional instruction to avoid using SYS with collection methods.
+</ol>
+
+<h3>12.1.14 December 6, 2015</h3>
+<ol>
+<li>Bug 22170172 Security Review of sqlt$a
+<li>Bug 22170173 Security Review of sqlt$d
+<li>Bug 22170175 Security Review of sqlt$i
+<li>Bug 22170176 Security Review of sqlt$r
+<li>Bug 22170177 Security Review of sqlt$t
+<li>Bug 22170178 Security Review of trca$g
+<li>Bug 22170181 Security Review of trca$i
+<li>Bug 22170182 Security Review of trca$t
+<li>Bug 22170194 Security Review of sqlt$_trca$_dir_set
+</ol>
+
+<h3>12.1.12.1 October 20, 2015</h3>
+<ol>
+<li>151008 BUG: ora-6502 packing SPDs
+<li>151019 BUG: s_rows_table_m bug in displaying SPDs</li>
+<li>151020 ENH: Display enh for SPD
+</ol>
+
+<h3>12.1.12 September 11, 2015</h3>
+<ol>
+<li>150220 BUG: ORA-01422 at SQLT$A.set_stand_by_dblink</li>
+<li>150824 BUG: Prevent SQL Injection potential from dblink</li>
+<li>150826 BUG: Use 11g+ Diag directories
+<li>150828 ENH: Collection, Import, Display of SQL Plan Directives and SQL Extensions
+<li>150903 ENH: Minor Cosmetic Changes
+<li>150911 ENH: Collect historic SQL Monitor reports
+</ol>
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.11 October 30, 2014</h3>
+<ol>
+<li>141017 ENH: Remove SEGMENT_ATTRIBUTES from testcase scripts</li>
+<li>141028 BUG: Prevent SQL Injection potential from collect_gv$pq_tqstat</li>
+</ol>
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.10 August 8, 2014</h3>
+
+<ol>
+<li>BUG: Fixed several typos/messages in HC.</li>
+<li>ENH: Added new information for In-Memory now that 12.1.0.2 has been released</li>
+<li>ENH: SQLT now estimates the size of the index if it were to be rebuilt</li>
+<li>ENH: Adjusted sqltupgdbahistash.sql to match with HASH partitioning of SQLT$_DBA_HIST_ACTIVE_SESS_HIS</li>
+<li>ENH: Enhanced "show errors" at the end of each packaged to avoid some rare "No errors" reported even when the package has indeed compilation errors</li>
+<li>ENH: Added additional columns to SQL Monitor views to support rowsource statistics</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.09 June 13, 2014</h3>
+
+<ol>
+<li>BUG: Fixed error in SQLT TC metadata missing package owner.</li>
+<li>BUG: SQLT$_DBA_HIST_ACTIVE_SESS_HIS is now partitioned by HASH to reduce installation requirements.</li>
+<li>ENH: SQLT now support Oracle In-Memory in 12c.</li>
+<li>ENH: Improved HC on histograms that might required regathering after upgrade.</li>
+<li>ENH: Added HC on SEG$ for cached segment information.</li>
+<li>ENH: Updated pxhcdr.sql with new algorithm for parallel_max_servers check.</li>
+<li>ENH: Improved error reporting on SQL Plan Baselines.</li>
+<li>ENH: Improved installation process for system with password complexity verification function in place.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.08 April 18, 2014</h3>
+
+<ol>
+<li>BUG: Fixed SQLHC bug on duplicate metadata</li>
+<li>BUG: Fixed SQLT bug on VPD policies not being reported sometimes</li>
+<li>BUG: Fixed SQLT bug on metadata script in SQLT TC</li>
+<li>BUG: Fixed error ORA-20000: TABLE "SYS".xxxx does not exist or insufficient privileges</li>
+<li>ENH: SQLT now provides information about SQL Plan Directives in 12c</li>
+<li>ENH: Introduced additional controls on when to partition SQLT repository table SQLT$_DBA_HIST_ACTIVE_SESS_HIS.</li>
+<li>ENH: Transparent upgrade of SQL Tuning Set stage table when it was created with older db versions.</li>
+<li>ENH: Improved Object Dependency section in SQLT</li>
+<li>ENH: SQLT has now the ability (disabled by default) to export dictionary stats</li>
+<li>ENH: New HC in SQLT for GTT/Temp tables with zero num_rows from stats but more than zero from execution stats</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.07 March 15, 2014</h3>
+
+<ol>
+<li>BUG: Fixed SQLT TC stats history restore for objects with same name in multiple schemas</li>
+<li>ENH: SQLT repository table SQLT$_DBA_HIST_ACTIVE_SESS_HIS is now partitioned for new installations. Manual upgrade script sqltupgdbahistash.sql is available in sqlt/utl for existing installation.</li>
+<li>ENH: SQLT XTRACT collects a single snapshot of V$CELL_STATE</li>
+<li>ENH: SQLT now collects dependencies from EXPLAIN PLAN FOR, this will help in those cases where the plan is only in AWR</li>
+<li>ENH: SQLT Main report now shows the partitioning keys in the "More" column of the execution plan</li>
+<li>ENH: SQLT TC now includes IO Resources</li>
+<li>ENH: SQLT Policies secton now links directly to the metadata section pointing to the policy code</li>
+<li>ENH: SQLT Instructions is now provided in txt format too</li>
+<li>ENH: Minor SQLT improvements on host information</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.06 January 30, 2014</h3>
+
+<ol>
+<li>BUG: Fixed bug in SQLHC/SQLHCExec on the predicate ordering HC</li>
+<li>BUG: Fixed bug in SQLHC/SQLHCExec on table/index partitions section</li>
+<li>ENH: SQLT supports Adaptive Plans in 12c</li>
+<li>ENH: Added HC in SQLT/SQLHC/SQLHCExec about automatic stats gathering job status</li>
+<li>ENH: Added Constraints info to SQLHC/SQLHCExec</li>
+<li>ENH: Added information about Stats censored by Data Vault in SQLT</li>
+<li>ENH: Added more detailed information about VPD Policies in SQLT</li>
+<li>ENH: Improved SQLT checks during execution, the execution now stops if SQLT was installed locally but the execution is coming from a remote client and connect_identified parameter is not set<br>
+         Instructions on how to fix it are in sqlt_instructions.html</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.05 December 11, 2013</h3>
+
+<ol>
+<li>ENH: SQLT TC/TCX improved to handle INTERVAL partitioned tables</li>
+<li>ENH: Added Index partitions info to SQLHC/SQLHCExec</li>
+<li>ENH: Added Table and Index Stats History to SQLHC/SQLHCExec</li>
+<li>ENH: Improved installation process to avoid issues when installing into a Pluggable DB</li>
+<li>ENH: Added initial support to Session Specific Stats on GTT</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>12.1.04 November 11, 2013</h3>
+
+<ol>
+<li>ENH: SQLT now supports 12c Top-Frequency and Hybrid histograms</li>
+<li>ENH: Improved SQLT own instrumentations for the driver scripts</li>
+<li>ENH: Added ability to enable DBMS_STATS.SEED_COL_USAGE for the tables involved in the SQL and report the findings for each table</li>
+<li>ENH: Added in SQLT, SQLHC and SQLHCExec Exadata-specific HC for table with CACHE property enable</li>
+<li>ENH: Added HC on columns with default value added after the table was created (to help the rediscovery of known issues introduced by such operation)</li>
+<li>ENH: Reset NLS_SORT and NLS_COMP parameter to their default value when running SQLHC and SQLDX to help improve the performance when accessing AWR</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+
+<h3>12.1.03 October 10, 2013</h3>
+
+<ol>
+<li>BUG: Fixed issue SQLT XECUTE was not report the [X] next to the executed plan</li>
+<li>ENH: Modified SQLT TC to handle the mview creation after the base table to handle mview on prebuilt table</li>
+<li>ENH: Added call to EXPAND_SQL (from 11.2.0.3 onwards) to expand the SQL text in presence of views</li>
+<li>ENH: More user-friendly message in SQLT XPLAIN when the file provided doesn't exist</li>
+<li>ENH: Added support for extended stats in SQLT COMPARE</li>
+<li>ENH: Added Exadata specific Health-Checks on conditions that might turn off Smart Scan</li>
+<li>ENH: Added Health-Checks on AutoDOP and DOP</li>
+<li>ENH: Forced EXPDP to work on a single node</li>
+<li>ENH: SQLDX will now skip LOGSTBY tables</li>
+<li>ENH: New script sqltresetstatementid.sql in sqt/utl to reset the statement_id</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+
+<h3>12.1.02 September 9, 2013</h3>
+
+<ol>
+<li>BUG: Fixed issue where SQLHCExec was grabbing the incorrect SQL ID</li>
+<li>BUG: Fixed issue in coe_gen_sql_patch.sql where the incorrect signature was generated</li>
+<li>ENH: Replaced V$SQLAREA with V$SQL in the scripts under sqlt/utl/spm to get more accurate info</li>
+<li>ENH: New script sqlt_parameters.sql in sqlt/utl to display SQLT version and a verbose description of all the SQLT parameters</li>
+<li>ENH: Script plan.sql in sqlt/utl reports RUNSTATS and ADVANCED output</li>
+<li>ENH: SQLHC now includes the metadata for tables and indexes</li>
+<li>ENH: Improved SQLT access to ASH with non default NLS_SORT, SQLT now sets its own NLS_SORT</li>
+<li>ENH: SQLHC now set AUTOPRINT OFF to prevent issues with SQL Monitoring in case AUTOPRINT is enabled in SQL*Plus</li>
+<li>ENH: SQLHC now includes information about table partitions</li>
+<li>ENH: SQLT now collects info about the target table for INSERT and CTAS</li>
+<li>ENH: SQLDX collects info only in CSV format by default to help in case of long executions</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+
+<h3>12.1.01 August 19, 2013</h3>
+
+<ol>
+<li>BUG: Incorrect date wrapping in report "Non-Default or Modified Session Parameters"</li>
+<li>BUG: SQLHC Table Summary reporting section was skipping tables if they had no index defined on them</li>
+<li>BUG: The logic in "Newest Value" column in Modified System Parameters needed to be adjusted, the value was sometime incorrect</li>
+<li>BUG: CBO Environment section was reporting a parameter many times if that param had been changed more than once</li>
+<li>ENH: SQLT and SQLHC works on 12c!
+<li>ENH: Improved SQLHC HC on corrupt histograms for 12c</li>
+<li>ENH: SQLT can now create user SQLTXADMIN in presence of password complexity verification function</li>
+<li>ENH: Stat table creation now supports Unicode charset in both SQLT TC and SQLT TCX</li>
+<li>ENH: Importing SQLT TC now handles IOT remapping</li>
+<li>ENH: Fix for 12c<br>sqlt$a: *** d:ORA-12899: value too large for column "SQLTXPLAIN"."SQLT$_DBA_TAB_COLS"."LOW_VALUE" (actual: 45, maximum: 40).
+<li>ENH: Added "version date" to SQLHC to make it easier to recognize if an old version is used</li>
+<li>ENH: Added "user" to SQLHC reporting the db login user</li>
+<li>ENH: SQLDX is now executed after SQLT/SQLHC completes, it helps in case SQLDX takes a long time to run since the zip file for SQLT/SQLHC is ready to be moved even when SQLDX is still running</li>
+<li>ENH: Added NUM_CPUs, NUM_COREs and NUM_CPU_SOCKETs info from V$OSSTAT to SQLT/SQLHC to help with multicore/multisocket CPUs</li>
+<li>ENH: Added Historical SQL Statistics - Total section to SQLHC</li>
+<li>ENH: SQLHC Exec now captures session statistics for the SQL analyzed</li>
+<li>ENH: New HC on Mviews not used in the SQL/plan that are defined on top of tables involved in the SQL/plan</li>
+<li>ENH: New column "If Offloadable" and "IO Saved %" on Exadata in Performance Statistics section</li>
+<li>ENH: New HC on Rewrite Equivalences defined by the owner of the objects involved in the SQL/plan</li>
+
+
+</ol>
+
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.10 July 15, 2013</h3>
+
+<ol>
+<li>BUG: Fixed issue with XPREXT and XPREXC where ASH was not turned off completely</li>
+<li>ENH: New health-check on plans with same PHV but predicates with different ordering</li>
+<li>ENH: SQLHC and SQLHCXEC now provides information about DBMS_STATS preferences</li>
+<li>ENH: SQLT shows when a parameter value has been changed (when this info is available in AWR)</li>
+<li>ENH: New link to Table Statistics Extensions directly available in the top menu</li>
+
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.9 June 10, 2013</h3>
+
+<ol>
+<li>ENH: New health-check on SDREADTIM/MREADTIM in Exadata</li>
+<li>ENH: Added SQLT parameter tcb_sampling_percent to control TCB sampling data percentage</li>
+<li>ENH: If no SQL is identified using the input string as HASH_VALUE then a search on PLAN_HASH_VALUE is performed</li>
+<li>ENH: Introduced new parameter c_ash_hist_days to split AWR data collection from ASH data collection and to limit the amount of info extracted from ASH</li>
+<li>ENH: Added scale information for TIMESTAMP datatype in Captured Binds sections</li>
+<li>ENH: ASH reports are now generated 1 per hour/instance starting from the interval where the SQL was most impacting</li>
+<li>ENH: SQLDX (SQL Dynamic eXtractor) collects only up to 10k rows per table/view</li>
+
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.8 May 10, 2013</h3>
+
+<ol>
+<li>BUG: Fix TRCA parsing errors due to missing CURSOR information: invalid call at line 27 "1" "1" "" "2".</li>
+<li>ENH: List of Cursors to include now "is_obsolete" flag.</li>
+<li>ENH: Improved performance on SQLT TC restore script. This SQL was taking too long to execute: UPDATE SQLI$_STATTAB_TEMP SET C5 = :B2 WHERE STATID = :B1 AND TYPE IN ('C', 'I', 'T').</li>
+<li>ENH: Traces generated by SQLT are now limited to 200 MB per file.</li>
+<li>ENH: New stand-alone set of scripts to migrate a SQL Plan Basaline. Look for readme in sqlt/utl/spm.</li>
+<li>ENH: New stand-alone monitoring tool to capture executions of SQL statements taking more than 5 seconds. Look for readme in sqlt/utl/mon.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.7 April 5, 2013</h3>
+
+<ol>
+<li>BUG: SQL Tuning Advisor was invoked only when SQL existed in memory. Now it is invoked also if SQL resides only in AWR.</li>
+<li>BUG: File sqlt_instructions.html had links with XPREXT tag instead of XTRACT.</li>
+<li>ENH: TKPROF may error out under some circumstances. SQLT now displays a message to "ignore this error".</li>
+<li>ENH: Improved performance of SQLT COMPARE when number of partitions is high.</li>
+<li>ENH: Collection of dba_sql_patches only happens on 11g+. It used to error out on 10g.</li>
+<li>ENH: Following error shows now on log file but not in MAIN html report:<br>sqlt$a: *** i:DBMS_SPACE.CREATE_INDEX_COST: ORA-01031: insufficient privileges<br>sqlt$a: *** i:index_name:XIE1_PCRD_APPROVER</li>
+<li>ENH: Best and Worst plans now consider last those plans with no fetches. Before this change it was possible to see killed executions (fetches 0) ranking as good plans.</li>
+<li>ENH: Purge of TRCA global temporary tables uses now a TRUNCATE instead of a DELETE.</li>
+<li>ENH: SQLT produces now a SQLT_installation_logs_archive.zip with all installation logs.</li>
+<li>ENH: Include Product Component Version in installation and main methods logs.</li>
+<li>ENH: SQLT log zip includes now alert.log and spfile.</li>
+<li>ENH: SQLDX (SQL Dynamic eXtractor) includes now details about tables accessed by execution plans of SQL provided.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.6 March 5, 2013</h3>
+
+<ol>
+<li>ENH: New script sqlt/utl/sqltq.sql to generate "q" script that contains binds and sql text for given SQL_ID.</li>
+<li>ENH: Script sqlt/utl/coe_gen_sql_patch.sql inputs now CBO Hints text in addition to SQL_ID.</li>
+<li>ENH: New min methods XPREXT and XPREXC similar to XTRACT and XECUTE but disabling several SQLT features as per sqlt/run/sqltcommon11.sql in order to improve SQLT performance.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.5 March 1, 2013</h3>
+
+<ol>
+<li>BUG: Following SQLT Parameters where not updateable: sql_monitor_reports, awr_reports, addm_reports, sta_time_limit_secs<br>Workaround: Execute this update before using API to change value: update SQLTXPLAIN.sqli$_parameter set low_value = 0, high_value = 9999 where name = 'addm_reports';</li>
+<li>BUG: Eliminate duplicate entries on views: sqlt$_gv$act_sess_hist_pl_v and sqlt$_dba_act_sess_hist_pl_v.</li>
+<li>BUG: Incorrect observation "Table rebuild candidate." when getting error on DBMS_SPACE.CREATE_TABLE_COST.</li>
+<li>BUG: Incorrect observation "Index coalesce candidate." when getting error on DBMS_SPACE.CREATE_INDEX_COST.</li>
+<li>BUG: Trap this error on 10g:<br>ORA-00942: table or view does not exist<br>sqlt$a: *** d:INSERT INTO sqlt$_gv$cell_state (statement_id, statid, begin_end_flag) SELECT :statement_id, :statid, :begin_end_flag FROM gv$cell_state</li>
+<li>ENH: Remove health-check references to Bug 3620168, which was fixed on 10.2.</li>
+<li>ENH: COUNT(*) on Tables referenced by SQL includes now a FULL(t) Hint. This is to improve performance of COUNT.</li>
+<li>ENH: SQLT now sets TRCA to skip extents capture (by setting TRCA tool parameter "capture_extents" to N during SQLT installation). This is to improve XECUTE performance.</li>
+<li>ENH: New SQLT parameter "tcb_export_pkg_body" controls if 11.2+ Test Case Builder includes package bodies (of the packages referenced in the SQL are exported). Default is FALSE.</li>
+<li>ENH: View DBA_HIST_PARAMETER is now excluded from SQLT repository export file. This is to improve performance of export and to reduce size of zip.</li>
+<li>ENH: Value of parameter "_db_file_exec_read_count" is now displayed in MAIN and COMPARE reports.</li>
+<li>ENH: 11g PLSQL_CODE_TYPE is set to NATIVE by default (to improver performance). 10g defaults back to INTERPRETED.</li>
+<li>ENH: SQLY XPLORE now iterates "_optimizer_max_permutations" on values: 100, 2000, 40000, 79999 and 80000.</li>
+<li>ENH: SQL Patches are now displayed on the MAIN report.</li>
+<li>ENH: New script sqlt/utl/flush_cursor.sql flushes one cursor out of the shared pool.</li>
+<li>ENH: New script sqlt/utl/coe_gen_sql_patch.sql generates a SQL Patch for one SQL with some diagnostics CBO Hints. It also turns trace 10053 for same SQL.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.4 February 4, 2013</h3>
+
+<ol>
+<li>BUG: Fix for 12c error:<br>sqlt$a: *** d:ORA-12899: value too large for column "SQLTXPLAIN"."SQLT$_DBA_TAB_COLS"."LOW_VALUE" (actual: 40, maximum: 32).</li>
+<li>BUG: Create SQL Plan Baseline from SQL Set was referencing SIGNATURE of SQL Text with stripped /* ^^unique_id */ instead of original SQL.</li>
+<li>BUG: Avoid possible collisions on STATEMENT_ID causing:<br>ORA-20304: statement with unique id "14060" could not be retrieved.</li>
+<li>BUG: Other roles where UNSET when sqlt/run/sqltcommon2.sql was setting the SQLT_USER_ROLE.</li>
+<li>ENH: New SQLT parameter "traces_directory_path" can now be used to source TKPROF on SQLT XECUTE and XTRXEC.</li>
+<li>ENH: PLSQL_CODE_TYPE changed from INTERPRETED to NATIVE in order to improver performance.</li>
+<li>ENH: Qualify with schema name of SQLTXPLAIN/SQLTXADMIN all SQL statements displayed in MAIN html report.</li>
+<li>ENH: EXADATA view GV$CELL_STATE is now included on SQLT XECUTE and XTRXEC before and after the SQL is executed.</li>
+<li>ENH: SQLT uses now DBMS_SPACE.CREATE_TABLE_COST and DBMS_SPACE.CREATE_INDEX_COST to perform a health-check on space size for Tables and Indexes.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.3 December 31, 2012</h3>
+
+<ol>
+<li>BUG: Section on Readme "Create SQL Plan Baseline from SQL Set" had an erroneous predicate "AND sql_handle = ''".</li>
+<li>ENH: New SQL Dynamic eXtractor (SQLDX) script added to main methods. It generates a new sqldx zip file and is regulated by parameter sqldx_reports_format.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.2 December 12, 2012</h3>
+
+<ol>
+<li>ENH: SQLT Test Cases created before SQLT 11.4.5.0 can now be implemented on SQLT 11.4.5.2 or higher. Restore script was erroring out since SQLT$A is now owned by SQLTXADMIN instead of SQLTXPLAIN.</li>
+<li>ENH: New synonyms to allow the call of SQLT APIs with either SQLTXPLAIN or SQLTXADMIN schema name.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.1 November 27, 2012</h3>
+
+<ol>
+<li>BUG: Fix "ORA-00904: : invalid identifier" in awrrpt reports on "SELECT output FROM TABLE(SYS.DBMS_WORKLOAD_REPOSITORY.AWR_REPORT_HTML".</li>
+<li>ENH: Table audit_actions is now optional.</li>
+<li>ENH: Exclude from metadata script LOB indexes which are automatically created on a LOB column.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.5.0 November 21, 2012</h3>
+
+<ol>
+<li>BUG: Escape character has been changed on SQLT XECUTE from "!" to "~". This allows now to use "!=" within the SQL passed to SQLT XECUTE.</li>
+<li>BUG: Handle error: ORA-00911: invalid character<br>ORA-06512: at "SQLTXPLAIN.SQLT$D", line 2832</li>
+<li>ENH: Event 10053 is now enabled with SQL_Optimizer instead of SQL_Compiler. Trace 10053 becomes more readable.</li>
+<li>ENH: New TCX zip file with SQLT Test Case with no SQLT dependencies to be consumed by BDE and SE. SQLT provides now 3 Test Cases: TCB, TC and TCX.</li>
+<li>ENH: SQLT MAIN report displays now Peeked and Captured Binds associated with each Predicate in the Columns Statistics section. This is controlled by new SQLT parameter "show_binds_in_predicates".</li>
+<li>ENH: Section "Create SQL Plan Baseline from SQL Set" on README is now ordered by plan performance and APIs to create Baselines set Plan Name and Description.</li>
+<li>ENH: Health-checks reported in the "Observations" section refers now to "fluctuating" values instead of "mutating".</li>
+<li>ENH: New Security Model.'</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.8 September 27, 2012</h3>
+
+<ol>
+<li>BUG: API sqlt$a.import_cbo_stats (line 5502 in 11.4.4.7). Deleting index stats history was not working for a partitioned index because the code looked up the obj# for a TABLE [SUB]PARTITION instead of an INDEX [SUB]PARTITION.  The fix was to change TABLE to INDEX.</li>
+<li>BUG: Avoid "ORA-01031: insufficient privileges", by executing "set role sqlt_user_role" on main scripts.</li>
+<li>ENH: Recommend use of DBMS_STATS.AUTO_SAMPLE_SIZE instead of sample % when executed on 11g.</li>
+<li>ENH: Reduce grants to SQLTXPLAIN and to SQLT_USER_ROLE.</li>
+<li>ENH: Use 10046 level 1 instead of 12 while tracing SQLT.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.7 July 2, 2012</h3>
+
+<ol>
+<li>BUG: Readme report for PeopleSoft was showing "Gathering Statistics" twice.</li>
+<li>BUG: Parameter "_db_file_optimizer_read_count" was showing an incorrect value on Main report.</li>
+<li>BUG: Number of executions above Execution Plans was showing zero when statistics_level was not set to ALL at the time the cursor was parsed.</li>
+<li>BUG: Avoid error below when DBMS_METADATA is not granted to PUBLIC.<br>1452/29  PLS-00201: identifier 'DBMS_METADATA' must be declared</li>
+<li>ENH: New HC to detect bug 14013094 on statistics gathering for partitioned tables and indexes where partition names are created in different order between table and index.</li>
+<li>ENH: New tool parameter tcb_export_data to control value of parameter exportData on API DBMS_SQLDIAG.EXPORT_SQL_TESTCASE.</li>
+<li>ENH: Handle non-stopper error: ORA-06550: line 4, column 18 with "FROM applsys.fnd_product_groups".</li>
+<li>ENH: Scripts roxtract and roxecute are now deprecated. Use sqlhc.sql and sqlhcxec.sql instead.</li>
+<li>ENH: Main report, sqlhc.sql and sqlhcxec.sql include now Plan Line and Plan summaries for Active Session History from memory and AWR.</li>
+<li>ENH: Scripts sqlhc.sql and sqlhcxec.sql to include ASH summaries, Cursor Sharing, set of SQL Monitor reports, SQL Detail report, SQL Profiles, SQL Plan Baseline and SQL Patches.</li>
+<li>ENH: Readme for PSFT includes now instructions to gather statistics using both PSCBO_STATS and DBMS_STATS.</li>
+<li>ENH: SQL Text now shows in red these keywords: SELECT, INSERT, UPDATE, DELETE, MERGE, FROM, WHERE.</li>
+<li>ENH: COUNT(*) on tables accessed by SQL being analyzed is reduced to a sample size 1% of current values. This will make this COUNT less accurate but much faster.</li>
+<li>ENH: SQLT main methods produce now up to 10 AWR reports for snaphots where the SQL being analyzed produced considerable elapsed time.</li>
+<li>ENH: SQLT main methods produce now up to 25 most recent SQL Monitor reports for the SQL being analyzed.</li>
+<li>ENH: SQLT main methods produce now ASH reports from memory and from AWR.</li>
+<li>ENH: SQLT main methods produce now up to 10 ADDM reports for snaphots where the SQL being analyzed produced considerable elapsed time.</li>
+<li>ENH: Workaround: disconnect ORA-07445 on SYS.DBMS_SQLTUNE_INTERNAL, which happened in some 11.2 systems.</li>
+<li>ENH: SQL Test Case (TC) now provides a script tc_pkg.sql to generate a stand-alone TC out of an implemented SQLT TC.</li>
+<li>ENH: All main methods record now into sqltxhost.log a set of 5 vmstat and sar samples.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.6 June 2, 2012</h3>
+
+<ol>
+<li>BUG: SQLT TC "restore" was allowing a column to be renamed from "a" to "b" then from "b" to "c", so it was ending up with duplicate rows in histogram among other issues.</li>
+<li>ENH: New tool parameter to control the automatic generation of a script with a Custom SQL Profile for best performing plan. Custom SQL Profiles based on DBMS_SQLTUNE.IMPORT_SQL_PROFILE are now inactive by default.</li>
+<li>ENH: New HC detecting corrupt histograms as per bugs 8543770, 10267075, 12819221 and 12876988.</li>
+<li>ENH: New HC reporting Tables where there are columns referenced in predicates and for which the number of distinct values has changed more than 10% from one statistics version to the next. These abrupt changes can cause an execution plan to also change.</li>
+<li>ENH: New HC about CBO not using partition level histograms if stats were gathered with "INCREMENTAL" and fix for bug 13583722 has been applied.</li>
+<li>ENH: Scripts roxtract.sql and roxecute.sql include now System Parameters with non-default or with modified values. They also report on all initialization paramaters for the connecting instance.</li>
+<li>ENH: All SQLT main methods ask now for the SQLTXPLAIN password in-line instead of using an ACCEPT command.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.5 May 2, 2012</h3>
+
+<ol>
+<li>BUG: Removed annoying message on main "sqlt$a: *** t:plan_operation%: ORA-01403: no data found".</li>
+<li>BUG: Script q.sql now takes values of NULL on binds instead of continue searching for not NULL values. It also handles string "NULL" as NULL on dba_hist_sqlbind.</li>
+<li>ENH: SQLT is now Data Guard aware. There is a new method SQLT XTRSBY which is executed on Primary and extracts from stand-by almost everything XTRACT does. Please refer to instructions before using this new method.</li>
+<li>ENH: In addition to new SQLT XTRSBY which runs in Data Guard Primary, there are two new scripts sqlt/utl/roxtract.sql and sqlt/utl/roxecute.sql which are super lite versions of SQLT XTRACT and XECUTE. The new read-only (RO) scripts can be used on any read-only database since they do not install anything and do not update anything. They provide a quick and safe view of the environment around one SQL statement.</li>
+<li>ENH: New instrumentation on SQLT XTRACT, XECUTE, XTRXEC, XTRSBY and XPLAIN. All these methods produce now a TKPROF for the actual execution of the tool. The new TKPROF is located in the log zip file. It helps to diagnose SQLT taking longer than expected.</li>
+<li>ENH: Skip MDSYS objects from metadata script. Since MDSYS is part of the data dictionary, it makes sense to skip it from Metadata as we do with similar schemas.</li>
+<li>ENH: Column remap on SQLT TC now considers map by QUALIFIED_COL_NAME when name is other than SYS%. This helps to match more columns when we are restoring CBO schema statistics while remapping to new TC user.</li>
+<li>ENH: Metadata includes now PL/SQL library which executed the SQL being analyzed. This is useful to actually see the piece of program that invoked the SQL being analyzed.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.4 April 2, 2012</h3>
+
+<ol>
+<li>BUG: Peeked and Captured Binds in Execution Plan of MAIN was showing :B1 where predicate was "COL=:B10" (false positives).<br>
+Fix display of bind peeking and bind capture when SQL contains binds like :b1 and :b10.</li>
+<li>BUG: Metadata script includes now creation of Statistics Extensions.</li>
+<li>ENH: New HC when derived stats are detected on a Table or Index (GLOBAL_STATS = 'NO' and PARTITIONED = 'YES').</li>
+<li>ENH: New HC when SQL Plan Baseline contains non-reproducible Plans.</li>
+<li>ENH: New HC indicating sizes of SQL Plan History and SQL Plan Baseline (enabled and accepted Plans).</li>
+<li>ENH: New HC when there is an enabled SQL Profile and there are VPD policies affecting your SQL. Plan may be unstable.</li>
+<li>ENH: New HC when there is more than 1 CBO environment in memory or AWR for given SQL.</li>
+<li>ENH: New HC when Indexes or their Partitions/Subpartitions have UNUSABLE segments.</li>
+<li>ENH: New HC when Indexes are INVISIBLE.</li>
+<li>ENH: New HC when an Index is referenced in a Plan and the index or its partitions/subpartitions are now UNUSABLE.</li>
+<li>ENH: New HC when an Index is referenced in a Plan and the index is now INVISIBLE.</li>
+<li>ENH: New HC when Table has locked statistics.</li>
+<li>ENH: New HC when INTERNAL_FUNCTION is present in a Filter Predicate since it may denote an undesired implicit data_type conversion.</li>
+<li>ENH: New HC when Plan Operations have a Cost of 0 and Cardinality of 1. Possible incorrect Selectivity.</li>
+<li>ENH: New HC when SREADTIM differs from actual db file sequential read for more then 10%.</li>
+<li>ENH: New HC when MREADTIM differs from actual db file scattered read for more then 10%.</li>
+<li>ENH: New HC when BLEVEL has changed for an Index, an Index Partition or an Index Subpartition according to statistics versions.</li>
+<li>ENH: New HC when NUM_ROWS has changed more than 10% for a Table, a Table Partition or a Table Subpartition according to statistics versions.</li>
+<li>ENH: New HC when Index is redundant because its leading columns are a subset of the leading columns of another Index on same Table.</li>
+<li>ENH: New HC when leaf blocks on a normal non-partitioned index are greater than estimated leaf blocks with a 70% efficiency.</li>
+<li>ENH: Active Session History sections on MAIN report include now up to 20 sessions and 20 snapshots (it was 10 and 10).</li>
+<li>ENH: Parameter _optimizer_fkr_index_cost_bias has been added to SQLT XPLORE.</li>
+<li>ENH: SQLTPROFILE and script coe_xfr_sql_profile.sql take now SQL statement with SQL Text larger than 32767 characters.</li>
+<li>ENH: Add metrics similar to what we have now on summary tables/indexes on SQLHC.</li>
+<li>ENH: Tables and Indexes sections on MAIN contain now links showing object counts instead of a constant. Similar to SQLHC.</li>
+<li>ENH: Execution Plans on SQLT to show with mouse-over, schema statistics for both: current and as per plan timestamp.</li>
+<li>ENH: Add new columns on 11.2.0.3 for all V$, GV$ and DBA views accessed by SQLT.</li>
+<li>ENH: Include reason WHY a cursor is not shared (out of XML "reason" column on gv$sql_shared_cursor).</li>
+<li>ENH: MAIN report heading includes now a link to MOS SQLT document.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.3 March 2, 2012</h3>
+
+<ol>
+<li>BUG: Script sqlt_sNNNNN_restore.sql maps now all SYS_NCnnnnn$ columns as per their expression and default data before matching by name.</li>
+<li>BUG: Script sqlt/run/sqltxtrset.sql was erroring out when list of SQL_IDs was comma separated without spaces.</li>
+<li>ENH: Improved performance on systems with very large number of subpartitions while executing SELECTs on SQLT$_DBA_SUBPART_HISTOGRAMS.<br>
+Created index sqlt$_dba_subpart_histogram_n1.</li>
+<li>ENH: Added some columns to List of Cursors under Cursor Sharing section of Main report.</li>
+<li>ENH: Script coe_xfr_sql_profile.sql to accept plans not only from SQL_ID passed but from modified versions of it as well.<br>
+It can create now a Custom SQL Profile associating the Original SQL to the Execution Plan of a Modified SQL (i.e. with CBO Hints).</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.2 February 2, 2012</h3>
+
+<ol>
+<li>BUG: Handle ORA-07445 on SYS.DBMS_SQLTUNE_INTERNAL while calling DBMS_SQLDIAG.DUMP_TRACE on XTRACT for 11.2.<br>ORA-07445: exception encountered: core dump [kprcdt()+6404] [SIGSEGV] [ADDR:0x853413537] [PC:0x101EB1D44] [Address not mapped to object]</li>
+<li>BUG: Fix error below when executing sqlt_set_min_max_values on a column with no histogram<br>
+ORA-06533: Subscript beyond count<br>
+ORA-06512: at "SQLTXPLAIN.SQLT$S", line 1674</li>
+<li>BUG: A COMPARE between 9i and 10g/11g was failing with error below<br>
+sqlt$a: *** c:plan_summary1: ORA-01403: no data found
+</li>
+<li>ENH: When there are VDB policies, get the metadata for their packages and functions, even when SQL is no longer in memory.</li>
+<li>ENH: SQLT XTRACT includes now dependencies on Materialized Views when the SQL is no longer in memory but only in AWR.</li>
+<li>ENH: EVENT 10053 trace includes now tracing SQL Plan Management SPM. Look for "SPM: " token in trace.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.1 January 2, 2012</h3>
+
+<ol>
+<li>BUG: Remove from coe_load_sql_baseline.sql column reproduced from SELECT on dba_sql_plan_baselines since this column exists from 11.2.0,2.</li>
+<li>BUG: ALTER SYSTEM commands in set_cbo_env.sql and XPLORE had SCOPE=MEMORY after ";".</li>
+<li>ENH: Summarize captured binds: We currently get a list of each set of values captured, but no overview as to the contents of each bind variable.<br>
+In other words, for each bind variable, summarize the # of values captured, the # of distinct values captured, the # of non-null values, and the minimum and maximum values.<br>
+This would be very helpful when trying to understand which bind variables tend to change between calls and how.</li>
+<li>ENH: Report v$sql_is_bind_aware = 'Y' in the Info column of the plans summary.</li>
+<li>ENH: Report I/O calibration settings, since these affect AutoDOP calculations and plan estimated time.</li>
+<li>ENH: Create new HC observation on COUNT of Materialized Views in the system.</li>
+<li>ENH: New HC: "Your DML statement references N Table(s) with at least one Bitmap index.</li>
+<li>ENH: Performance History is shown now as (delta) and (total).</li>
+<li>ENH: New HC to report Columns with Histograms when column data lenght is greater than 32 bytes.</li>
+<li>ENH: Report new HC Observation when Empty Blocks for a Table is larger than Blocks.</li>
+<li>ENH: New Observation when FIRST_ROWS Optimizer Mode is used.</li>
+<li>ENH: New HC: "Table contains Extended Statistics".</li>
+<li>ENH: If an index referenced on a plan no longer exists, then a new Observation is now created in MAIN.</li>
+<li>ENH: New HC Observation: "Version COUNT for this SQL is high: N".</li>
+<li>ENH: LITE report includes now Plans from all RAC nodes and not just one instance.</li>
+<li>ENH: SQLT XTRACT on 11.2 uses now DBMS_SQLDIAG.DUMP_TRACE to generate 10053 on child cursor with largest average elapsed time from connecting instance.</li>
+<li>ENH: SQLT XTRACT, XECUTE, XPLAIN and XTRXEC ask now for SQLTXPLAIN password at the beginning instead of at the end of their execution.</li>
+<li>ENH: Avoid display of error "ORA-00942: table or view does not exist" when verifying if EBS selecting on "applsys.fnd_product_groups".</li>
+<li>ENH: SQLT now avoids granting to PUBLIC, as this causes concerns for security-conscious customers.<br>
+Instead, it grants to SQLT_USER_ROLE and to SQLTXPLAIN.</li>
+<li>ENH: Test case scripts sqltc.sql and tc.sh were confusingly named: they are closely related, while tc.sh had little to do with tc.sql.<br>
+Renaming sqltc.sql to xpress.sql and tc.sh to xpress.sh.</li>
+<li>ENH: The SQLT scripts refuse now to run unless run by SYS, SQLTXPLAIN, or a user with SQLT_USER_ROLE or DBA.<br>
+Running as someone else produced too many errors.</li>
+<li>ENH: XPLORE: XPLORE now tries to vary the _optimizer_extended_stats_usage_control parameter.<br>
+(NB: It has value FF through 10g; F0 in 11.1.0.6; E0 in 11.1.0.7-11.2.0.1; and C0 in 11.2.0.2+. These values are now tried.)</li>
+<li>ENH: Include basic plan performance summary info in the lite report:<br>Plan Hash Value to Total Fetches and Source from the "Plans Summary" section in the main report.<br>(This is to ease the cut and paste of this info.)</li>
+<li>ENH: Save query results on XECUTE:<br>
+Instead of overwriting sqltxecute2.log, write the query results to another file (make sure the name is clear and distinct).<br>
+Then use a parameter (xecute_script_output) to decide whether to<br>
+1. include the results in the zip, 2. leave it in place, or 3. clear and delete it. (Clear first in case deleting fails.)</li>
+<li>ENH: Name SQLT reports with the type of run that generated it.<br>
+(e.g. sqlt_s12345_xplain.zip; sqlt_s12345_xecute.zip; etc.)<br>
+This makes it easier to tell what a customer has uploaded most of the time.</li>
+<li>ENH: SQL_ID is now included on sqlt_sNNNNN.zip filename for SQLT XTRACT.</li>
+<li>ENH: SQLT XHUME now documents in its readme how to set the server clock instead of resetting the TC objects creation date.</li>
+<li>ENH: Procedure sys.tasqdirset uses now double single quotes in the directory path before creating it: replace(p2_directory_path,'''','''''')</li>
+<li>ENH: Procedure sys.tasqdirset is now named sys.sqlt$_trca$_dir_set.</li>
+<li>ENH: TRCA: When producing an "Explain Plan" section, it includes now a warning:<br>
+"May not match the plan used for execution.".</li>
+<li>ENH: SQLT MAIN now reports table stats prefs (in sys.optstat_user_prefs$) for each table.<br>
+Also, STALE_PERCENT, PUBLISH, and INCREMENTAL to reported prefs for both tables and the system.<br>
+For the system, it also reports STATS_RETENTION, APPROXIMATE_NDV, and CONCURRENT.</li>
+<li>ENH: MAIN report includes now a histogram on LAST_ANALYZED date for object_type = 'FIXED TABLE' on DBA_TAB_STATISTICS.<br>
+Similar to existing histogram on SYS tables.</li>
+<li>ENH: MAIN nows indicate when a system is EXADATA.</li>
+<li>ENH: MAIN reports now the database character sets and time zone in the environment section. Also possibly the database block size.</li>
+<li>ENH: MAIN reports now the total size and # of datafiles in the Tablespaces section, and always include the SYSTEM and SYSAUX tablespaces.<br>
+Also includes the total size of all tablespaces somewhere. This is helpful for determining the feasibility of getting a copy of tablespaces, data dictionary, or the entire database.</li>
+<li>ENH: PK/UK constraints have now a link to the index supporting them.</li>
+<li>ENH: Rather than having sqltranlzr.sql ask whether to continue to gather SQLT XTRACTs on the top SQL found, we have now separated scripts for each.<br>
+This simplifies directions to customers and avoid the need to check the current directory when not running XTRACTs.<br>
+Script sqlt/run/sqltrcanlzr.sql performs Trace Analyzer, while sqltrcaxtr.sql performs Trace Analyzer followed by SQLT XTRACT on each Top SQL.</li>
+<li>ENH: sqlt$a.get_sql_id_or_hash_value should treated a 13-digit number as a sql_id, not a hash value.<br>
+Hash values cannot be that large, while sql_ids can (rarely) be composed only of digits.</li>
+<li>ENH: Avoid committing before executing a query with an XECUTE by wrapping appropriate parts of SQLT in autonomous transactions.<br>
+Actually, avoid committing or rolling back altogether (before executing provided script) unless within an autonomous transactions.<br>
+This makes it much easier to run queries that access GTTs.<br>
+Note also that instead of rolling back a whole transaction (if configured), SQLT XECUTE now rolls back to a savepoint:<br>
+SQLT XECUTE creates the savepoint just before executing the user script; then runs the script recording the prev_sql_id, etc.; and follows with a roll back to the savepoint.</li>
+<li>ENH: TRCA provides now a script sqlt/run/sqltrcasplit.sql to split a trace file into a 10046 trace and the rest.<br>
+(In other words, it provides access to this capability of splitting a 10046/10053 trace to end users.)</li>
+<li>ENH: SQLT XECUTE can accept now PL/SQL blocks as per sqlt/input/sample/plsql1.sql sample.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.4.0 December 4, 2011</h3>
+
+<ol>
+<li>BUG: Estimated MBRC was computed by SQLT as db_file_multiblock_read_count instead of _db_file_optimizer_read_count.</li>
+<li>BUG: Module XGRAM is now capable to handle CHAR columns in addition to VARCHAR2, NUMBER and DATE.</li>
+<li>BUG: Eliminate from SQLT$_CAPTURED_BINDS_V those rows where LAST_CAPTURED was NULL.</li>
+<li>BUG: Handle occasional LOB memory leak affecting MAIN report when processing othe_xml.<br>
+You had this bug if you see garbage with traces of some hints at the end of the MAIN report.</li>
+<li>BUG: SQLT Profile when asked to generate script on plan X it was doing so for plan Y.</li>
+<li>BUG: Metadata script used to fail replacing table owner on CREATE INDEX command when different than index owner.</li>
+<li>BUG: Avoid following error when using SQLT on a distributed environment and remote SQL is executed as some user other than local user.<br>
+ORA-20210: To download this file you must connect as "SYS", "SYSTEM", "SQLTXPLAIN", or "remote user"</li>
+<li>BUG: SQLT COMPARE was not showing plans when comparing files older than 11.4.3.8.</li>
+<li>ENH: RAW variables are now handled by SQLT TC scripts as VARCHAR2, and their values are passed within single-quotes,</li>
+<li>ENH: Added "REPRODUCED" flag to DBA_SQL_PLAN_BASELINES view and corresponding section in MAIN.</li>
+<li>ENH: Plan Info is now more accurate on Plans Summary and Execution Plans sections.</li>
+<li>ENH: RESTORE nows matches hidden columns by expression and data_default when restoring CBO stats into TC schema objects.</li>
+<li>ENH: Set the sequence sqlt$_sql_statement_id_s to NOCACHE.<br>
+Caching is intended to speed frequent access to the sequence (which does not happen here), and results in the sequence tending jump by units of 20.<br>
+This makes it harder to identify consecutive runs. This also applies to trca$_tool_execution_id.</li>
+<li>ENH: When setting system stats in the test case script, use "scope=memory" to avoid changing the spfile. Same for XPLORE.</li>
+<li>ENH: Report columns that use the ADD COLUMN...DEFAULT optimization in the "Column Properties" section.<br>
+Plan generation for such columns differs from normal columns because references to it are internally turned into the equivalent of NVL(column, default).</li>
+<li>ENH: Improve performance of sqlt$t.remap_metadata on 10g.<br>
+This API was using recursive code on a CLOB and it performed poorly on 10g when there were a large number of partitions or subpartitions.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.9 October 30, 2011</h3>
+
+<ol>
+<li>BUG: Test Case User suffix was duplicated in some TC scripts.</li>
+<li>ENH: Incorporate new sqlhc.sql into sqlt/utl.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.8 October 20, 2011</h3>
+
+<ol>
+<li>ENH: Using PX when doing COUNT(*) on large tables, improving SQLT performance.</li>
+<li>BUG: Fix errors below:<br>
+sqlt$a: *** d:ORA-06502: PL/SQL: numeric or value error: character string buffer too small<br>
+sqlt$a: *** d:DBMS_SQLTUNE.LOAD_SQLSET</li>
+<li>ENH: New health-check to detect when NLS_SORT is not set to BINARY.</li>
+<li>BUG: Child Address is now considered in order to avoid duplicates on INST_ID/SQL_ID/CHILD_NUMBER in GV$ objects.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.7 October 10, 2011</h3>
+
+<ol>
+<li>BUG: Handle error below when trace cannot be accessed.<br>ORA-22297: warning: Open LOBs exist at transaction commit time</li>
+<li>ENH: UTL_RAW is added to list of packages to grant to SQLTXPLAIN in case it is not set to PUBLIC.</li>
+<li>ENH: SQLTXPLAIN password is now enclosed in double quotes in order to allow for case sensitivity and avoid "ORA-00922: missing or invalid option" when installing SQLT under some special cases.</li>
+<li>ENH: Better granularity of SAMPLE when doing COUNT(*) on large tables, improving SQLT performance.</li>
+<li>ENH: Tesc Case User can now be changed on Metadata and it cascades into restore, del_hgrm and sqltc scripts.</li>
+<li>ENH: CBO "schema statistics import" resets the object creation time as per last analyzed date instead of saved time.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.6 August 16, 2011</h3>
+
+<ol>
+<li>BUG: RUN scripts now validate SQLT Package specs instead of SQLT Package Bodies. This change was needed for PSFT applications in order to avoid:<br>ORA-20100: SQLT is not properly installed. Review installation logs.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.5 August 10, 2011</h3>
+
+<ol>
+<li>ENH: Improved accuracy for Estimated Cardinality and Estimated Selectivity on Histograms sections of MAIN report.</li>
+<li>ENH: Better performance while creating a TC since populating CBO_STAT_TAB_4TC is now delayed until stand-alone TC is needed.</li>
+<li>ENH: Reduce the SAMPLE size while doing a COUNT(*) of very large tables.</li>
+<li>ENH: README report no longer using DBMS_STATS.AUTO_SAMPLE_SIZE on section "Gather CBO statistics with Histograms".</li>
+<li>ENH: Execution Plans in MAIN and COMPARE show now Captured Binds in addition to Peeked Binds.</li>
+<li>ENH: Scripts for main methods now verify SQLT is installed before executing. Error is very clear now.</li>
+<li>ENH: Deprecate VARCHAR2_TABLE type and use DBMS_DEBUG_VC2COLL instead.</li>
+<li>ENH: SQLT XGRAM does not have dependencies on SQLT now.</li>
+<li>ENH: SQL Plan Baselines section on MAIN report shows now Plan Hash Value column on list of Plans.</li>
+<li>BUG: Captured Binds of type TIMESTAMP are now showing captured value. They were showing NULL.</li>
+<li>ENH: SQLT XPLORE takes now one of two XPLORE methods: XECUTE or XPLAIN. The former is the legacy and the former is new and uses EXPLAIN PLAN FOR.</li>
+<li>ENH: Kill SQLT installation if this error is received: "ORA-12154: TNS:could not resolve the connect identifier specified".</li>
+<li>ENH: SQLT now provides a SILENT installation method with script sqlt/install/sqcsilent.sql. Installation parameters are pre-defined in a parameters script then SQLT is installed with no inline parameters.</li>
+<li>BUG: SQL Text is now handled in chunks of 2000 instead of 120. This change helps to avoid unwanted wraps that made q.sql, SQLT Profile and similar files to fail in SQLs with large line sizes and comments.</li>
+<li>ENH: SQLT XHUME handles now Table and Index Partitions.</li>
+<li>BUG: DOMAIN CONTEXT indexes were missing from MAIN report and METADATA script. SQLT handles now DOMAIN CONTEXT indexes.</li>
+<li>BUG: METADATA script included SYS, CTXSYS and PUBLIC schemas. These schemas are now skipped on METADATA script.</li>
+<li>ENH: New health-check to detect _optim_peek_user_binds is TRUE, a child cursor has captured binds, but it misses peeked binds. Possible application flaw or known Bug.</li>
+<li>ENH: SQLT TC script now shows which parameters were not set out of GV$SQL_OPTIMIZER_ENV because they are not real CBO parameters as per SYS.SQLT$_GV$PARAMETER_CBO_V.</li>
+<li>ENH: SQLT MAIN and COMPARE now show "Leading" section below Execution Plans, with a list of objects in the order they are joined. This is out of the LEADING hint from the OUTLINE.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.4 July 20, 2011</h3>
+
+<ol>
+<li>ENH: Plans Summary section in MAIN report shows "Max/Min Elapsed Time" for plans even when they have zero Executions, as long as "Elapsed Time" has some value.</li>
+<li>BUG: Extend format for "Time in Seconds" from '99999990D990' to '999999999999990D990'. This format is used by MAIN and COMPARE.</li>
+<li>ENH: View sys.sqlt$_gv$parameter_cbo created by SQLT is renamed to sys.sqlt$_gv$parameter_cbo_v in order to avoid confusion with user tables with same name.</li>
+<li>BUG: STA was not invoked when there were plans with large elapsed time in SQLT repository.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.3 July 14, 2011</h3>
+
+<ol>
+<li>ENH: Add some new columns to sqlt$_gv$sql_shared_cursor: sec_depth_mismatch, sql_redirect_mismatch, row_ship_mismatch, bind_equiv_failure, pddl_env_mismatch, use_feedback_stats and reason.</li>
+<li>BUG: SQLT 11.4.3.2 had CBO Statistics History (Versions) missing for Tables, Indexes, Columns and Histograms.</li>
+<li>BUG: SQLT 11.4.3.2 had CBO column usage missing.</li>
+<li>ENH: Implementation of SQL Test Case has been updated from ". tc.sh" to "./tc.sh".</li>
+<li>ENH: Script METADATA to call DBMS_STATS.DELETE_INDEX_STATS on each index right after CREATE INDEX command.</li>
+<li>ENH: Extract and report on DBA_SQLTUNE_PLANS regardless of the value of tool parameter "sql_tuning_advisor".</li>
+<li>ENH: Remove from README instructions on sqlt/utl/xhume/sqltrstobj.sql since they are now included under sqlt/utl/xhume/readme.txt,</li>
+<li>ENH: SELECTIVITY script to act only on tables owned by current USER (use USER_TABLES instead of DBA_TABLES).</li>
+<li>BUG: XHUME was showing CPU and ET in microseconds instead of seconds in section "Chronological list of Tests".</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.2 July 9, 2011</h3>
+
+<ol>
+<li>ENH: New advanced module XGRAM. It allows to insert, update and delete CBO histograms and individual buckets without the need to gather stats or to have the data.</li>
+<li>ENH: TC includes a new script sqlt_s99999_del_hgrm.sql which deletes all histograms in TC schema. It can be used to verify plan without histograms.</li>
+<li>ENH: Escape character has been changed on SQLT XECUTE from default "\" to "!". This allows now to use "\" within the SQL passed to SQLT XECUTE.</li>
+<li>ENH: Health-check on OPTIMIZER_SECURE_VIEW_MERGING excludes now validation of USER executing SQLT. It still validates PARSING_SCHEMA_OWNER.</li>
+<li>ENH: Change name of sys.gv$parameter_cbo to sys.sqlt$_gv$parameter_cbo. Same for similar views created and used by SQLT.</li>
+<li>ENH: New health-check to review when a column has a HEIGHT BALANCED histogram with no popular values and this column is referenced in a predicate.</li>
+<li>ENH: New section "Modified System Parameters" based on DBA_HIST_PARAMETER is now part of main report.</li>
+<li>ENH: Added a Bucket Decription for Adaptive Cursor Sharing "Histograms" section (GV$SQL_CS_HISTOGRAM).</li>
+<li>ENH: Skip SQL Tuning Advisor STA if max Elapsed Time for known plans is greater than "sta_time_limit_secs" threshold parameter (1800 secs).</li>
+<li>ENH: Readme section "Load SQL Plan from SQL Set" includes now a plan performance summary for each plan baseline that can be created out of syntax provided.</li>
+<li>ENH: Readme includes syntax to gather statistics if application is PeopleSoft PSFT as per 1322888.1.</li>
+<li>ENH: New set of health-checks to validate CBO statistics if application is PeopleSoft PSFT as per 1322888.1.</li>
+<li>ENH: New parameter "search_sql_by_sqltext" allows XPLAIN to control searches in memory and AWR using SQL text while trying to find known plans.</li>
+<li>ENH: Include GV$ACTIVE_SESSION_HISTORY and DBA_HIST_ACTIVE_SESS_HISTORY on main report (under SQL Execution).</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.1 June 17, 2011</h3>
+
+<ol>
+<li>BUG: Message "Column is referenced in predicate(s) and it is not included in any index." was shown incorrectly in cases where the column had a DESC clause in index.</li>
+<li>BUG: Script SET_CBO_ENV sets now "db_file_multiblock_read_count" before "_db_file_optimizer_read_count".</li>
+<li>BUG: Avoid error below by creating and maintaining SQLT/TRCA directories automatically.<br>ORA-22288: file or LOB operation FILEOPEN failed.</li>
+<li>ENH: Fix the "SQL Identification" section to clearly distinguish between identification of the original SQL Text and the stripped SQL Text, by having a separate column for each when they differ.</li>
+<li>ENH: Signatures (and outline signatures) are now shown for both versions (unstripped and stripped SQL Text).</li>
+<li>ENH: New expandable section for the unstripped SQL Text when it is different than stripped SQL Text.</li>
+<li>ENH: A new tuning task is now created on the stripped SQL text so that accepting it will have benefit. This is done by extracting the bind_list and user_name from memory when using XECUTE so that the task can be created directly on the SQL text.</li>
+<li>ENH: All SQLT scripts including XECUTE set now APPINFO to OFF. This is needed by XECUTE to avoid selecting the following SQL when /* ^^unique_id */ is missing from input script<br>"BEGIN DBMS_APPLICATION_INFO.SET_MODULE(:1,NULL); END;"</li>
+<li>ENH: Added instructions in dynamic readme to export the SQLT repository manually.</li>
+<li>ENH: SQLT is now Peolple Soft PSFT aware.</li>
+<li>ENH: SQLT MAIN and COMPARE reports include now SIEBEL and PSFT version (application or tools).</li>
+<li>ENH: SQLT XPLORE uses now SQL Monitor report on 11g. This new functionality is controlled with an execution parameter.</li>
+<li>BUG: SQLT XHUME was getting error below when statistics history included versions with lock.<br>ORA-20005: object statistics are locked (stattype = ALL)</li>
+<li>BUG: SQLT XHUME was not initializing first test with oldest version but with current timestamp. This caused some consecutive executions to generate different results.</li>
+<li>ENH: GLOBAL and USER STATS are now added to sqlt$_dba_tab_stats_versions_v and sqlt$_dba_ind_stats_versions_v views and corresponding sections in MAIN report.</li>
+<li>BUG: CBO parameter "optimizer_features_enable" is now referenced just once in SET_CBO_ENV script. It used to be twice.</li>
+<li>BUG: METADATA uses now &#94; instead of &#38; for the DEFINE (character used to prefix substitution variables). This allows now to have PL/SQL libraries with &#38; and not having to modify them on METADATA.</li>
+<li>ENH: If SQLT XECUTE was used and &#94;&#94;unique_id is missing, an observation is now included in MAIN report.</li>
+<li>BUG: Custom SQL Profile excludes now those plans for which there is an entry on Plans Summary but such plan lacks OTHER_XML information (thus Hints for Profile).</li>
+<li>ENH: SQL Monitoring "Starts" and "Output Rows" are now included on SQLT XTRACT MAIN execution plans when SQL "hangs". In other words, when it takes very long to execute.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.3.0 May 20, 2011</h3>
+
+<ol>
+<li>SQL Monitoring Active report is now enabled for 11.1.0.7.</li>
+<li>SQL Detail Active report is now available for 11.2 or higher.</li>
+<li>Script coe_load_sql_baseline.sql packages created SQL Plan Baseline into staging table and exports it in case it needs to be implemented into a similar system.</li>
+<li>New script coe_load_sql_profile.sql to create a Custom SQL Profile for an Original SQL using the plan from a Modified SQL (usually with Hints).</li>
+<li>Fix: t:sqlt_plan_hash_value: ORA-01460: unimplemented or unreasonable conversion requested.</li>
+<li>Size of Main report is gradually reduced if file size is larger than 50MB. Controlled by sqlt_max_file_size_mb/2.</li>
+<li>SQLT takes control over TRCA directories. This avoids errors when a DB is cloned then SQLT is used on it.</li>
+<li>SQLT XTRACT generates EBS multi-org APIs calls in TC script so they can be used by SQLT XECUTE.</li>
+<li>SQLT Plan Hash Value handles now objects with name 'SYS_TEMP%' and 'index$_join$_%'.</li>
+<li>SQLT XTRACT, XECUTE, XPLAIN, XTRXEC, XTRSET, COMPARE, TRCANLZR provide a clear error message when executed without installing SQLT.</li>
+<li>New health-check for bugs 10248781, 9885553 and 9842771.</li>
+<li>Restore of CBO statistics for a TC allows now to upgrade or downgrade the CBO stats table to the current version of the target system.</li>
+<li>Scaling Factor column has been replaced by more meaningful column: Over/Under Estimate.</li>
+<li>Metadata width was changed from 120 to 1000 in sqlt$m.metadata_sec and sqlt$t.remap_metadata to avoid errors on metadata script.</li>
+<li>Fix error below:<br>d:ORA-12899: value too large for column "SQLTXPLAIN"."SQLT$_DBA_TAB_SUBPARTITIONS"."COMPRESS_FOR" (actual: 16, maximum: 12)</li>
+<li>Add Tablespaces for Temp and Undo.</li>
+<li>Main report includes now a clear error when SQLT was executed with a user other than the application user, and "EXPLAIN PLAN FOR" fails.</li>
+<li>SQLT now includes "Nested Tables" as per DBA_NESTED_TABLES, DBA_NESTED_TABLE_COLS and DBA_OBJECT_TABLES views.</li>
+<li>SQLT TC now handles special characters like '$' within the schema owner from the source system.</li>
+<li>NLS Parameters are now included in MAIN report (NLS_SESSION_PARAMETERS, NLS_INSTANCE_PARAMETERS and NLS_DATABASE_PARAMETERS). COMPARE report includes NLS Session Parameters.</li>
+<li>MAIN report includes now OPTIMIZER_ENV_HASH_VALUE.</li>
+<li>SQLTRCANLZR and SQLTXTRSET validate now they are executed from within sqlt/run directory.</li>
+<li>Call to DBMS_STATS.GATHER_TABLE_STATS on README report uses now DBMS_STATS.AUTO_SAMPLE_SIZE for 11g. It also uses SIZE AUTO when Histograms are generated.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.7 April 8, 2011</h3>
+
+<ol>
+<li>Several enhancements to new method XHUME.</li>
+<li>Filename sizes increased from 128 to 256 in order to accommodate output file identifier needed by EBS.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.6 March 28, 2011</h3>
+
+<ol>
+<li>New method XHUME allows to discover plans by restoring TC schema object statistics to several points in time.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.5 March 20, 2011</h3>
+
+<ol>
+<li>Add a "/" and SHOW ERRORS after packages, procedures, functions and views in Metadata script.</li>
+<li>Fix on 11.2.0.2: ORA-12899: value too large for column "SQLTXPLAIN"."SQLT$_DBA_TAB_PARTITIONS"."SEGMENT_CREATED" (actual: 4, maximum: 3)</li>
+<li>Default and temporary tablespace names for SQLTXPLAIN schema owner are now case sensitive.</li>
+<li>COMPARE includes now low and high column values from RAW and not only from NUMBER.</li>
+<li>Fix duplicate rows on STS staging table, which would produce error when restoring a STS.</li>
+<li>EBS script bde_chk_cbo.sql is now a PL/SQL call.</li>
+<li>Staging SQLT STATTAB tables are now upgraded in the sqcobj.sql script in order to avoid "ORA-20002: Version of statistics table SQLTXPLAIN.SQLT$_STATTAB is too old.".</li>
+<li>XPLORE has now 3 parameters when creating XPLORE script. New parameter is EXADATA parameters.</li>
+<li>New set of APIs under package SQLT$E to allow the execution of SQLT from a PL/SQL package.</li>
+<li>All TC spool files are now reports so they are stored in repository as any other SQLT report.</li>
+<li>SQLT log file is now a report, which is stored into SQLT repository and visible to new SQLT$E APIs.</li>
+<li>Special method TRCANLZR can now execute XTRACT on Top SQL.</li>
+<li>New special method XTRSET allows the XTRACT on a set of SQL statements. Useful for benchmarks of the same list of SQL statements over several tests.</li>
+<li>Enhanced instructions including new methods TRCANLZR, TRCASET and XTRSET.</li>
+<li>Module and Action are updated for TRCA using DBMS_APPLICATION_INFO.</li>
+<li>Inluded instructions to reduce the SQLT execution time when there is a large number of subpartitions.</li>
+<li>Partition Start and Stop show now on main Plan section as columns in addition to the "more" column.</li>
+<li>New health-check to detect 10174050 (frequency histograms with less buckets than number of distinct values).</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.4 February 18, 2011</h3>
+
+<ol>
+<li>New sqltrstobj (reset object) script for test cases where the schema object statistics have to be restored to a point in time.</li>
+<li>Include method and instance on list of statements for: compare, histfile, histpurge, profile and rstobj scripts.</li>
+<li>Collect SQL Sets not only on 11g but also on 10g. SQL Set is not exported for 10.2 and 11.1, it stays on SQLI$_STGTAB_SQLSET.</li>
+<li>SQL Monitor Active Report is now included for 11.1 or higher.</li>
+<li>Fix following error on XPLORE for some PX plans: ORA-01422: exact fetch returns more than requested number of rows.</li>
+<li>New script coe_load_sql_baseline.sql to create a SQL Plan Baseline for an Original SQL based on a Modified SQL (with Hints).</li>
+<li>SQLT Plan Hash Value to ignore "STORAGE" keyword from PLAN_TABLE.OPTIONS column and "VW_ST%" from PLAN_TABLE.OBJECT_NAME.</li>
+<li>New SQLT Plan Hash Value2 which depends also on Access and Filter Predicates.</li>
+<li>XPLORE includes now "_sort_elimination_cost_ratio".</li>
+<li>XPLORE includes now 9 EXADATA parameters.</li>
+<li>XPLORE asks now what must be tested: Parameters and/or Bug Fix Control.</li>
+<li>TC Expert mode becomes Express mode. Step-by-step becomes Custom mode.</li>
+<li>TC create schema objects has been moved to first step.</li>
+<li>Test case user now takes a case-sensitive string as a suffix. For example initials of the person doing the test.</li>
+<li>Include the opatch zip inside the tc zip file in addition to keeping it in main zip. Update section "Create stand-alone test case based on a SQLT TC" on readme.</li>
+<li>Add selectivity and selectivity_aux scripts into tc zip file.</li>
+<li>Added sqlt/utl/sqltmain.sql script to re-generate main html report based on SQLT repository.</li>
+<li>Script SET_CBO_ENV warns that some ALTER SYSTEM commands will be executed.</li>
+<li>SQL Text is now collapsable in main report for execution plans and binds display.</li>
+<li>SQLT XECUTE phase of XTRXEC does not exit now if there were an error in an ALTER SESSION/SYSTEM parameter.</li>
+<li>Scope of SQLT Tool Parameters can now be set at the session level in addition to permanent.</li>
+<li>SQLT IMP to show a column of OK when value of "IN STATTAB" and in "RESTORE" columns are the same.</li>
+<li>SQLT XTRXEC skips now STA and TCB on XEC phase.</li>
+<li>SQLT now createa a tuning set from AWR even if SQL is no longer in memory.</li>
+<li>Trace Analyzer can now be called directly from SQLT by using sqlt/utl/sqltrcanlzr.sql script.</li>
+<li>Audit Policies section has been incorporated to main html report.</li>
+<li>Method XTRXEC is now part of the Main SQLT methods and not an Advanced method.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.3 January 14, 2011</h3>
+
+<ol>
+<li>Table Modifications section is added to main menu on main html report.</li>
+<li>New health-check to detect columns with missing low/high values and their number of distinct values is greater than zero.</li>
+<li>New Advanced Cursor Sharing section in main report.</li>
+<li>New parameter event_10507_level added to trace Cardinality Feedback on SQLT XECUTE 11g.</li>
+<li>SQLT now exports SQL Profiles and SQL Plan Baselines associated to a SQL. They can be easily restored into the same system or similar. Readme contains detailed instructions.</li>
+<li>Metadata to create types is now executed 3 times in a row in order to reduce errors due to type dependencies.</li>
+<li>Validate that SYSAUX is not specified as TABLESPACE for SQLTXPLAIN during installation.</li>
+<li>New observation with number of tables with stale statistics.</li>
+<li>New observation if connected user is missing the SQLT_USER_ROLE role.</li>
+<li>SIEBEL aware. It includes CBO statistics and parameters health-checks as per 781927.1. It also includes instructions to gather statistics in the readme.</li>
+<li>Updated bde_chk_cbo.sql to identify CBO parameters.</li>
+<li>New observation if DB_FILE_MULTIBLOCK_READ_COUNT is set.</li>
+<li>New observation if OPTIMIZER_FEATURES_ENABLE from Optimizer Enviornment is different than RDBMS Release.</li>
+<li>New observation if OPTIMIZER_DYNAMIC_SAMPLING is between 1 and 3.</li>
+<li>New observations with count of CBO parameters with non-default or modified values.</li>
+<li>New observation when OPTIMIZER_SECURE_VIEW_MERGING is ON and there are views not owned by USER or parsing schema name.</li>
+<li>CREATE script verifies that TABLESPACE to be used by this tool has at least 100 free megabytes.</li>
+<li>New observation if index DOP is not the same as its table DOP.</li>
+<li>Wait events from V$EVENT_NAME are now updated as of 11.2.0.2</li>
+<li>New "Go To" column in Plan so user can navigate to Table or Index details directly from Plan.</li>
+<li>Columns "More" and "Binds" are now just after "Operation" in Plan.</li>
+<li>Plan History from DBA_HIST_SQLSTAT is now included in main report.</li>
+<li>DBA_HIST_ACTIVE_SESS_HISTORY and GV$ACTIVE_SESSION_HISTORY are now included into SQLT repository.</li>
+<li>DBA_POLICIES, DBA_AUDIT_POLICIES and V$VPD_POLICY are now included into SQLT repository.</li>
+<li>Max Index Selectivity: Index Selectivity where Full Index Scan Cost meets Full Table Scan Cost. A value of 0.02 means that if selecting 2% of the rows or less, an index scan is cheaper than a FTS.</li>
+<li>Include index clustering factor quality in terms of location between table blocks and table rows.</li>
+<li>Include computed selectivity and cardinality for an equality predicate for each table column.</li>
+<li>XTRACT generates SQL Tuning Sets for each plan on 11g. A STS can then be loaded into a SQL Plan Baseline if needed.</li>
+<li>Readme includes now instructions to load a STS on 11g into a SQL Plan Baseline. On 11.2 it also includes how to migrate a STS captured by SQLT XTRACT.</li>
+<li>Tested SQLT in EXADATA. All fine.</li>
+<li>DBMS_STATS Setup section includes now Statistics for SYS Tables.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.1 October 24, 2010</h3>
+
+<ol>
+<li>SQLT: Reset some initialization parameters to default values for Siebel applications after SQL has been executed.</li>
+<li>SQLT: Fix "ORA-20002: Version of statistics table SQLTXPLAIN.SQLI$_STATTAB_TEMP is too old." when executing sqltimp.sql on 11.2.0.2</li>
+<li>TRCA: Fix "ORA-01426: numeric overflow" when analyzing a trace generated on 11.2.0.2 and cursor number is very large (after fix for 7309111 is applied).</li>
+<li>TRCA: Relevant executions for Top SQL include now up to 5 FETCH calls: First, Second, Third, Last and the one with largest Elapsed Time. This functionality allows to measure time to return first set of rows.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.2.0 September 18, 2010</h3>
+
+<ol>
+<li>Fix "ORA-02065: illegal option for ALTER XXX" when executing SQLT XECUTE on a TC script generated by XTRACT and the value passed is like "2097152 KB".</li>
+<li>TC script has now all ALTER commands commented out.</li>
+<li>Directory paths for SQLT$UDUMP and SQLT$BDUMP is now derived from UDUMP, BDUMP else DBA_DIRECTORIES.</li>
+<li>PX Processes section shows QC. PX Sessions section shows server name.</li>
+<li>Fix "ORA-01722: invalid number. ORA-06512: at line 83" in tautltest.log when SQLT is installed in non-english character sets.</li>
+<li>Traces are now truncated at center as per parameter "upload_trace_size_mb".</li>
+<li>XPLORE to include E-Rows in list of discovered plans.</li>
+<li>Parallel Processing section now focus on QC for statement that used PX in XECUTE method.</li>
+<li>Segment Statistics are now restricted to display first 300 more relevant rows.</li>
+<li>Statement response time (wall clock time) is now included in XECUTE and COMPARE.</li>
+<li>Plan Info is added to Plans Summary, Plans Performance Statistics and Execution Plans.</li>
+<li>TKPROFs for PX processes were missing for 10046_10053 traces.</li>
+<li>XPLORE includes now SQLT Plan Hash Value to ease finding a known plan among the discovered plans.</li>
+<li>New sqlt_s99999_tc.zip subdirectory contains all SQLT Test Case files, includimp dmp export file.</li>
+<li>Simplified SQLT test case creation.</li>
+<li>Simplified stand-alone test case creation.</li>
+<li>SQLT Plan Hash Value is now computed ignoring table names that start with SYS_TEMP.</li>
+<li>Not all multi-column or single_column indexes were displayed in "indexed columns" section.</li>
+<li>XPLORE captures v$sql_plan_statistics_all for all tests it performs. This is for detailed analysis.</li>
+<li>Errors during use of SQLT were not recorded in SQLT log file.</li>
+<li>New tool parameter "healthcheck_endpoints" to disable "compute_mutating_endpoints" if needed.</li>
+<li>SQLT now captures all columns of WRI$ tables, which are needed to restore schema object stats to point in time in a test case.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.6 August 20, 2010</h3>
+
+<ol>
+<li>Fix "ORA-00979: not a GROUP BY expression" when compiling view sqlt$_dba_tab_col_statistics_v during installation on 10.2.0.3.</li>
+<li>Workaround bugs 9299013 and 9559544 producing<br>ORA-12801: error signaled in parallel query server P000<br>ORA-00600: internal error code, arguments: [15714], [], [], [], [], [], [], [], [], [], [], []<br>ORA-06512: at "SQLTXPLAIN.TRCA$T", line 459</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.5 August 4, 2010</h3>
+
+<ol>
+<li>SQLT includes now PX and PQ views. It also includes PX traces and tkprofs on XECUTE.</li>
+<li>Reduce the size of main report on 11.2 by regulating size of "DBMS_STATS Operations History" section.</li>
+<li>Installation asks now for "Connect Identifier". This parameter is useful when access to database server is restricted.</li>
+<li>Output of script executed by XECUTE is now eliminated from log file. This is to avoid application data to be displayed into XECUTE log.</li>
+<li>Better error message when input file provided to XPLAIN or XECUTE is not found.</li>
+<li>New health-check observation when a table is global temporary and its CBO statistics are in zero.</li>
+<li>New health-check observations when SREADTIM or MREADTIM are too small or too large.</li>
+<li>COMPARE includes now estimated and actual performance of the compared plans.</li>
+<li>COMPARE only requires to enter plan hash value if there is more than one for given statement id.</li>
+<li>New healh-check observation when SQLT$UDUMP and USER_DUMP_DEST do not match.</li>
+<li>History of V$PARAMETER captured in DBA_HIST_PARAMETER added to Initialization Parameters section.</li>
+<li>Fix error below:<br>ORA-20000: ORU-10027: buffer overflow, limit of 1000000 bytes</li>
+<li>New parameter "skip_metadata_for_object" that allows to skip one or many objects from metadata extraction.</li>
+<li>Fix bug 9967741 which would cause error below when SQL accesses tables with domain indexes:<br>ORA-20318: Value E not in list: Y N</li>
+<li>New health-check observations if tables or indexes have a degree of parallelism greater than 1.</li>
+<li>Exclude these index types from statistics health-checks: "DOMAIN", "LOB" and "FUNCTION-BASED DOMAIN".</li>
+<li>Tool parameter "event_others" defaults now to "N".</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.4 July 12, 2010</h3>
+
+<ol>
+<li>Fix error below:<br>ORA-12899: value too large for column "SQLTXPLAIN"."SQLT$_DBA_TABLES"."COMPRESS_FOR"</li>
+<li>SQLT can handle now distributed queries. SQLT must be installed in local and remote nodes.</li>
+<li>New health-check on Low/High values for DATE columns used in predicates. Low &gt; 10 years in the past. High &lt; 3 years in the future.</li>
+<li>SQLT maximum file size is now controlled by parameters "upload_trace_size_mb" and "sqlt_max_file_size_mb". Default value is 100M.</li>
+<li>Two readme files are now provided. One is HTML and the other is TXT.</li>
+<li>Include 10053 traces out of user_dump_dest directly.</li>
+<li>Workaround ORA-07445: exception encountered:<br>BEGIN CTXSYS.CTX_REPORT.CREATE_INDEX_SCRIPT(index_name => :name, report => :report); END;</li>
+<li>XPLORE script performs now: ALTER SESSION SET STATISTICS_LEVEL = ALL;</li>
+<li>Main report includes now SQL to get subpartition statistics and histograms out of the SQLT repository.</li>
+<li>SQLT XECUTE missed the dmp export file when "SET TIMING ON" was executed right before XECUTE. This is fixed now.</li>
+<li>Cleaning plan table in order to avoid "ORA-01722: invalid number" in "INSERT INTO sqlt$_plan_extension".</li>
+<li>Export file includes only those SQLT tables with data. It avoids following errors in 11.2<br>IMP-00003: ORACLE error 959 encountered<br>ORA-00959: tablespace 'DATA01' does not exist</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.3 June 8, 2010</h3>
+
+<ol>
+<li>Fix error below while using SQLT XTRACT:<br>ORA-06502: PL/SQL: numeric or value error: Bulk Bind: Truncated Bind<br>ORA-06512: at "SQLTXPLAIN.SQLT$D", line 1338</li>
+<li>Fix error below on INSERT INTO sqlt$_dba_hist_sqlbind:<br>ORA-22950: cannot ORDER objects without MAP or ORDER method</li>
+<li>Fix duplicate rows shown in "Table Statistics" and "Index Statistics" report sections when tables and indexes have same names.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.2 June 3, 2010</h3>
+
+<ol>
+<li>Fix error below calling TRCA from SQLT XECUTE:<br>ORA-06550: line 1, column 7:<br>PLS-00306: wrong number or types of arguments in call to 'TRCANLZR'<br>ORA-06550: line 1, column 7:</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.1.1 June 1, 2010</h3>
+
+<ol>
+<li>Incorporate Trace Analyzer TRCA as part of SQLT XECUTE.</li>
+<li>Installation parameter "Oracle Pack license" defaults now to "T" (Oracle Tuning Pack).</li>
+<li>SQLT STAGE and UDUMP directories can now be specified during installation.</li>
+<li>Oracle patch inventory is now included on methods XTRACT, XECUTE and XPLAIN.</li>
+<li>Captured bind values are now enclosed in double quotes consistent to peeked bind values.</li>
+<li>New parameter "c_cbo_stats_vers_days" to control number of days to capture CBO statistics versions.</li>
+<li>New parameter "event_10053_level" to enable or disable event 10053 trace on SQLT XECUTE, XTRACT and XPLAIN.</li>
+<li>New parameter "event_10046_level" to set level of event 10046 trace to 12, 8, 4, 1 or 0 on SQLT XECUTE.</li>
+<li>New parameter "event_others" to enable or disable events 10241, 10032, 10033, 10104, 10730, 46049 on SQLT XECUTE when 10046 is enabled.</li>
+<li>Reduce size of main html report by restricting lists of "Statistics Versions" for tables, indexes, and index columns.</li>
+<li>Include user_dump_dest, background_dump_dest and SQLT/TRCA directories in log files for XTRACT, XECUTE and XPLAIN.</li>
+<li>EBS Histograms link was inactive even when EBS system had histograms in related columns.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.0.5 May 20, 2010</h3>
+
+<ol>
+<li>Remove duplicate rows seen in Captured Binds section.</li>
+<li>Fix error below:<br>ORA-01422: exact fetch returns more than requested number of rows<br>ORA-06512: at "SQLTXPLAIN.SQLT$A", line 1627<br>ORA-06512: at "SQLTXPLAIN.SQLT$I", line 839</li>
+<li>New SQLT Plan Hash Value. It is used to compare similar plans when table owners are different. Oracle plan hash value is different. SQLT plan hash value is same.</li>
+<li>New parameter "c_dba_hist_parameter" to control collection of relevant rows out of view DBA_HIST_PARAMETER.</li>
+<li>Fix Bug 9717863 with error below:<br>ORA-06502: PL/SQL: numeric or value error: Bulk Bind: Truncated Bind<br>ORA-06512: at "SQLTXPLAIN.SQLT$D", line 1368</li>
+<li>Enhanced README report to include detailed instructions to use the COMPARE method.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.0.4 May 6, 2010</h3>
+
+<ol>
+<li>Fix error below while calling: SQL> EXEC sqltxplain.sqlt$i.xecute_end.<br>ORA-06502: PL/SQL: numeric or value error: host bind array too small<br>ORA-06512: at line 1</li>
+<li>Workaround error on Execution Plans section:<br>plan_exec_sec: ORA-01801: date format is too long for internal buffer</li>
+<li>Fix Bug 9684719 - SQLT XTRACT ORA-22275 INVALID LOB LOCATOR SPECIFIED while calling: SQL> EXEC sqltxplain.sqlt$i.xtract.<br>ORA-22275: invalid LOB locator specified<br>ORA-06512: at "SYS.DBMS_LOB", line 560<br>ORA-06512: at "SQLTXPLAIN.SQLT$I", line 419</li>
+<li>Fix error: d:ORA-01436: CONNECT BY loop in user data.</li>
+<li>Fix error: d:ORA-01472: cannot use CONNECT BY on view with DISTINCT, GROUP BY, etc.</li>
+<li>Replace dependencies collection algorithms for better accuracy and performance.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.0.3 April 22, 2010</h3>
+
+<ol>
+<li>Change generation order of MV/TABLE on metadata script. Now MVs are generated first.</li>
+<li>Schema owner in metadata script includes "." as suffix. This avoids some bad names in triggers like &&SCHEMA_SFP.SFP_PROJT becoming TC15198SFP_PROJT. ORA-00942: table or view does not exist.</li>
+<li>Table references within triggers (or any other library) are now included in metadata script.</li>
+<li>Workaround ORA-07445 caused by CTXSYS.CTX_REPORT.CREATE_INDEX_SCRIPT by creating new tool parameter "domain_index_metadata".</li>
+<li>Enhanced COUNT(*) using proportional SAMPLE clause for large tables.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.0.2 April 13, 2010</h3>
+
+<ol>
+<li>Fix Bug 9580238 - SQLT XTRACT FAILS WITH ORA-22275: INVALID LOB LOCATOR SPECIFIED.</li>
+<li>Change background color in titles from f0f0d0 to cccc99.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<h3>11.4.0.1 April 11, 2010</h3>
+
+<ol>
+<li>SQLT 3rd generation. New data model and code for 10.2 and higher.</li>
+</ol>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+
+<hr size="3">
+</body>
+</html>
