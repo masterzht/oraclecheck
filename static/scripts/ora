@@ -4934,7 +4934,22 @@ if [ "$1" = "4030" ]; then
 echo "current instance only"
 exit 0
 fi
-################10046 ###################
+#######################
+if [ "$1" = "sqlt" ]; then
+  echo ""
+  echo "All About the SQLT Diagnostic Tool (Doc ID 215187.1)"
+  echo "SQLT Usage Instructions (Doc ID 1614107.1)	"
+  echo "======================"
+  echo"""
+# cd sqlt/install
+# sqlplus / as sysdba
+SQL> START sqcreate.sql
+
+
+  """
+exit 1
+fi
+######################
 if [ "$1" = "10046" ]; then
   echo ""
   echo "Run 10053 Command"
@@ -9675,6 +9690,9 @@ if [ "$1" = "sqltune" ]; then
     var bid varchar2(100);
     var eid varchar2(100);
     var sql_id varchar2(100);
+    SET LONG 10000
+    SET PAGESIZE 1000
+    SET LINESIZE 200
     alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 begin
     :bid :='$bid';
@@ -9701,13 +9719,11 @@ dbms_output.put_line('======================');
 dbms_output.put_line('');
 dbms_output.put_line('Running the tuning task');
 dbms_output.put_line('======================');
-exec DBMS_SQLTUNE.execute_tuning_task(task_name => v_sql_tune_task_name);
+-- exec DBMS_SQLTUNE.execute_tuning_task(task_name => v_sql_tune_task_name);
 
-SELECT task_name, status FROM dba_advisor_log WHERE task_name like v_sql_tune_task_name;
+SELECT task_name, status FROM dba_advisor_log WHERE task_name like '%:sql_id%' order by EXECUTION_START desc;
 
-SET LONG 10000;
-SET PAGESIZE 1000
-SET LINESIZE 200
+
 SELECT DBMS_SQLTUNE.report_tuning_task(v_sql_tune_task_name) AS recommendations FROM dual;
 
 END;
