@@ -9659,11 +9659,11 @@ if [ "$1" = "sqltune" ]; then
 
     connect $DBUSER
 
-SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
-SET TERMout off ECHO OFF feedback off
-set trims on
-SPOOL create_sqltune_task.log
-
+    SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
+    SET TERMout off ECHO OFF
+    set trims on
+    SET TRIMSPOOL ON
+    spool ora_create_sqltune_task_$filedate.log
     set timing off
     set serveroutput on
     set feedback off
