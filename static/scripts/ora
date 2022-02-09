@@ -9632,10 +9632,206 @@ fi
 
 #########################
 if [ "$1" = "sqltune" ]; then
-echo "SQL Tuning Advisor"
-   if [ "$2" = "" -o "$3" = "" ]; then
-     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-     connect $DBUSER
+   if [ "$2" = "" ]; then
+echo """
+ALL Abount SQL Tuning Advisor
+======================
+SET SERVEROUTPUT ON
+
+-- Tuning task created for specific a statement from the AWR.
+DECLARE
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          begin_snap  => 28809,
+                          end_snap    => 28810,
+                          sql_id      => 'gbs7bwgtcbn04',
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          task_name   => 'gbs7bwgtcbn04_tuning_task',
+                          description => 'Tuning task for statement gbs7bwgtcbn04 in AWR.');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+END;
+/
+
+-- Tuning task created for specific a statement from the cursor cache.
+DECLARE
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          sql_id      => 'gbs7bwgtcbn04',
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          task_name   => 'gbs7bwgtcbn04_tuning_task',
+                          description => 'Tuning task for statement gbs7bwgtcbn04.');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+END;
+/
+
+-- Tuning task created from an SQL tuning set.
+DECLARE
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          sqlset_name => 'test_sql_tuning_set',
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          time_limit  => 60,
+                          task_name   => 'sqlset_tuning_task',
+                          description => 'Tuning task for an SQL tuning set.');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+END;
+/
+
+-- Tuning task created for a manually specified statement.
+DECLARE
+  l_sql               VARCHAR2(500);
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+  l_sql := 'SELECT e.*, d.* ' ||
+           'FROM   emp e JOIN dept d ON e.deptno = d.deptno ' ||
+           'WHERE  NVL(empno, ''0'') = :empno';
+
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          sql_text    => l_sql,
+                          bind_list   => sql_binds(anydata.ConvertNumber(100)),
+                          user_name   => 'scott',
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          time_limit  => 60,
+                          task_name   => 'emp_dept_tuning_task',
+                          description => 'Tuning task for an EMP to DEPT join query.');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+END;
+/
+
+--running the tuning task
+======================
+EXEC DBMS_SQLTUNE.execute_tuning_task(task_name => 'gbs7bwgtcbn04_tuning_task');
+
+--select the tuning task status
+======================
+SELECT task_name, status FROM dba_advisor_log WHERE task_name like 'gbs7bwgtcbn04_tuning_task';
+
+TASK_NAME                      STATUS
+------------------------------ -----------
+84w2p0s2zq9td_tuning_task      COMPLETED
+
+
+--report tuning task
+======================
+set long 99999999 linesize 1000 pages 0
+select DBMS_SQLTUNE.report_tuning_task('gbs7bwgtcbn04_tuning_task') AS recommendations from dual;
+
+--accept sql profile
+======================
+DECLARE
+my_sqlprofile_name VARCHAR2(30);
+BEGIN
+my_sqlprofile_name := DBMS_SQLTUNE.ACCEPT_SQL_PROFILE (task_name => 'gbs7bwgtcbn04_tuning_task',name => '1zp1p359ppm80_sql_profile');
+END;
+/
+--drop sql profile
+EXEC DBMS_SQLTUNE.DROP_SQL_PROFILE('coe_atkdk3q54jhy4_522459436');
+
+--drop tuning task
+EXEC DBMS_SQLTUNE.drop_tuning_task (task_name => 'coe_4b061vggv5xc9_514643384');
+
+--set table
+exec dbms_stats.set_table_stats('CS2_PARTY_OWNER', 'CS2_CT_MVMT', num_rows=>null, no_invalidate=>false);
+--set columns
+exec DBMS_STATS.SET_COLUMN_STATS('CS2_SHIPMENT_FOLDER_OWNER','SHIPMENT_FOLDER_REFERENCE','REFERENCE_NUMBER',distcnt=>8338272,density=>1/8338272,no_invalidate=>false,force=>true);
+exec DBMS_STATS.SET_COLUMN_STATS('CS2_SHIPMENT_FOLDER_OWNER','SHIPMENT_FOLDER_REFERENCE','SYS_NC00006$',distcnt=>8338272,density=>1/8338272,no_invalidate=>false,force=>true);
+exec DBMS_STATS.SET_COLUMN_STATS('MCCIOWNER','MCCI_ILM_INTERACTION_REF','REF_KEY_VALUE',distcnt=>10439783,density=>1/10439783,no_invalidate=>false,force=>true)
+
+--lock table
+exec DBMS_STATS.LOCK_TABLE_STATS('CS2_SHIPMENT_FOLDER_OWNER','SHIPMENT_FOLDER_REFERENCE');
+======================
+"""
+echo "./ora sqltune [ awr|sql_id ]"
+echo ""
+   exit 0
+fi
+
+if [ "$2" = "SQL" -o "$2" = "sql" ]; then
+  if [ "$3" = ""  ]; then
+     read -p "Please input sql_id:" sql_id
+  if [ -z "${sql_id}" ];then
+         echo "no input , exit"
+         exit 1
+  fi
+  else
+    sql_id=$3
+  fi
+
+  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+
+    connect $DBUSER
+
+    SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
+    SET TERMout off ECHO OFF
+    set trims on
+    SET TRIMSPOOL ON
+    spool ora_create_sqltune_task_$filedate.log
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    set linesize 500
+    undefine sql_id
+    var sql_id varchar2(100);
+    SET LONG 10000
+    SET PAGESIZE 1000
+    SET LINESIZE 200
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+begin
+    :sql_id := '$sql_id';
+end;
+/
+
+DECLARE
+  v_tuning_task_name  VARCHAR2(100);
+BEGIN
+  dbms_output.put_line('
+Tuning task created for specific a statement from the cursor cache.');
+  dbms_output.put_line('======================');
+  v_tuning_task_name := DBMS_SQLTUNE.create_tuning_task (
+                          sql_id      => :sql_id,
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          task_name   => :sql_id || '_tuning_task',
+                          description => 'Tuning task for statement' || :sql_id);
+  dbms_output.put_line('Step1 |Tuning Task created success!! : ' || v_tuning_task_name);
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step2 |exec dbms_sqltune.execute_tuning_task(task_name =>'||''''||v_tuning_task_name||''''||');');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task('||''''||v_tuning_task_name||''''||') AS recommendations FROM dual;');
+  dbms_output.put_line('======================');
+exception
+ when others then
+  dbms_output.put_line('Step1 |failed to execute!' || 'description: ' || SQLERRM);
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step2 |exec dbms_sqltune.execute_tuning_task(task_name => task_name);');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task(task_name) AS recommendations FROM dual;');
+  dbms_output.put_line('======================');
+END;
+/
+
+    $ECHO
+    spool off
+!
+echo "create sql tuning task for sql_id $sql_id"
+  exit 0
+fi
+
+
+
+
+if [ "$2" = "AWR" -o "$2" = "awr" ]; then
+  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
     set linesize 150 pagesize 30
     col begin_interval_time format a20
     col end_interval_time format a20
@@ -9674,7 +9870,7 @@ echo "SQL Tuning Advisor"
    else
     bid=$2
     eid=$3
-  fi
+   fi
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -9709,32 +9905,33 @@ end;
 
 DECLARE
   v_sql_tune_task_name  VARCHAR2(100);
+  l_sql_tune_task_id  VARCHAR2(100);
 BEGIN
 dbms_output.put_line('');
 dbms_output.put_line('Tuning task created for specific a statement from the AWR.');
 dbms_output.put_line('======================');
-  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
-                          begin_snap  => :bid,
-                          end_snap    => :eid,
-                          sql_id      => :sql_id,
-                          scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
-                          description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
-  DBMS_OUTPUT.put_line('sql_tune_task_name: ' || v_sql_tune_task_name);
+--  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
+--                          begin_snap  => :bid,
+--                          end_snap    => :eid,
+--                          sql_id      => :sql_id,
+--                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+--                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
+--                          description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
+--  DBMS_OUTPUT.put_line('sql_tune_task_name: ' || v_sql_tune_task_name);
+
 
 dbms_output.put_line('');
 dbms_output.put_line('Running the tuning task');
 dbms_output.put_line('======================');
 -- exec DBMS_SQLTUNE.execute_tuning_task(task_name => v_sql_tune_task_name);
 
-SELECT task_name, status FROM dba_advisor_log WHERE task_name like '%:sql_id%' order by EXECUTION_START desc;
+-- SELECT task_name, status FROM dba_advisor_log WHERE task_name like '%:sql_id%' order by EXECUTION_START desc;
 
 
-SELECT DBMS_SQLTUNE.report_tuning_task(v_sql_tune_task_name) AS recommendations FROM dual;
+-- SELECT DBMS_SQLTUNE.report_tuning_task(v_sql_tune_task_name) AS recommendations FROM dual;
 
 END;
 /
-
     $ECHO
     spool off
 !

@@ -7,10 +7,10 @@ BEGIN
   l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
                           begin_snap  => 28809,
                           end_snap    => 28810,
-                          sql_id      => '1zp1p359ppm80',
+                          sql_id      => 'gbs7bwgtcbn04',
                           scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          task_name   => '1zp1p359ppm80_tuning_task',
-                          description => 'Tuning task for statement 1zp1p359ppm80 in AWR.');
+                          task_name   => 'gbs7bwgtcbn04_tuning_task',
+                          description => 'Tuning task for statement gbs7bwgtcbn04 in AWR.');
   DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
 END;
 /
@@ -20,10 +20,10 @@ DECLARE
   l_sql_tune_task_id  VARCHAR2(100);
 BEGIN
   l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
-                          sql_id      => '1zp1p359ppm80',
+                          sql_id      => 'gbs7bwgtcbn04',
                           scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          task_name   => '1zp1p359ppm80_tuning_task',
-                          description => 'Tuning task for statement 1zp1p359ppm80.');
+                          task_name   => 'gbs7bwgtcbn04_tuning_task',
+                          description => 'Tuning task for statement gbs7bwgtcbn04.');
   DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
 END;
 /
@@ -65,15 +65,18 @@ END;
 
 
 --running the tuning task
-EXEC DBMS_SQLTUNE.execute_tuning_task(task_name => '1zp1p359ppm80_tuning_task');
+EXEC DBMS_SQLTUNE.execute_tuning_task(task_name => 'gbs7bwgtcbn04_tuning_task');
 
-SELECT task_name, status FROM dba_advisor_log WHERE task_name like '1zp1p359ppm80_tuning_task';
+SELECT task_name, status FROM dba_advisor_log WHERE task_name like 'gbs7bwgtcbn04_tuning_task';
 
-SET LONG 10000;
-SET PAGESIZE 1000
-SET LINESIZE 200
-SELECT DBMS_SQLTUNE.report_tuning_task('1zp1p359ppm80_tuning_task') AS recommendations FROM dual;
-SET PAGESIZE 24
+TASK_NAME                      STATUS
+------------------------------ -----------
+84w2p0s2zq9td_tuning_task      COMPLETED
+
+SET LONG 999999
+set pages 0 linesize 500
+select DBMS_SQLTUNE.report_tuning_task('gbs7bwgtcbn04_tuning_task') AS recommendations from dual;
+
 
 
 --accept sql profile
