@@ -121,10 +121,6 @@ v$session s where username = 'TRADE_ZSDZ'
 
 
 
-
-
-
-
 col tracefile for A120
 
 select value ||'/'||(select instance_name from v$instance) ||'_ora_'||
