@@ -9632,7 +9632,7 @@ fi
 
 #########################
 if [ "$1" = "sqltune" ]; then
-
+echo "SQL Tuning Advisor"
    if [ "$2" = "" -o "$3" = "" ]; then
      sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
      connect $DBUSER
