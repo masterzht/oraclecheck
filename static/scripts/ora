@@ -113,6 +113,7 @@ usage()
       - sparse_index
       - sparse_table
       - sql <sqlid>                            display sql information
+      - sqlt                                   show sqlt  sqlt_10g_11g_12c_18c_19c_5th_June_2020 usage
       - sqltune [awr|sql] <sql_id>             SQL Tuning Advisor
       - sqlnet                                 display How to collect sqlnet trace for Client Site
       - sql_baseline <sqlid> <sqlid> <PHV>
