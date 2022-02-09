@@ -9802,7 +9802,7 @@ Tuning task created for specific a statement from the cursor cache.');
   dbms_output.put_line('======================');
   dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
   dbms_output.put_line('======================');
-  dbms_output.put_line('set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |set long 99999999 linesize 1000 pages 0');
   dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task('||''''||v_tuning_task_name||''''||') AS recommendations FROM dual;');
   dbms_output.put_line('======================');
 exception
@@ -9813,7 +9813,7 @@ exception
   dbms_output.put_line('======================');
   dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
   dbms_output.put_line('======================');
-  dbms_output.put_line('set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |set long 99999999 linesize 1000 pages 0');
   dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task(task_name) AS recommendations FROM dual;');
   dbms_output.put_line('======================');
 END;
@@ -9825,9 +9825,6 @@ END;
 echo "create sql tuning task for sql_id $sql_id"
   exit 0
 fi
-
-
-
 
 if [ "$2" = "AWR" -o "$2" = "awr" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -9863,19 +9860,18 @@ if [ "$2" = "AWR" -o "$2" = "awr" ]; then
          sql_id=$defsql_id
     fi
 
-   if [ ${bid} -ge ${eid} ];then
-      echo begin_snap_id:$bid end_snap_id:$eid  input error!
-      exit 1
-   fi
-   else
+    if [ ${bid} -ge ${eid} ];then
+       echo begin_snap_id:$bid end_snap_id:$eid  input error!
+       exit 1
+    fi
+    else
     bid=$2
     eid=$3
-   fi
+    fi
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
     SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
     SET TERMout off ECHO OFF
     set trims on
@@ -9907,29 +9903,36 @@ DECLARE
   v_sql_tune_task_name  VARCHAR2(100);
   l_sql_tune_task_id  VARCHAR2(100);
 BEGIN
-dbms_output.put_line('');
-dbms_output.put_line('Tuning task created for specific a statement from the AWR.');
-dbms_output.put_line('======================');
---  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
---                          begin_snap  => :bid,
---                          end_snap    => :eid,
---                          sql_id      => :sql_id,
---                          scope       => DBMS_SQLTUNE.scope_comprehensive,
---                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
---                          description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
---  DBMS_OUTPUT.put_line('sql_tune_task_name: ' || v_sql_tune_task_name);
-
-
-dbms_output.put_line('');
-dbms_output.put_line('Running the tuning task');
-dbms_output.put_line('======================');
--- exec DBMS_SQLTUNE.execute_tuning_task(task_name => v_sql_tune_task_name);
-
--- SELECT task_name, status FROM dba_advisor_log WHERE task_name like '%:sql_id%' order by EXECUTION_START desc;
-
-
--- SELECT DBMS_SQLTUNE.report_tuning_task(v_sql_tune_task_name) AS recommendations FROM dual;
-
+dbms_output.put_line('
+Tuning task created for specific a statement from the AWR.');
+  dbms_output.put_line('======================');
+  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
+                          begin_snap  => :bid,
+                          end_snap    => :eid,
+                          sql_id      => :sql_id,
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
+                          description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
+  dbms_output.put_line('Step1 |Tuning Task created success!! : ' || v_tuning_task_name);
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step2 |exec dbms_sqltune.execute_tuning_task(task_name =>'||''''||v_tuning_task_name||''''||');');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step4 |set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task('||''''||v_tuning_task_name||''''||') AS recommendations FROM dual;');
+  dbms_output.put_line('======================');
+exception
+ when others then
+  dbms_output.put_line('Step1 |failed to execute!' || 'description: ' || SQLERRM);
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step2 |exec dbms_sqltune.execute_tuning_task(task_name => task_name);');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('Step4 |set long 99999999 linesize 1000 pages 0');
+  dbms_output.put_line('Step4 |select dbms_sqltune.report_tuning_task(task_name) AS recommendations FROM dual;');
+  dbms_output.put_line('======================');
 END;
 /
     $ECHO
