@@ -9913,7 +9913,7 @@ Tuning task created for specific a statement from the AWR.');
                           end_snap    => :eid,
                           sql_id      => :sql_id,
                           scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          task_name   => :sql_id || '_task' || :bid || 'and' || :eid,
+                          task_name   => :sql_id || '_tsk' || :bid || 'to' || :eid,
                           description => 'Tuning task for statement || :sql_id || in AWR snap between and eid.');
   dbms_output.put_line('Step1 |Tuning Task created success!! : ' || v_tuning_task_name);
   dbms_output.put_line('======================');
