@@ -71,6 +71,7 @@ usage()
       - job                                    show all jobs
 
       - troubleshooting                        Usage:./ora troubleshooting event_name p1,p2,p3 eg ./ora troubleshooting \"latch: cache buffers chains\" 259201931656,177,0
+
       - logminer                               the usage of logminer
       - lock|blocker|wait_chain                show blocked rows and blocked chains
       - lob                                    show top space used lob segment
@@ -112,6 +113,7 @@ usage()
       - sparse_index
       - sparse_table
       - sql <sqlid>                            display sql information
+      - sqltune [awr|sql] <sql_id>             SQL Tuning Advisor
       - sqlnet                                 display How to collect sqlnet trace for Client Site
       - sql_baseline <sqlid> <sqlid> <PHV>
       - sqlmon/sqlmonitor                      <sql_id> get v\$sql_monitor Information
@@ -9900,13 +9902,12 @@ end;
 /
 
 DECLARE
-  v_sql_tune_task_name  VARCHAR2(100);
-  l_sql_tune_task_id  VARCHAR2(100);
+  v_tuning_task_name  VARCHAR2(100);
 BEGIN
 dbms_output.put_line('
 Tuning task created for specific a statement from the AWR.');
   dbms_output.put_line('======================');
-  v_sql_tune_task_name := DBMS_SQLTUNE.create_tuning_task (
+  v_tuning_task_name := DBMS_SQLTUNE.create_tuning_task (
                           begin_snap  => :bid,
                           end_snap    => :eid,
                           sql_id      => :sql_id,
