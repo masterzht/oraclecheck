@@ -4036,6 +4036,7 @@ if [ "$1" = "drop" ]; then
          elsif drop_type='PROFILE' then
                DBMS_SQLTUNE.drop_sql_profile (name=> '$name', ignore => TRUE);
          elsif drop_type='BASELINE' then
+               dbms_output.put_line('input PLAN_NAME');
                v_text :=DBMS_SPM.drop_sql_plan_baseline(plan_name =>'$name');
          end if;
     end;
@@ -4043,7 +4044,7 @@ if [ "$1" = "drop" ]; then
 !
 exit 0
 fi
-####################################################
+############################
 if [ "$1" = "sparse_index" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
