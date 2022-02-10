@@ -4024,7 +4024,7 @@ if [ "$1" = "drop" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
+    set serveroutput on
     set pagesize 30 linesize 150
     declare
     drop_type varchar2(30);
@@ -4036,7 +4036,9 @@ if [ "$1" = "drop" ]; then
          elsif drop_type='PROFILE' then
                DBMS_SQLTUNE.drop_sql_profile (name=> '$name', ignore => TRUE);
          elsif drop_type='BASELINE' then
-               dbms_output.put_line('input PLAN_NAME');
+               dbms_output.put_line('======================');
+               dbms_output.put_line('Input PLAN_NAME !!!');
+               dbms_output.put_line('======================');
                v_text :=DBMS_SPM.drop_sql_plan_baseline(plan_name =>'$name');
          end if;
     end;
@@ -5926,6 +5928,13 @@ echo "instance_number=$INST"
 exit 0
 fi
 ###############################
+
+
+
+
+
+
+###############################
 if [ "$1" = "coe" ]; then
 echo ""
 echo """coe load binds a new sql_id from the original one
@@ -5976,8 +5985,10 @@ echo "======================"
        s.origin,
        -- s.DESCRIPTION,
        s.SQL_TEXT
-  FROM DBA_SQL_PLAN_BASELINES s order by s.created desc
+  FROM DBA_SQL_PLAN_BASELINES s -- where s.PARSING_SCHEMA_NAME = <:owner>
+  order by s.created desc
      ) where rownum<=20;
+
 !
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> TO Find the best plan hash value of modified_sql_id"
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> <plan hash value>"
