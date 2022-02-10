@@ -5265,6 +5265,21 @@ if [ "$1" = "errorstack" ]; then
   --<run your sql>
   alter session set events '<error code> trace name context off';
   --<SEE alert log >
+
+  -- trace 1031 error -- Security An attempt was made to change the current username or password without the appropriate privilege
+  alter system set events '1031 trace name errorstack level 3';
+  alter system set events '1031 trace name errorstack level 3; name library_cache level 10';
+
+  alter session set events '3120 trace name errorstack level 3, forever';
+  alter session set events '3120 trace name errorstack level 3, lifetime 42';
+
+  -- control file
+  alter session set events 'immediate trace name controlf level 12';
+
+  -- redo log file header
+  alter session set events 'immediate trace name redohdr level 10';
+
+  -- data file head
   """
   exit 0
 fi
