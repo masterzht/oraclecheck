@@ -5988,7 +5988,6 @@ echo "======================"
   FROM DBA_SQL_PLAN_BASELINES s -- where s.PARSING_SCHEMA_NAME = <:owner>
   order by s.created desc
      ) where rownum<=20;
-
 !
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> TO Find the best plan hash value of modified_sql_id"
     echo "Usage:./ora coe <original_sql_id> <modified_sql_id> <plan hash value>"
