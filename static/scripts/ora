@@ -2044,9 +2044,7 @@ echo "instance_number=$INST"
 echo "top sqlarea group by force_matching_signarue,orderby $orderby , top $topn"
 exit 0
 fi
-
-
-################################################################################
+###########################
 if [ "$1" = "open_cursor" ]; then
 
   if [ "$2" = "" ]; then
@@ -2058,15 +2056,10 @@ if [ "$1" = "open_cursor" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
-
-    set pagesize 30
-    set linesize 150
-
+    set pagesize 30 linesize 150
     pro display top 30 having open_cursor >= $th :
     select * from
-    (
-    select inst_id,sid,count(*) as cnt
-    from gv\$open_cursor
+    (select inst_id,sid,count(*) as cnt from gv\$open_cursor
     where inst_id=$INST
     group by inst_id,sid
     having count(*)>=$th
