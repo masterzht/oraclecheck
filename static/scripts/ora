@@ -628,7 +628,7 @@ if [ "$1" = "awr_baseline" ]; then
 !
 exit 0
 fi
-################################################################################
+#########################################
 if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
    read -p "This Command will execute dbms_workload_repository.create_snapshot,cont? y/[n]:" cont
