@@ -9832,9 +9832,12 @@ Tuning task created for specific a statement from the cursor cache.');
 exception
  when others then
   dbms_output.put_line('Step1 |failed to execute!' || 'description: ' || SQLERRM);
+  -- dbms_output.put_line(DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+  dbms_output.put_line('Step1 |failed to execute!' || 'description: ' || SQLERRM);
   dbms_output.put_line('======================');
   dbms_output.put_line('Step2 |exec dbms_sqltune.execute_tuning_task(task_name => task_name);');
-  dbms_output.put_line('======================');
+  dbms_output.put_line('====
+  ==================');
   dbms_output.put_line('Setp3 |select task_name, status FROM dba_advisor_log WHERE task_name = '||''''||v_tuning_task_name||''''||';');
   dbms_output.put_line('======================');
   dbms_output.put_line('Step4 |set long 99999999 longchunk 99999999 linesize 1000 pages 0 trimspool on');
