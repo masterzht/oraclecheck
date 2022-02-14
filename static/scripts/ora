@@ -13258,7 +13258,12 @@ if [ "$1" = "logminer" ]; then
 1、select FORCE_LOGGING,SUPPLEMENTAL_LOG_DATA_MIN from v\$database;
 alter database force logging;
 alter database add SUPPLEMENTAL log data;
-
+select SUPPLEMENTAL_LOG_DATA_MIN min,
+       SUPPLEMENTAL_LOG_DATA_PK  pk,
+       SUPPLEMENTAL_LOG_DATA_UI  ui,
+       SUPPLEMENTAL_LOG_DATA_FK  fk,
+       SUPPLEMENTAL_LOG_DATA_ALL \"all\"
+  from v\$database;
 2、alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
 @$ORACLE_HOME/rdbms/admin/dbmslm.sql
 @$ORACLE_HOME/rdbms/admin/dbmslmd.sql
