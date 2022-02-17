@@ -7868,6 +7868,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
     col module format a10 trunc
     col machine format a15 trunc
     col owner_and_object_name for a32
+    col "module@machine" for a32
     set trimspool on
     spool ora_lock_$filedate.log
     pro
@@ -7875,7 +7876,9 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
      WITH sessions AS
         (SELECT /*+materialize*/ sid,serial#,inst_id,module, machine,blocking_session, BLOCKING_INSTANCE,row_wait_obj#, sql_id,event FROM gv\$session)
     SELECT LPAD(' ', 4*(LEVEL-1) ) || sid||','||serial# ||'@'||s.inst_id as "sid and serial@inst_id",
-    s.module, s.machine, owner ||'.'||object_name as owner_and_object_name, s.sql_id, s.event, substr(sql_text,1,50) sql_text
+    s.module||'@'|| s.machine as "module@machine",
+    owner ||'.'||object_name as owner_and_object_name,
+    s.sql_id, s.event, substr(sql_text,1,50) sql_text
        FROM sessions s
        LEFT OUTER JOIN dba_objects ON (object_id = row_wait_obj#)
        LEFT OUTER JOIN gv\$sqlarea gs
