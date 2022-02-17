@@ -2011,6 +2011,7 @@ if [ "$1" = "toparea_by_sig" ]; then
     col rn format        99
     col sql_text format a25
     col min_sql_id format a14
+    set trimspool on
     spool ora_topsql_by_sig_${INST}_${filedate}_${orderby}.log
 
 select rownum as rn,a.* from
@@ -4164,6 +4165,7 @@ if [ "$1" = "sparse_table" ]; then
     col "Avg_Row_Len" format 999999999 heading "Avg |Row Length"
     col "HWM" format 999999999 heading "HWM"
     col "should_use_m" format 999999999 heading "Should_use_M"
+    set trimspool on
     spool ora_sparse_table_$filedate.log
     SELECT ---table partition
      table_owner "Owner",
@@ -4355,6 +4357,7 @@ if [ "$1" = "top_seg" -o "$1" = "topseg" ]; then
     col object_name format a30
     col subobject_name format a30
     col OBJECT_TYPE format a20 trunc
+    set trimspool on
     spool ora_topseg_$filedate.log
     PRO Top Logical Reads Objects:
     with sum_logical_reads as
@@ -6407,7 +6410,7 @@ if [ "$1" = "sysmetric" ]; then
     col uc_s format 99999
     col ut_s format 99999
     col start_time format a20
-
+    set trimspool on
     spool ora_sysmetirc_$filedate.log
 
 select instance_number as inst,
@@ -6518,8 +6521,8 @@ spool off
   set feedback off
   set verify off
   set linesize 500
-  set trimspool on
   undefine object_name
+  set trimspool on
   spool ora_ddl_$filedate.log
   var object_name varchar2(100);
   var owner varchar2(100);
@@ -7865,6 +7868,7 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
     col module format a10 trunc
     col machine format a15 trunc
     col owner_and_object_name for a32
+    set trimspool on
     spool ora_lock_$filedate.log
     pro
     pro SHOW Blocking and Blocked Session Information...
@@ -9413,6 +9417,7 @@ if [ "$1" = "cputime" ]; then
     col total_time_day for 9999999999
     col stat_time_day for a20
     define statname='DB CPU'
+    set trimspool on
     spool ora_cputime_$filedate.log
     Pro cputime by day:
     with stat_time as
