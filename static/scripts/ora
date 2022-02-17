@@ -66,6 +66,7 @@ usage()
 
       - idx2sqlid <index_name>                 show sqls use the given index name
       - ind | index <table_name>               get all indexes info for given table
+      - ind_monitor | index_monitor <schema>   monitoring schema index usage
       - index_creating                         index is creating
 
       - job                                    show all jobs
@@ -11256,7 +11257,7 @@ where
     and t.obj# = i.bo#
     and u.user# = io.owner#
     and u.name = :owner
-    and bitand(ou.flags, 1) = 0
+  --and bitand(ou.flags, 1) = 0
     order by c.bytes desc;
     v_monitor c_monitor%rowtype;
 
