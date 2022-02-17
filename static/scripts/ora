@@ -679,7 +679,7 @@ if [ "$1" = "sqlmon" -o "$1" = "sql_monitor" -o "$1" = "sqlmonitor" ]; then
     SET LONG 1000000
     SET LONGCHUNKSIZE 1000000
     SET LINESIZE 1000 PAGESIZE 0
-    SET TRIM ON
+    set trimspool on
     --SET TRIMSPOOL OFF
     SET ECHO OFF
     SET FEEDBACK OFF
@@ -839,7 +839,7 @@ if [ "$1" = "tophis_byplan" ]; then
     col sqls format 9999
     col CPU_S format 9999999
     col reads_k format 9999999
-
+    set trimspool on
     spool ora_tophis_byplan_${INST}_${bid}_${eid}_${orderby}.log
 
     with sql_stat as
@@ -958,7 +958,7 @@ if [ "$1" = "tophis_bysig" ]; then
     col sqls format 9999
     col CPU_S format 9999999
     col reads_k format 9999999
-
+    set trimspool on
     spool ora_tophis_bysig_${INST}_${bid}_${eid}_${orderby}.log
 
     with sql_stat as
@@ -1084,6 +1084,7 @@ if [ "$1" = "dup_index" ]; then
     col index_col_lists format a30
     col dup_col_lists format a30
     col dup_index_name format a30
+    set trimspool on
     spool ora_dup_index_$filedate.log
     with tmp as ( select table_owner,table_name,index_name, listagg(column_name,chr(10)||',') within group (order by column_position) as col_lists from dba_ind_columns where table_owner=upper('$owner') group by table_owner,table_name,index_name )
     select table_name,index_name,index_col_lists,dup_col_lists,dup_index_name from
@@ -8378,6 +8379,7 @@ if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
     col file_name format A40
     col USED_SPACE format A20
     col MAX_USED_SPACE format A20
+    set trimspool on
     spool ora_temp_$filedate.log
 
     prompt Used Temp tablespace:
@@ -10015,6 +10017,7 @@ if [ "$1" = "highparse" ]; then
     col sql_text format a100
     col sql_id format a13
     column FORCE_MATCHING_SIGNATURE format 99999999999999999999999
+    set trimspool on
     spool ora_highparse_$filedate.log
     WITH c AS
         (SELECT  FORCE_MATCHING_SIGNATURE,
@@ -10070,7 +10073,7 @@ if [ "$1" = "highparse2" ]; then
     col sql_id format a13
     column FORCE_MATCHING_SIGNATURE format 99999999999999999999999
     col MIN_SQL_ID format a13
-
+    set trimspool on
     spool ora_highparse2_$filedate.log
 
     WITH c AS
@@ -10115,7 +10118,7 @@ set verify off
 col exec_user format a10
 col sql_id format a13
 col phvs format 99
-
+set trimspool on
 spool ora_PC_$filedate.log
 
 with base_info as
@@ -10253,7 +10256,7 @@ col B_LAST_TIME format a11
 col curr_last_time format a11
 col ratio format 9999999
 col STDDEV format 999999
-
+set trimspool on
 spool ora_PC2_$filedate.log
 
 with base_info as
@@ -10328,7 +10331,7 @@ if [ "$1" = "pc_old" ]; then
 set linesize 180 pagesize 30
 set verify off
 col exec_user format a10
-
+set trimspool on
 spool ora_PC_OLD$filedate.log
 
 --find plan change sql_id in (gv\$sql and dba_hist_sqlstat recent n days )
@@ -10495,6 +10498,7 @@ if [ "$1" = "batch_osstat" -o "$1" = "osstat" ]; then
     set linesize 200 pagesize 100
     col END_SNAP_TIME format a20
     col inst_id format 9999
+    set trimspool on
     spool ora_batch_osstat_${INST}_$filedate.log
     select os.instance_number as inst_id
          ,s.snap_id-1 as bid
