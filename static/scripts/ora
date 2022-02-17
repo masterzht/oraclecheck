@@ -11190,6 +11190,116 @@ else
 fi
   exit 0
 fi
+
+
+
+#####################################
+if [ "$1" = "ind_monitor" -o "$1" = "index_monitor" ]; then
+
+  if [ "$2" = ""  ]; then
+   read -p "Please input schema_name:" owner
+    if [ -z "${owner}" ];then
+         echo "no input , exit"
+         exit 1
+    fi
+  else
+    owner=$2
+  fi
+
+    ver2=`get_ver 2`
+    if [ $ver2 -lt 11 ]; then
+      ver2='--'
+    else
+      ver2=''
+    fi
+
+    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+    connect $DBUSER
+
+    set timing off
+    set serveroutput on
+    set feedback off
+    set verify off
+    set linesize 500
+    undefine owner
+    var owner varchar2(100);
+    alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss';
+    set trimspool on
+    spool ora_ind_monitor_${owner}_${filedate}.log
+begin
+    :owner :=upper('$owner');
+end;
+/
+declare
+
+    cursor c_monitor is select
+    u.name owner,
+    t.name table_name,
+    io.name index_name,
+    d.index_type,
+    d.DEGREE,
+    case when d.uniqueness = 'UNIQUE' then 'YES' else 'NO ' end UNIQUENESS,
+    case when d.STATUS = 'UNUSABLE' then 'NO' else 'YES' end USABLE,
+    round(C.BYTES / 1024 / 1024) AS INDEX_MB,
+    decode(d.TABLESPACE_NAME,null,'None',D.TABLESPACE_NAME) as TABLESPACE_NAME,
+    decode(bitand(i.flags, 65536), 0, 'NO', 'YES') monitoring,
+    decode(bitand(ou.flags, 1), 0, 'NO', 'YES') used,
+    ou.start_monitoring,
+    decode(ou.end_monitoring,null,'Not Ended',ou.end_monitoring) as end_monitoring
+from sys.user\$ u, sys.obj\$ io, sys.obj\$ t, sys.ind\$ i, sys.object_usage ou, dba_indexes d ,DBA_SEGMENTS C
+where
+    C.SEGMENT_NAME = d.INDEX_NAME
+    and u.name = d.owner
+    and io.name = d.index_name
+    and i.obj# = ou.obj#
+    and io.obj# = ou.obj#
+    and t.obj# = i.bo#
+    and u.user# = io.owner#
+    and u.name = :owner
+    and bitand(ou.flags, 1) = 0
+    order by c.bytes desc;
+    v_monitor c_monitor%rowtype;
+
+begin
+  dbms_output.enable(buffer_size=>NULL);
+  dbms_output.put_line('
+UNI? Means UNIQUENESS?
+ED? Means DEGREE
+MONITOR Means IF current Monitored
+Index of '|| :owner ||' schema Information being monitored');
+  dbms_output.put_line('======================');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| TABLE_NAME                     ' || '| INDEX_NAME                       |' ||  ' INDEX_TYPE           |'  || ' DE? ' || '| UNI? ' || '| USABLE ' || '| INDEX_MB |' || ' TABLESPACE_NAME ' || '| MONITOR |' || ' USED ' || '| START_MONITORING    |' || ' END_MONITORING      ' || '|');
+  dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  open c_monitor;
+    loop fetch c_monitor into v_monitor;
+    exit when c_monitor%notfound;
+    dbms_output.put_line('| ' || rpad(v_monitor.TABLE_NAME,30)||' | '|| rpad(v_monitor.INDEX_NAME,32) ||' | '|| rpad(v_monitor.index_type,20) ||' | '||lpad(v_monitor.DEGREE,3)|| ' | '||lpad(v_monitor.UNIQUENESS,4)|| ' | '|| lpad(v_monitor.USABLE,6)|| ' | '|| lpad(v_monitor.INDEX_MB,8) || ' | '|| rpad(v_monitor.TABLESPACE_NAME,15) || ' | '|| lpad(v_monitor.monitoring,7) || ' | '|| lpad(v_monitor.used,4) || ' | '||lpad(v_monitor.start_monitoring,19) || ' | '|| lpad(v_monitor.end_monitoring,19) || ' |');
+    end loop;
+    dbms_output.put_line('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  close c_monitor;
+
+end;
+/
+    $ECHO
+    spool off
+!
+
+  exit 0
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
 #####################################
 if [ "$1" = "table" -o "$1" = "tab" ]; then
 
