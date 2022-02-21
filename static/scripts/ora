@@ -11213,7 +11213,7 @@ if [ "$1" = "ind_monitor" -o "$1" = "index_monitor" ]; then
     fi
 echo """
 set heading off echo off feedback off pages 10000
-spool start_index_monitor.sql
+spool ora_start_index_monitor.sql
 select 'alter index ' || owner || '.' || index_name || ' nomonitoring usage;' from dba_indexes
 where owner = :owner;
 spool off
