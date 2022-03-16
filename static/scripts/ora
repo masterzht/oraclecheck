@@ -6494,24 +6494,23 @@ fi
 
 ######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
-:' 多行注释
-set long 2000000000
-set longchunksize 50000
-set pages 0
-set linesize 32767
-set trimspool on
-spool ddl.sql
-select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
-                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
-                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
-                                                     when object_type = 'INDEX' then 'INDEX'
-                                                     else object_type end,
-                                                object_name, owner) as object_ddl
-                    from dba_objects
-                    where owner in ('SYS')
-                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
-spool off
-'
+
+#set long 2000000000
+#set longchunksize 50000
+#set pages 0
+#set linesize 32767
+#set trimspool on
+#spool ddl.sql
+#select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
+#                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
+#                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
+#                                                     when object_type = 'INDEX' then 'INDEX'
+#                                                     else object_type end,
+#                                                object_name, owner) as object_ddl
+#                    from dba_objects
+#                    where owner in ('SYS')
+#                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
+#spool off
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
