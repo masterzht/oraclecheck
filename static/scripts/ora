@@ -6494,7 +6494,7 @@ fi
 
 ######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
-echo """
+:' 多行注释
 set long 2000000000
 set longchunksize 50000
 set pages 0
@@ -6511,7 +6511,7 @@ select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE
                     where owner in ('SYS')
                     AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
 spool off
-"""
+'
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
