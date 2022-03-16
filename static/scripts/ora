@@ -6494,7 +6494,7 @@ fi
 
 ######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
-# for getting view trigger function procedure DDL of SYS user
+# for batch getting [view trigger function procedures] definition of SYS user
 #set long 2000000000
 #set longchunksize 50000
 #set pages 0
