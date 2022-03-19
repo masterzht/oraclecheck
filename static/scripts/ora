@@ -6534,7 +6534,10 @@ if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
   /
 declare
 
-   cursor c_obj is select owner,object_type from dba_objects where object_name = :object_name;
+   cursor c_obj is select obj.owner,
+   obj.object_type,
+   (select sum(seg.bytes/1024/1024) from dba_segments seg where seg.segment_name = :object_name and seg.owner = obj.owner) segment_size
+   from dba_objects obj where obj.object_name = :object_name;
    v_obj c_obj%rowtype;
    cursor c_ddl is select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
                                                      when object_type like 'DATABASE LINK' then 'DB_LINK'
@@ -6565,14 +6568,14 @@ begin
   dbms_output.put_line('
 Display The Object Type in The Database');
   dbms_output.put_line('======================');
-  dbms_output.put_line('------------------------------------------------------');
-  dbms_output.put_line('| OWNER            |' || ' OBJECT_TYPE                     '   || '|');
-  dbms_output.put_line('------------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------------------');
+  dbms_output.put_line('| OWNER            |' || ' OBJECT_TYPE                      |'||  ' SEGMENT_SIZE(M)' || ' |');
+  dbms_output.put_line('-------------------------------------------------------------------------');
   open c_obj;
     loop fetch c_obj into v_obj;
     exit when c_obj%notfound;
-    dbms_output.put_line('| ' || rpad(v_obj.OWNER,16) ||' | '|| rpad(v_obj.object_type,32) || '|');
-    dbms_output.put_line('------------------------------------------------------');
+    dbms_output.put_line('| ' || rpad(v_obj.OWNER,16) ||' | '|| rpad(v_obj.object_type,32) || ' | ' || lpad(v_obj.segment_size,15) ||' |');
+    dbms_output.put_line('-------------------------------------------------------------------------');
     end loop;
   close c_obj;
 
