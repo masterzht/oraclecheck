@@ -6579,7 +6579,6 @@ Display The Object Type in The Database');
     end loop;
   close c_obj;
 
-
   dbms_output.put_line('
 Show The Object DDL Information)');
   dbms_output.put_line('======================');
