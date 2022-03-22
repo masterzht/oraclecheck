@@ -347,10 +347,6 @@ if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
       select * from pg_settings where name ='synchronous_commit';
   "
 
-
-$ECHO
-!
-exit 0
 fi
 ##################################show dblink information ##############################################
 if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
