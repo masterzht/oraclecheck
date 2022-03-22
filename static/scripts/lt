@@ -301,224 +301,52 @@ exit 0
 fi
 #####################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
-  $ORACLE_HOME/bin/sqlplus / as sysdba
+  $PGDATA/bin/ltsql -p $2
 fi
 #####################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
+  ltsql -p $2 -x -c"
+   SELECT application_name                            AS appname,
+        usename,
+        coalesce(client_addr::TEXT, 'localhost')    AS address,
+        pid::TEXT,
+        client_port,
+        CASE state
+            WHEN 'streaming' THEN 0
+            WHEN 'startup' THEN 1
+            WHEN 'catchup' THEN 2
+            WHEN 'backup' THEN 3
+            WHEN 'stopping' THEN 4
+            ELSE -1 END                             AS state,
+        CASE sync_state
+            WHEN 'async' THEN 0
+            WHEN 'potential' THEN 1
+            WHEN 'sync' THEN 2
+            WHEN 'quorum' THEN 3
+            ELSE -1 END                             AS sync_state,
+        sync_priority,
+        backend_xmin::TEXT::BIGINT                  AS backend_xmin,
+        current.lsn - '0/0'                         AS lsn,
+        current.lsn - sent_lsn                      AS sent_diff,
+        current.lsn - write_lsn                     AS write_diff,
+        current.lsn - flush_lsn                     AS flush_diff,
+        current.lsn - replay_lsn                    AS replay_diff,
+        sent_lsn - '0/0'                            AS sent_lsn,
+        write_lsn - '0/0'                           AS write_lsn,
+        flush_lsn - '0/0'                           AS flush_lsn,
+        replay_lsn - '0/0'                          AS replay_lsn,
+        coalesce(extract(EPOCH FROM write_lag), 0)  AS write_lag,
+        coalesce(extract(EPOCH FROM flush_lag), 0)  AS flush_lag,
+        coalesce(extract(EPOCH FROM replay_lag), 0) AS replay_lag,
+        extract(EPOCH FROM current_timestamp)       AS "time",
+        extract(EPOCH FROM backend_start)           AS launch_time,
+        extract(EPOCH FROM reply_time)              AS reply_time
+ FROM pg_stat_replication,
+      (SELECT CASE WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn() ELSE pg_current_wal_lsn() END AS lsn) current;
+      select * from pg_settings where name ='synchronous_commit';
+  "
 
-    connect $DBUSER
-
-Pro DataGuard Config Info:
-Pro
-    set pagesize 200 linesize 200
-    col name for a30
-    col display_value for a100
-select name, display_value
-  from (select name, display_value
-          from v\$parameter
-         where name in ('log_archive_config','db_file_name_convert','log_file_name_convert','fal_client','fal_server')
-            or name like 'log_archive_dest%'
-            or name like 'log_archive_dest_state_1%'
-         order by 1 desc
-    )
- where display_value is not null AND display_value !='enable';
-
-Pro DataGuard RunTime Apply Info:
-Pro
-set linesize 400
-set serveroutput on
-set feedback off
-declare
-    v_database_role varchar2(100) :=null;
-    v_open_mode varchar2(100) :=null;
-    v_protection_mode  varchar2(100) :=null;
-    v_switchover  varchar2(100) :=null;
-    v_force_logging varchar2(100) :=null;
-
-  cursor c_lag is select inst_id,name,value from gv\$dataguard_stats where name like '%lag%' order by inst_id,name;
-  v_lag c_lag%rowtype;
-  cursor c_dest_error is select inst_id,dest_name,
-  decode(
-    regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))'),
-    null,
-    destination,
-    regexp_substr(destination,'((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))')
-    ) as destination,
-  decode(error,null,'None',error) as error
-  from gv\$archive_dest where destination is not null order by dest_id,inst_id;
-  v_dest_error c_dest_error%rowtype;
-
-  cursor c_standby_lag is select inst_id,lpad(name,14) as name,
-  decode(value,null,'None',value) as value,
-  decode(datum_time,null,'None',datum_time) as datum_time,
-  decode(time_computed,null,'None',time_computed) as time_computed
-  from gv\$dataguard_stats
-  where name like '%lag%' order by inst_id,name;
-
-  v_standby_lag c_standby_lag%rowtype;
-  cursor c_standby_max_seq is select thread#, max(sequence#) as mseq from v\$archived_log where applied='YES' group by thread#;
-  v_standby_max_seq c_standby_max_seq%rowtype;
-  cursor c_mrp is select thread#,process,status,sequence#,block#,blocks from v\$managed_standby where PROCESS like 'MRP%' order by sequence#;
-  v_mrp c_mrp%rowtype;
-  cursor c_convert is select q'[alter system set ]' || name || q'[ = ']' || replace(value,', ',''',''') || q'[' scope=spfile;]' command from v\$parameter where name in ('log_file_name_convert','db_file_name_convert');
-  v_convert c_convert%rowtype;
-
-  cursor c_runtime_apply_info is select thread# as thread,
-       DB_UNIQUE_NAME,
-       DEST_NAME,
-       TARGET,
-       DATABASE_MODE,
-       error,
-       DESTINATION,
-       RECOVERY_MODE,
-       GAP_STATUS,
-       Last_Archived,
-       APPLIED_SEQ# as APPLIED_SEQ,
-       current_scn,
-       applied_scn,
-       to_char((scn_to_timestamp(current_scn)), 'yyyymmdd hh24:mi:ss') current_scn_time,
-       to_char((scn_to_timestamp(applied_scn)), 'yyyymmdd hh24:mi:ss') applied_scn_time,
-       extract(day from(scn_to_timestamp(current_scn) - scn_to_timestamp(current_scn))) * 24 * 60 +
-       extract(hour from(scn_to_timestamp(current_scn) - scn_to_timestamp(current_scn))) * 60 +
-       extract(minute from(scn_to_timestamp(current_scn) - scn_to_timestamp(applied_scn))) as DELAY_TIME_MINUTE
-from
-(SELECT al.thread#,
-               ads.dest_id,
-               ads.DEST_NAME,
-               ads.TYPE || ' ' || ad.TARGET TARGET,
-               ADS.DATABASE_MODE,
-               ads.STATUS,
-               ads.error,
-               ads.RECOVERY_MODE,
-               ads.DB_UNIQUE_NAME,
-               ads.DESTINATION,
-               ads.GAP_STATUS,
-               (SELECT sequence#
-                  FROM v\$log na
-                 WHERE na.thread# = al.thread#
-                   and status = 'CURRENT') Current_Seq#,
-               Last_Archived,
-               al.APPLIED_SEQ#,
-               ad.applied_scn,
-               current_scn
-          FROM (SELECT dest_id,
-                       thread#,
-                       d.current_scn,
-                       MAX(sequence#) Last_Archived,
-                       max(CASE WHEN APPLIED = 'YES' THEN sequence# end) APPLIED_SEQ#
-                  FROM v\$archived_log V, v\$database d
-                 WHERE V.resetlogs_change# = d.RESETLOGS_CHANGE#
-                 group by dest_id, thread#, d.current_scn
-                ) al,
-               v\$archive_dest_status ads,
-               v\$archive_dest AD
-         WHERE al.dest_id(+) = ads.dest_id
-           AND ads.STATUS != 'INACTIVE'
-           AND AD.DEST_ID = ADS.DEST_ID
-           and ad.APPLIED_SCN <> 0
-         ORDER BY al.thread#, ads.dest_id
-);
-  v_runtime_apply_info c_runtime_apply_info%rowtype;
-
-begin
-select database_role,open_mode,PROTECTION_MODE,SWITCHOVER_STATUS,FORCE_LOGGING into v_database_role,v_open_mode,v_protection_mode,v_switchover,v_force_logging from v\$database;
-
-    dbms_output.put_line('DG Information');
-    dbms_output.put_line('=======================');
-    dbms_output.put_line('DATABASE_ROLE            :   '|| v_database_role);
-    dbms_output.put_line('OPEN_MODE                :   '|| v_open_mode);
-    dbms_output.put_line('PROTECTION_MODE          :   '|| v_protection_mode);
-    dbms_output.put_line('SWITCHOVER_STATUS        :   '|| v_switchover);
-    dbms_output.put_line('FORCE_LOGGING            :   '|| v_force_logging);
-if v_database_role = 'PRIMARY' then
-
-  dbms_output.put_line('
-DataGuard Runtime Apply Info');
-  dbms_output.put_line('=======================');
-  open c_runtime_apply_info;
-    loop fetch c_runtime_apply_info into v_runtime_apply_info;
-    exit when c_runtime_apply_info%notfound;
-
-    dbms_output.put_line('Thread#                  :   '|| v_runtime_apply_info.thread);
-    dbms_output.put_line('DB_UNIQUE_NAME           :   '|| v_runtime_apply_info.DB_UNIQUE_NAME);
-    dbms_output.put_line('DEST_NAME                :   '|| v_runtime_apply_info.DEST_NAME);
-    dbms_output.put_line('TARGET                   :   '|| v_runtime_apply_info.TARGET);
-    dbms_output.put_line('DATABASE_MODE            :   '|| v_runtime_apply_info.DATABASE_MODE);
-    dbms_output.put_line('ERROR                    :   '|| v_runtime_apply_info.error);
-    dbms_output.put_line('DESTINATION              :   '|| v_runtime_apply_info.DESTINATION);
-    dbms_output.put_line('RECOVERY_MODE            :   '|| v_runtime_apply_info.RECOVERY_MODE);
-    dbms_output.put_line('GAP_STATUS               :   '|| v_runtime_apply_info.GAP_STATUS);
-    dbms_output.put_line('Primary_Last_Archived#   :   '|| v_runtime_apply_info.Last_Archived);
-    dbms_output.put_line('APPLIED_SEQ#             :   '|| v_runtime_apply_info.APPLIED_SEQ);
-    dbms_output.put_line('current_scn              :   '|| v_runtime_apply_info.current_scn);
-    dbms_output.put_line('applied_scn              :   '|| v_runtime_apply_info.applied_scn);
-    dbms_output.put_line('current_scn_time         :   '|| v_runtime_apply_info.current_scn_time);
-    dbms_output.put_line('applied_scn_time         :   '|| v_runtime_apply_info.applied_scn_time);
-    dbms_output.put_line('DELAY_TIME_MINUTE        :   '|| v_runtime_apply_info.DELAY_TIME_MINUTE);
-    dbms_output.put_line('==============================================');
-    end loop;
-  close c_runtime_apply_info;
-
-  dbms_output.put_line('
-Primary Dest_id Error Information');
-  dbms_output.put_line('=======================');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| inst# |' || ' DEST_NAME            ' || '| ERROR                                     |' || ' DESTINATION ADDRESS     ' || '|');
-  dbms_output.put_line('------------------------------------------------------------------------------------------------------');
-  open c_dest_error;
-    loop fetch c_dest_error into v_dest_error;
-    exit when c_dest_error%notfound;
-    dbms_output.put_line('| '|| lpad(v_dest_error.inst_id,5) || ' | ' || rpad(v_dest_error.dest_name,20) || ' | ' || rpad(v_dest_error.error,41) || ' | ' || lpad(v_dest_error.destination,23) || ' |');
-    end loop;
-    dbms_output.put_line('------------------------------------------------------------------------------------------------------');
-  close c_dest_error;
-else
-  dbms_output.put_line('
-datum_time Means The last time the standby database receive redo log
-Standby Current Apply Lag Information');
-  dbms_output.put_line('=======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------');
-  dbms_output.put_line('| inst# |' || ' NAME           ' || '| VALUE        |' || ' datum_time           ' || '| time_computed        ' || '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------');
-  open c_standby_lag;
-    loop fetch c_standby_lag into v_standby_lag;
-    exit when c_standby_lag%notfound;
-    dbms_output.put_line('| '|| lpad(v_standby_lag.inst_id,5) || ' | ' || rpad(v_standby_lag.name,14) || ' | ' || lpad(v_standby_lag.value,12) || ' | ' || lpad(v_standby_lag.datum_time,20) || ' | ' || lpad(v_standby_lag.time_computed,20) ||' |');
-    end loop;
-  dbms_output.put_line('---------------------------------------------------------------------------------------');
-  close c_standby_lag;
-
-  dbms_output.put_line('
-alter database recover managed standby database cancel;
-alter database recover managed standby database using current logfile disconnect from session;
-MRP Processes Status Information');
-  dbms_output.put_line('=======================');
-  open c_mrp;
-    loop fetch c_mrp into v_mrp;
-    exit when c_mrp%notfound;
-    dbms_output.put_line('thread#                  :   '|| v_mrp.thread#);
-    dbms_output.put_line('PROCESS                  :   '|| v_mrp.PROCESS);
-    dbms_output.put_line('STATUS                   :   '|| v_mrp.STATUS);
-    dbms_output.put_line('SEQUENCE#                :   '|| v_mrp.SEQUENCE#);
-    dbms_output.put_line('BLOCK#                   :   '|| v_mrp.BLOCK#);
-    end loop;
-  close c_mrp;
-
-  dbms_output.put_line('
-db_file_name_convert and log_file_name_convert in Physical Standby');
-  dbms_output.put_line('=======================');
-  open c_convert;
-    loop fetch c_convert into v_convert;
-    exit when c_convert%notfound;
-    dbms_output.put_line(v_convert.command);
-    end loop;
-  close c_convert;
-
-end if;
-end;
-/
 
 $ECHO
 !
