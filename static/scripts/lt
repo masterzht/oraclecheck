@@ -22,7 +22,7 @@ usage()
       - app                                    displays application configuration level information such as Sequence No Cache..
       - ashdump  [1]min                        dump ash records into trc file,default value is 1 minutes
       - asm                                    Show asm space/free space
-      - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
+      - awr [port] [bid] [eid]                 ora awr bid eid
       - awrsqrpt [bid] [eid] <sql_id>          ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
@@ -220,11 +220,6 @@ while [ 1 ]; do
   esac
   shift
 done
-######################################
-if [ $# -lt 1 ]; then
-  usage
-  exit 1
-fi
 
 ###usage ver2=`get_ver 2` / ver4=`get_ver 4`
 function get_ver
@@ -235,28 +230,7 @@ function get_ver
     #ver2=`echo $version|cut -c 1-2`
     #ver4=`echo $version|cut -c 1-4`
 }
-##this is just a template,if you add new command ,just copy and replace with your own script:
-if [ "$1" = "test" ]; then
 
-   echo ORACLE_SID=$ORACLE_SID
-
-   ver2=`get_ver 2`
-   ver4=`get_ver 4`
-   ver8=`get_ver 8`
-   #echo $ver2
-   #echo $ver4
-   #echo $ver8
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-    set pagesize 30 linesize 150
-    set head off
-    select 'DB_version='||'$ver8' from dual;
-    $ECHO
-!
-exit 0
-fi
 ######################
 if [ "$1" = "logon" ]; then
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -300,9 +274,20 @@ if [ "$1" = "logon" ]; then
 exit 0
 fi
 #####################################
-if [ "$1" = "s" -o "$1" = "S" ]; then
-  $PGDATA/bin/ltsql -p $2
+if [ "$1" = "l" -o "$1" = "L" ]; then
+  if [ "$2" = "" ]; then
+    read -p "please input port :" sqlid
+    if [ -z "${port}" ];then
+      echo "no input,exit"
+      exit 1
+    fi
+  else
+    port=$2
+  fi
+
+  ltsql -p $port
 fi
+
 #####################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
@@ -339,16 +324,16 @@ if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
         coalesce(extract(EPOCH FROM write_lag), 0)  AS write_lag,
         coalesce(extract(EPOCH FROM flush_lag), 0)  AS flush_lag,
         coalesce(extract(EPOCH FROM replay_lag), 0) AS replay_lag,
-        extract(EPOCH FROM current_timestamp)       AS "time",
+        extract(EPOCH FROM current_timestamp)       AS 'time',
         extract(EPOCH FROM backend_start)           AS launch_time,
         extract(EPOCH FROM reply_time)              AS reply_time
  FROM pg_stat_replication,
       (SELECT CASE WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn() ELSE pg_current_wal_lsn() END AS lsn) current;
       select * from pg_settings where name ='synchronous_commit';
   "
-
 fi
-##################################show dblink information ##############################################
+
+###############show dblink information #######################
 if [ "$1" = "db_link" -o "$1" = "dblink" -o "$1" = "link" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
@@ -460,7 +445,7 @@ if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
     if [ "${cont}" = "y" -o "${cont}" = "Y" ];then
 
-    ltsql -p -c "
+    ltsql -p $2 -c "
     select take_sample();
     Pro dbms_workload_repository.create_snapshot executed!
     "
@@ -1232,52 +1217,8 @@ if [ "$1" = "px" -o "$1" = "parallel" ]; then
   else
     sql_id=$2
   fi
-echo """
-TQ:Table Queues的缩写, TQ用以PX进程之间或者是PX与QC之间的通信连接。生产者通过 table queue 分发数据, 消费者从 table queue 接收数据。不同的 table queue 编号, 代表了不同的数据分发Table Queue。
-DFOs (data flow operations)：DFO 代表 Data Flow Operator, 表示一个可以并行执行的操作。
-DFO Trees：一个DFO Tree可以包含一个或者多个相互联系的DFO；同一个DFO Tree中所有的DFO NUMBER都相同；值得注意的是不同的 DFO Tree间的DFO可以并行执行。
-QC: 负责给PX进程分配工作，对PX进程进行统一的管理和调度。
 
-Id 1-8: 表示由两个DFO组成的DFO Tree，DFONUMBER为3。第一个DFO（TQ=0）一组PX进程进行LJL1表的并行扫描通过(:TQ30000)虚拟表向另外一组PX进程分发数据（Id 5-8）。第二个DFO（TQ=1）一组PX进程通过读取(:TQ30000)虚拟表的数据（Id 4）并进行HASH UNIOUE操作后通过写入虚拟表（:TQ30001）向查询协调器QC发送数据集。
-Id 9-14: 代表第二颗DFO Tree，它包含一个DFO；Name列中的TQ10000可以理解为DFO NUMBER=1，TQ=0。
-Id15-20: 代表第三颗DFO Tree，DFO NUMBER=2，TQ=0表示也由单个DFO操作组成。
 
-除此之外我们我们发现上述执行计划多了TQ列，IN-OUT列，PQ Distrib列。TQ列我们上面已经解释过不再赘述；
-
-IN-OUT列表示数据的流动和传递方式：
-PCWP: Parallel Combine with Parent.
-PCWC: Parallel Combine wth Child.
-P->S: Parallel to Serial.
-S->P: Serial to Parallel.
-P->P: Parallel to Parallel. Inter-operation parallism.
-PQ Distrib列：
-QC (RAND): 所有生产者以random分发方式将它们的行发送到查询协调器QC；
-HASH: 生产者并行进程使用HASH方式向并行消费者分发数据；
-
-Run Following SQL to See Customers and Consumers
-======================
-select
-        dfo_number
-      , tq_id
-      , cast(server_type as varchar2(10)) as server_type
-      , instance
-      , cast(process as varchar2(8)) as process
-      , num_rows
-      , round(ratio_to_report(num_rows) over (partition by dfo_number, tq_id, server_type) * 100) as \"%\"
-      , cast(rpad('#', round(num_rows * 10 / nullif(max(num_rows) over (partition by dfo_number, tq_id, server_type), 0)), '#') as varchar2(10)) as graph
-      , round(bytes / 1024 / 1024) as mb
-      , round(bytes / nullif(num_rows, 0)) as \"bytes/row\"
-from
-        v\$pq_tqstat
-order by
-        dfo_number
-      , tq_id
-      , server_type desc
-      , instance
-      , process
-;
-select sid,pq_QUEUED,PQ_STATUS,PQ_ACTIVE,dop,pq_servers from v\$rsrc_session_info where PQ_STATUS is not null;
-"""
    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
     connect $DBUSER
@@ -6319,7 +6260,7 @@ if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
     exit 1
   fi
   object_name=$2
- ltsql -Ulightdb -p "$2" -x -c "
+ ltsql -p $2 -Ulightdb -x -c "
  SELECT c.oid,
        (select rolname from pg_authid auth where auth.oid = c.relowner)            as username,
        (select tbs.spcname from pg_tablespace tbs where tbs.oid = c.reltablespace) as tablesapce_name,
@@ -7901,8 +7842,6 @@ reboot database
 To Close AnonHugePages
 vim /etc/grub.conf
 transparent_hugepage=never
-
-
   """
 
 cat $PGDATA/postgresql.conf | grep -vE '^$|^#' | grep  ^'[a-Z]'
@@ -7917,7 +7856,7 @@ cat $PGDATA/postgresql.conf | grep -vE '^$|^#' | grep  ^'[a-Z]'
   echo 'watchdog process:' `ps -ef | grep watchdog | grep -v grep | awk '{print $8}'  | grep -v bash`
   echo ''
   echo '======================'
-  ltsql -Uem -dem -c "
+  ltsql -p $2 -Ulightdb -c "
   select 'listen_addresses' as name ,current_setting('listen_addresses') as value union all
   select 'port' as name ,current_setting('port') as value union all
   select 'max_connections' as name ,current_setting('max_connections') as value union all
@@ -7947,8 +7886,6 @@ cat $PGDATA/postgresql.conf | grep -vE '^$|^#' | grep  ^'[a-Z]'
   select 'log_lock_waits' as name ,current_setting('log_lock_waits') as value union all
   select 'log_statement' as name ,current_setting('log_statement') as value;
   "
-!
-exit 0
 fi
 ####################################
 if [ "$1" = "temp" -o "$1" = "tmp" ] ; then
@@ -8107,7 +8044,7 @@ fi
 ####################
 if [ "$1" = "buffers" -o "$1" = "buffer" ]; then
 
-    ltsql -Uem -dem -c "
+    ltsql -p $2 -Ulightdb -c "
 select c.relname,pg_size_pretty(count(*) * 8192) as pg_buffered,
        round(100.0 * count(*) / (select setting from pg_settings  where name='shared_buffers')::integer,1) as pgbuffer_percent,
        round(100.0*count(*)*8192 / pg_table_size(c.oid),1) as percent_of_relation,
@@ -8122,7 +8059,7 @@ select c.relname,pg_size_pretty(count(*) * 8192) as pg_buffered,
  order by 3 desc limit 30;
 
     "
-    ltsql -Uem -dem -c "
+    ltsql -p $2 -Ulightdb -c "
     select usagecount,count(*),isdirty from pg_buffercache group by isdirty, usagecount order by isdirty, usagecount ;
     "
 !
@@ -8130,7 +8067,6 @@ echo "Current instance_number is $INST"
   exit 0
 fi
 
-#########################
 ##duplicate with pga command
 if [ "$1" = "processes" ]; then
 
@@ -8642,12 +8578,7 @@ fi
 
 ##########################
 if [ "$1" = "awr" ]; then
-
-   if [ "$2" = "" -o "$3" = "" ]; then
-     ltsql -c "
-     SELECT * from show_samples()
-     "
-fi
+  ltsql -p $2 -c "SELECT * from show_samples()"
 
 ##########################
 if [ "$1" = "awrsqrpt" ]; then
