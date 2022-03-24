@@ -456,19 +456,14 @@ fi
 #########################################
 if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
-   read -p "This Command will execute dbms_workload_repository.create_snapshot,cont? y/[n]:" cont
+   read -p "This Command will execute select take_sample(),cont? y/[n]:" cont
 
     if [ "${cont}" = "y" -o "${cont}" = "Y" ];then
 
-    sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-    exec dbms_workload_repository.create_snapshot();
+    ltsql -p -c "
+    select take_sample();
     Pro dbms_workload_repository.create_snapshot executed!
-!
-   else
-      echo "command canceled"
-      exit 1
+    "
     fi
 exit 0
 fi
@@ -7907,7 +7902,11 @@ To Close AnonHugePages
 vim /etc/grub.conf
 transparent_hugepage=never
 
+
   """
+
+cat $PGDATA/postgresql.conf | grep -vE '^$|^#' | grep  ^'[a-Z]'
+
   echo 'redhat-release:' `cat /etc/redhat-release`
   echo 'hostname:' `hostname`
   echo 'UDP Buffer ipfrag_low_thresh:' `cat /proc/sys/net/ipv4/ipfrag_low_thresh` ' Bytes'
@@ -8641,105 +8640,16 @@ if [ "$1" = "cputime" ]; then
   exit 0
 fi
 
-#####################
+##########################
 if [ "$1" = "awr" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
-     sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-     connect $DBUSER
-    set linesize 150 pagesize 30
-    col begin_interval_time format a20
-    col end_interval_time format a20
-    col startup_time format a20
-
-    break on startup_time
-    select  instance_number,snap_id-1 as begin_snapid,snap_id as end_snapid
-            ,to_char(begin_interval_time,'yyyy-mm-dd hh24:mi:ss') as begin_interval_time
-            ,to_char(end_interval_time,'mm-dd hh24:mi:ss') as end_interval_time
-            ,to_char(startup_time,'yyyy-mm-dd hh24:mi:ss') as startup_time
-            ,round((cast(end_interval_time as date)-cast(begin_interval_time as date))*24*60) as interval_min
-     from dba_hist_snapshot
-     where end_interval_time>sysdate-7
-     order by instance_number,snap_id;
-     $ECHO
-!
-   defbid=`echo "select trim(12345||max(snap_id)-1) as bid from dba_hist_snapshot;" | sqlplus -s $DBUSER|grep 12345|cut -c 6-15`
-   let defeid=defbid+1
-   read -p "Please input begin snap_id[$defbid]:" bid
-    if [ -z "${bid}" ];then
-         bid=$defbid
-    fi
-   read -p "Please input end   snap_id[$defeid]:" eid
-    if [ -z "${eid}" ];then
-         eid=$defeid
-    fi
-
-   if [ ${bid} -ge ${eid} ];then
-      echo begin_snap_id:$bid end_snap_id:$eid  input error!
-      exit 1
-   fi
-   else
-    bid=$2
-    eid=$3
-  fi
-
-
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-SET AUTOP OFF VER OFF SERVEROUT ON SIZE unlimited;
-SET TERMout off ECHO OFF feedback off
-set trims on
-
-SPOOL _awr.sql
-
-declare
-
-node_cnt number:=0;
-v_dbid number;
-BEGIN
-
-    DBMS_OUTPUT.PUT_LINE('SET TERMOUT OFF PAGESIZE 0 HEADING OFF LINESIZE 8000 TRIMSPOOL ON TRIMOUT ON TAB OFF timing off feedback off');
-    dbms_output.put_line('exec DBMS_WORKLOAD_REPOSITORY.AWR_SET_REPORT_THRESHOLDS(top_n_sql=>60);');
-
-
-
-    for i in (select dbid,inst_id from gv\$database order by 1)
-    loop
-        DBMS_OUTPUT.PUT_LINE('SET TERMOUT ON');
-        DBMS_OUTPUT.PUT_LINE('PRO Generate AWR for node'||i.inst_id||' ,  please wait for a few minutes......');
-        DBMS_OUTPUT.PUT_LINE('SET TERMOUT OFF');
-        DBMS_OUTPUT.PUT_LINE('spool ora_awrrpt_'||i.inst_id||'_'||$bid||'_'||$eid||'.html');
-        DBMS_OUTPUT.PUT_LINE('SELECT * FROM TABLE(DBMS_WORKLOAD_REPOSITORY.awr_report_html('||i.dbid||','||i.inst_id||','||$bid||','||$eid||'));');
-        DBMS_OUTPUT.PUT_LINE('spool off');
-        node_cnt:=node_cnt+1;
-        v_dbid  :=i.dbid;
-    END LOOP;
-
-    if node_cnt>1 then
-    DBMS_OUTPUT.PUT_LINE('SET TERMOUT ON');
-    DBMS_OUTPUT.PUT_LINE('PRO Generate AWR for RAC ,  please wait for a few minutes');
-    DBMS_OUTPUT.PUT_LINE('SET TERMOUT OFF');
-    DBMS_OUTPUT.PUT_LINE('spool ora_awrrpt_RAC_'||$bid||'_'||$eid||'.html');
-    DBMS_OUTPUT.PUT_LINE('SELECT * FROM TABLE(DBMS_WORKLOAD_REPOSITORY.awr_global_report_html('||v_dbid||', CAST(null AS VARCHAR2(10)),'||$bid||' ,'||$eid||'));');
-    DBMS_OUTPUT.PUT_LINE('spool off');
-    end if;
-END;
-/
-
-SPOOL OFF;
-
-set SERVEROUT off
-
-@_awr
-!
-rm _awr.sql
-echo "generate awr report for snapid $bid - $eid "
-  exit 0
+     ltsql -c "
+     SELECT * from show_samples()
+     "
 fi
 
-#########################
+##########################
 if [ "$1" = "awrsqrpt" ]; then
 
    if [ "$2" = "" -o "$3" = "" ]; then
@@ -11771,7 +11681,7 @@ fi
 ######################
 if [ "$1" = "active" ]; then
 echo "======================="
-ltsql -Uem -dem -c "
+ltsql -Ulightdb -dem -c "
 
 SELECT
     procpid,
