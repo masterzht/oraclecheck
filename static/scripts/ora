@@ -79,7 +79,7 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - mvsnap                                 view all_snapshots (mview) status
-
+      - ora2pg                                 first edit ora2pg.conf to modify ip port and service_name
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
       - open_cursor [100]                      top 30 ,default >100
       - outline  <profile|patch> <name>        ora outline profile|patch name,get hint set (no sql_plan_baseline)
@@ -780,6 +780,36 @@ sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows se
 exit 0
 fi
 ######################################
+if [ "$1" = "ora2pg" ]; then
+
+   if [ "$2" = "" ]; then
+    read -p "please input schema name:" schema
+    read -p "please input schema password:" password
+
+    if [ -z "${schema}" ];then
+        echo "input schema error"
+    fi
+    if [ -z "${password}" ];then
+        echo "input password error"
+    fi
+  fi
+
+  echo $schema
+  echo $password
+data_type_list='TABLE
+ COPY
+ SEQUENCE
+ VIEW
+ PROCEDURE
+ '
+ for data_type in $data_type_list
+ do
+   ora2pg -c ora2pg.conf  -u $schema -w $password -n $schema -t$data_type -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log &
+ done
+
+fi
+######################################
+
 if [ "$1" = "tophis_byplan" ]; then
 
    if [ "$2" = "" -o "$2" = "cpu" -o "$2" = "CPU" ]; then
@@ -6494,23 +6524,27 @@ fi
 
 ######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
+
+  get_ddl(){
 # for batch getting [view trigger function procedures] definition of SYS user
-#set long 2000000000
-#set longchunksize 50000
-#set pages 0
-#set linesize 32767
-#set trimspool on
-#spool ddl.sql
-#select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
-#                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
-#                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
-#                                                     when object_type = 'INDEX' then 'INDEX'
-#                                                     else object_type end,
-#                                                object_name, owner) as object_ddl
-#                    from dba_objects
-#                    where owner in ('SYS')
-#                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
-#spool off
+set long 2000000000
+set longchunksize 50000
+set pages 0
+set linesize 32767
+set trimspool on
+spool ddl.sql
+select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
+                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
+                                                     }
+                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
+                                                     when object_type = 'INDEX' then 'INDEX'
+                                                     else object_type end,
+                                                object_name, owner) as object_ddl
+                    from dba_objects
+                    where owner in ('SYS')
+                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
+spool off
+  }
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 

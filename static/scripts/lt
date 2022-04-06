@@ -387,7 +387,7 @@ if [ "$1" = "awr_baseline" ]; then
 exit 0
 fi
 #########################################
-if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
+if [ "$1" = "snap" -o "$1" = "snapshot" -o "$1" = "take_sample"]; then
 
    read -p "This Command will execute select take_sample(),cont? y/[n]:" cont
 
@@ -395,7 +395,7 @@ if [ "$1" = "snap" -o "$1" = "snapshot" ]; then
 
     ltsql -p $2 -c "
     select take_sample();
-    Pro dbms_workload_repository.create_snapshot executed!
+    Pro select take_sample() executed!
     "
     fi
 exit 0
@@ -6035,94 +6035,6 @@ echo "show dbtime by day and top 10 by snapshots"
 exit 0
 fi
 ################################################
-if [ "$1" = "sysmetric" ]; then
-
-#AIX not support date  -d
-  if [ "$2" = "" ]; then
-     echo "ora sysmetric \"`date +"%Y/%m/%d %H:%M"`\" 30"
-    exit 1
-  fi
-
-  if [ "$3" = "" ]; then
-    defdur=30
-   else
-     defdur=$3
-  fi
-  btime=$2
-  sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
-    connect $DBUSER
-
-    set pagesize 30
-    set linesize 200
-    col inst format 99
-    col exec_p_s format 999999
-    col uc_s format 99999
-    col ut_s format 99999
-    col start_time format a20
-    set trimspool on
-    spool ora_sysmetirc_$filedate.log
-
-select instance_number as inst,
-       to_char(begin_time,'mmdd hh24miss')as start_time,--end_time,
-       round(avg_act_sess) as act_sess,
-       round(avg_syn_read) as syn_read,
-       round(exec_s) as exec_p_s ,
-       round(io_m_s,1) as io_m_s,
-       round(iops) as iops,
-       round(logon_s,1) as logon_s,
-       round(net_vol_s) as net_s,
-       round(phy_r_s) as phy_r_s,
-       round(phy_w_s) as phy_w_s,
-       round(redo_s) as redo_s,
-       round(sql_res,4) as sql_res,
-       round(user_call_s) as uc_s,
-       round(user_trx_s) as ut_s
-from
-(select instance_number,begin_time,end_time,metric_name,value
- from DBA_HIST_SYSMETRIC_HISTORY
-where begin_time > = to_date('$btime','yyyy/mm/dd hh24:mi')
-  and  begin_time <= to_date('$btime','yyyy/mm/dd hh24:mi')+$defdur/60/24
-  and instance_number=$INST
-  and metric_name in
-('Average Active Sessions',
-'Average Synchronous Single-Block Read Latency',
-'Executions Per Sec',
-'I/O Megabytes per Second',
-'I/O Requests per Second',
-'Logons Per Sec',
-'Network Traffic Volume Per Sec',
-'Physical Reads Per Sec',
-'Physical Writes Per Sec',
-'Redo Generated Per Sec',
-'SQL Service Response Time',
-'User Calls Per Sec',
-'User Transaction Per Sec')
-)
-pivot
-(max(value) for metric_name in
-('Average Active Sessions' as avg_act_sess,
-'Average Synchronous Single-Block Read Latency' as avg_syn_read,
-'Executions Per Sec' as exec_s,
-'I/O Megabytes per Second' as IO_M_s,
-'I/O Requests per Second' as IOPS,
-'Logons Per Sec' as logon_s,
-'Network Traffic Volume Per Sec' as net_vol_s,
-'Physical Reads Per Sec' as PHY_R_s,
-'Physical Writes Per Sec'as phy_w_s,
-'Redo Generated Per Sec' as redo_s,
-'SQL Service Response Time' as sql_res,
-'User Calls Per Sec'as user_call_s,
-'User Transaction Per Sec'as user_trx_s)
-) order by 1,2;
-$ECHO
-spool off
-
-!
-echo "instance_number=$INST"
-exit 0
-fi
-##############################################
 if [ "$1" = "recover" -o "$1" = "recover_state" ]; then
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
@@ -7429,9 +7341,29 @@ fi
 if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 
   ltsql -p $2 -c "
-  select relation::regclass, s.pid, granted, client_hostname, application_name, usename, query
-  from pg_locks l, pg_stat_activity s where s.pid = l.pid;
-
+SELECT blocked_locks.pid         AS blocked_pid,
+       blocked_activity.usename  AS blocked_user,
+       'select pg_terminate_backend(' || blocking_locks.pid || ');'    AS kill_blocking_command,
+       blocking_activity.usename AS blocking_user,
+       blocking_activity.wait_event as blocking_event,
+       blocked_activity.query    AS blocked_statement,
+       blocking_activity.query   AS current_statement_in_blocking_process
+FROM pg_catalog.pg_locks blocked_locks
+         JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+         JOIN pg_catalog.pg_locks blocking_locks
+              ON blocking_locks.locktype = blocked_locks.locktype
+                  AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+                  AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+                  AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+                  AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+                  AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+                  AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+                  AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+                  AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+                  AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+                  AND blocking_locks.pid != blocked_locks.pid
+         JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted;
   "
 echo "
 可以根据查出来的pid或客户端，找到阻塞的连接和进程，手动杀掉
@@ -8291,8 +8223,11 @@ fi
 
 ##########################
 if [ "$1" = "awr" ]; then
-  ltsql -p $2 -c "SELECT * from show_samples()"
+  ltsql -p $2 -c "select * from show_samples();"
 
+ select * from show_samples();
+ select get_pwr($startId, $endId);
+ ltsql -c "select get_pwr(8,9)" > awr.html
 ##########################
 if [ "$1" = "awrsqrpt" ]; then
 
