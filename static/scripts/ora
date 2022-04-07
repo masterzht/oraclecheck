@@ -785,6 +785,7 @@ if [ "$1" = "ora2pg" ]; then
    if [ "$2" = "" ]; then
     read -p "please input schema name:" schema
     read -p "please input schema password:" password
+    mkdir -p $schema
 
     if [ -z "${schema}" ];then
         echo "input schema error"
@@ -804,7 +805,7 @@ data_type_list='TABLE
  '
  for data_type in $data_type_list
  do
-   ora2pg -c ora2pg.conf  -u $schema -w $password -n $schema -t$data_type -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log &
+   ora2pg -c ora2pg.conf -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log &
  done
 
 fi
@@ -6525,26 +6526,24 @@ fi
 ######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
 
-  get_ddl(){
 # for batch getting [view trigger function procedures] definition of SYS user
-set long 2000000000
-set longchunksize 50000
-set pages 0
-set linesize 32767
-set trimspool on
-spool ddl.sql
-select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
-                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
-                                                     }
-                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
-                                                     when object_type = 'INDEX' then 'INDEX'
-                                                     else object_type end,
-                                                object_name, owner) as object_ddl
-                    from dba_objects
-                    where owner in ('SYS')
-                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
-spool off
-  }
+#set long 2000000000
+#set longchunksize 50000
+#set pages 0
+#set linesize 32767
+#set trimspool on
+#spool ddl.sql
+#select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
+#                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
+#                                                     }
+#                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
+#                                                     when object_type = 'INDEX' then 'INDEX'
+#                                                     else object_type end,
+#                                                object_name, owner) as object_ddl
+#                    from dba_objects
+#                    where owner in ('SYS')
+#                    AND object_type in ('VIEW','TRIGGER','FUNCTION','PROCEDURE');
+#spool off
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
 
