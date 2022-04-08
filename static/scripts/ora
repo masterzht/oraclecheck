@@ -74,10 +74,12 @@ usage()
       - troubleshooting                        Usage:./ora troubleshooting event_name p1,p2,p3 eg ./ora troubleshooting \"latch: cache buffers chains\" 259201931656,177,0
 
       - logminer                               the usage of logminer
-      - lock|blocker|wait_chain                show blocked rows and blocked chains
+      - lock|wait_chain                        show blocked rows and blocked chains
+      - ltlock|ltwait_chain                    show blocked rows and blocked chains for lightdb
       - lob                                    show top space used lob segment
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
+      - ltactive                               ltactive show lightdb database active sessions
       - mvsnap                                 view all_snapshots (mview) status
       - ora2pg                                 first edit ora2pg.conf to modify ip port and service_name
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
@@ -104,6 +106,8 @@ usage()
               <ora_command>                    E.g. ora repeat 5 100 temp
       - rman                                   rman status and RECOVERY_FILE_DEST info
 
+      - s                                      login to oracle database
+      - lt <port>                              login to lightdb database
       - seq                                    show sequences have bad setting (order_flag='Y' or cache_size<=20)
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
       - snapper \"12:10\" 40                     AAS and session event
@@ -176,8 +180,7 @@ if [ "$ORA_TMP" = "" ]; then
 fi
 ###################################
 #very important init parameter
-#filedate=`date +"%Y%m%d_%H%M%S"`
-filedate=`date +"%Y%m%d_%H:%M:%S"`
+filedate=`date +"%Y%m%d_%H%M%S"`
 ECHO=""
 DEFNODISP="--"
 DEFDISP=""
@@ -302,6 +305,15 @@ fi
 #####################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
   $ORACLE_HOME/bin/sqlplus / as sysdba
+  ### ltsql -p $2 -Ulightdb -c
+fi
+#####################################
+if [ "$1" = "lt" -o "$1" = "lt" ]; then
+  if [ "$2" = "" ]; then
+    echo "Usage: ora lt <port>"
+    exit 1
+  fi
+  ltsql -p $2 -Ulightdb
 fi
 #####################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
@@ -783,6 +795,72 @@ fi
 if [ "$1" = "ora2pg" ]; then
 
    if [ "$2" = "" ]; then
+     echo "Usage: ora ora2pg <exp/imp>"
+     exit 0
+   fi
+
+   if [ "$2" = "exp" ]; then
+     echo ""
+     echo "First edit ora2pg config file ora2pg.conf to make sure datasource is correct"
+     echo ""
+     while true
+     do
+       read -p "please input schema name[exit or EXIT]:" schema
+       read -p "please input schema password[exit or EXIT]:" password
+       if [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]
+       then
+         echo bye
+	       exit 0            ###执行退出命令
+	     else
+	       mkdir -p $schema
+	       if [ -z "${schema}" ];then
+	         echo "input schema error"
+         fi
+         if [ -z "${password}" ];then
+           echo "input password error"
+         fi
+         data_type_list='TABLE
+         COPY
+         SEQUENCE
+         VIEW'
+         # PROCEDURE
+         for data_type in $data_type_list
+         do
+           echo 'exporting' ${data_type}' please wait...'
+           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
+         done
+         echo 'background exporting...'
+       fi
+     done
+   elif [ "$2" = "imp" ]; then
+    echo "Make sure target Lightdb has been created database and schemas for the importing database"
+    read -p "please input database name:" db_name
+    read -p "please input port:" port
+    if [ -z "${db_name}" ];then
+        echo "input schema error"
+    fi
+    if [ -z "${port}" ];then
+        echo "input port error"
+    fi
+    #-v ON_ERROR_STOP=ON
+    echo 'importing please wait...'
+    ltsql -p $port -d $db_name -f `ls | grep '^TABLE_'`        > imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^SEQUENCE_'`    >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^COPY_'`        >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^INDEXES_'`     >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^CONSTRAINTS_'` >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^FKEYS_'`       >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -f `ls | grep '^VIEW_'`        >> imp_${db_name}.log 2>&1 &&
+    ltsql -p $port -d $db_name -c "analyze verbose"           >> imp_${db_name}.log 2>&1 &
+    echo 'importing complete'
+exit 0
+echo 'importing complete'
+   fi
+fi
+######################################
+if [ "$1" = "pg_bulkload" ]; then
+
+   if [ "$2" = "" ]; then
     read -p "please input schema name:" schema
     read -p "please input schema password:" password
     mkdir -p $schema
@@ -795,8 +873,6 @@ if [ "$1" = "ora2pg" ]; then
     fi
   fi
 
-  echo 'dump schema is ' $schema
-  echo 'export schema password is ' $password
 data_type_list='TABLE
  COPY
  SEQUENCE
@@ -806,13 +882,12 @@ data_type_list='TABLE
  for data_type in $data_type_list
  do
    ora2pg -c ora2pg.conf -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1
-   echo 'exporting' ${data_type}'please wait...'
+   echo 'exporting' ${data_type}' please wait...'
  done
 exit 0
 echo 'exporting secuss'
 fi
-######################################
-
+############################################
 if [ "$1" = "tophis_byplan" ]; then
 
    if [ "$2" = "" -o "$2" = "cpu" -o "$2" = "CPU" ]; then
@@ -7964,6 +8039,46 @@ if [ "$1" = "lock" -o "$1" = "blocker" -o "$1" = "wait_chain" ]; then
 echo "full nodes"
 exit 0
 fi
+######################################################
+if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
+
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltwait_chain <port>"
+    exit 1
+  fi
+
+ ltsql -p $2 -Ulightdb -c """
+ SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_blocking_command,
+       blocking_activity.usename                                    AS blocking_user,
+       blocking_locks.mode                                          as blocking_locks_mode,
+       blocking_activity.wait_event                                 as blocking_wait_event,
+       blocking_activity.query                                      AS current_statement_in_blocking_process,
+       blocked_locks.pid                                            AS blocked_pid,
+       blocked_activity.usename                                     AS blocked_user,
+       blocked_locks.mode                                           as blocked_locks_mode,
+       blocked_activity.wait_event                                  as locked_wait_event,
+       blocked_activity.query                                       AS blocked_statement
+FROM pg_catalog.pg_locks blocked_locks
+         JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+         JOIN pg_catalog.pg_locks blocking_locks
+              ON blocking_locks.locktype = blocked_locks.locktype
+                  AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+                  AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+                  AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+                  AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+                  AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+                  AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+                  AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+                  AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+                  AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+                  AND blocking_locks.pid != blocked_locks.pid
+         JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted;
+ """
+!
+exit 0
+fi
 
 ############################################
 if [ "$1" = "awrsnap" -o "$1" = "listsnap" ]; then
@@ -13199,9 +13314,58 @@ end;
 /
     spool off
 !
+!
   exit 0
 fi
 ######################
+if [  "$1" = "ltsnap" -o "$1" = "ltsnapshot" -o "$1" = "take_sample" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltsnap <port>"
+    exit 1
+  fi
+  read -p "This Command will execute select take_sample(),cont? y/[n]:" cont
+
+  if [ "${cont}" = "y" -o "${cont}" = "Y" ];then
+
+    ltsql -p $2 -Ulightdb -c "select take_sample();"
+    echo "select take_sample() executed!"
+  fi
+exit 0
+!
+exit 0
+fi
+######################
+if [ "$1" = "ltactive" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltactive <port>"
+    exit 1
+  fi
+
+ ltsql -p $2 -Ulightdb -c """
+SELECT 'select pg_terminate_backend(' || pid || ');'                 AS kill_pid_command,
+       usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' ||
+       client_port                                                   AS "client_username_db_addr_port",
+       application_name                                              AS appname,
+       backend_type,
+       wait_event ||'@'||wait_event_type                             AS wait_event_class,
+       state,
+       date_trunc('seconds', clock_timestamp() - xact_start)::text   AS xact_age,
+       date_trunc('seconds', clock_timestamp() - query_start)::text  AS query_age,
+       date_trunc('seconds', clock_timestamp() - state_change)::text AS change_age,
+       substr(query, 0, 20)                                          AS query
+       --regexp_replace(query, E'\\s+', ' ', 'g')
+FROM pg_stat_activity
+WHERE state != 'idle'
+  AND pid <> pg_backend_pid()
+  -- AND ((clock_timestamp() - xact_start) > '{{.QueryAgeThresh}}'::interval OR (clock_timestamp() - query_start) > '{{.QueryAgeThresh}}'::interval)
+ORDER BY xact_age DESC;
+ """
+!
+exit 0
+fi
+##########################################
 if [ "$1" = "active" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
