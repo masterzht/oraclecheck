@@ -907,6 +907,9 @@ data_type_list='TABLE
  VIEW
  PROCEDURE
  '
+ #GRANT
+ #FUNCTION
+ #PACKAGE
  for data_type in $data_type_list
  do
    ora2pg -c ora2pg.conf -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1
