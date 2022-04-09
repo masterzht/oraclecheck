@@ -805,21 +805,33 @@ if [ "$1" = "ora2pg" ]; then
      echo ""
      while true
      do
+
        read -p "please input schema name[exit or EXIT]:" schema
        read -p "please input schema password[exit or EXIT]:" password
+       if [ -z "${schema}" ];then
+       echo "The username or password is empty, program exit"
+       exit 0
+       fi
+       if [ -z "${password}" ];then
+       echo "The username or password is empty, program exit"
+       exit 0
+       fi
+       if [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]; then
+         echo "input exit, program exit"
+	       exit 0            ###执行退出命令
+       fi
        connect=`ora2pg -t SHOW_VERSION -c ora2pg.conf -u $schema -w $password`
-       if [ "$connect" == "*ORA-01017*" ]; then
+       echo $connect
+       ora28000_flag="ORA-28000"
+       ora01017_flag="ORA-01017"
+       oracle_logon_flag="Oracle"
+       if [[ "$connect" =~ ^"${ora01017_flag}".* ]]; then
          echo $connect
          echo "ORA-01017: invalid username/password; logon denied"
-       elif [ "$connect" == "*ORA-28000*" ]; then
+       elif [[ "$connect" =~ ^"${ora28000_flag}".* ]]; then
          echo $connect
          echo "ORA-28000: The account is locked"
-       elif [ -z "${schema}" || -z "${$password}" ]; then
-         echo "The username or password is empty"
-       elif [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]; then
-         echo bye
-	       exit 0            ###执行退出命令
-	     elif [ "$connect" == "Oracle*" ]; then
+       elif [[ "$connect" =~ ^"${oracle_logon_flag}".* ]]; then
 	       mkdir -p $schema
          data_type_list='TABLE
          COPY
