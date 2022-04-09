@@ -807,23 +807,29 @@ if [ "$1" = "ora2pg" ]; then
      do
        read -p "please input schema name[exit or EXIT]:" schema
        read -p "please input schema password[exit or EXIT]:" password
-       if [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]
-       then
+       connect=`ora2pg -t SHOW_VERSION -c ora2pg.conf -u $schema -w $password`
+       if [ "$connect" == "*ORA-01017*" ]; then
+         echo $connect
+         echo "ORA-01017: invalid username/password; logon denied"
+       elif [ "$connect" == "*ORA-28000*" ]; then
+         echo $connect
+         echo "ORA-28000: The account is locked"
+       elif [ -z "${schema}" || -z "${$password}" ]; then
+         echo "The username or password is empty"
+       elif [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]; then
          echo bye
 	       exit 0            ###执行退出命令
-	     else
+	     elif [ "$connect" == "Oracle*" ]; then
 	       mkdir -p $schema
-	       if [ -z "${schema}" ];then
-	         echo "input schema error"
-         fi
-         if [ -z "${password}" ];then
-           echo "input password error"
-         fi
          data_type_list='TABLE
          COPY
          SEQUENCE
-         VIEW'
-         # PROCEDURE
+         VIEW
+         PROCEDURE
+         GRANT
+         FUNCTION
+         PACKAGE
+         SYNONYM'
          for data_type in $data_type_list
          do
            echo 'exporting' ${data_type}' please wait...'
@@ -834,24 +840,34 @@ if [ "$1" = "ora2pg" ]; then
      done
    elif [ "$2" = "imp" ]; then
     echo "Make sure target Lightdb has been created database and schemas for the importing database"
+    read -p "please input super username:" username
+    read -p "please input super username password:" password
     read -p "please input database name:" db_name
-    read -p "please input port:" port
+    read -p "please input target ip address:" ip
+    read -p "please input target lightdb port:" port
     if [ -z "${db_name}" ];then
         echo "input schema error"
+        exit 0
+    fi
+    if [ -z "${ip}" ];then
+        echo "input schema error"
+        exit 0
     fi
     if [ -z "${port}" ];then
         echo "input port error"
+        exit 0
     fi
     #-v ON_ERROR_STOP=ON
     echo 'importing please wait...'
-    ltsql -p $port -d $db_name -f `ls | grep '^TABLE_'`        > imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^SEQUENCE_'`    >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^COPY_'`        >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^INDEXES_'`     >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^CONSTRAINTS_'` >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^FKEYS_'`       >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -f `ls | grep '^VIEW_'`        >> imp_${db_name}.log 2>&1 &&
-    ltsql -p $port -d $db_name -c "analyze verbose"           >> imp_${db_name}.log 2>&1 &
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^TABLE_'`        > imp_${db_name}.log 2>&1 &&
+    date +"%Y%m%d_%H%M%S"                                                                      &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^SEQUENCE_'`    >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^COPY_'`        >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^INDEXES_'`     >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^CONSTRAINTS_'` >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^FKEYS_'`       >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f `ls | grep '^VIEW_'`        >> imp_${db_name}.log 2>&1 &&
+    PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"           >> imp_${db_name}.log 2>&1 &
     echo 'importing complete'
 exit 0
 echo 'importing complete'
