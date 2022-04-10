@@ -896,14 +896,18 @@ if [ "$1" = "ora2pg" ]; then
 
        #-v ON_ERROR_STOP=ON
 
-       echo 'importing please wait...'
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'`                         > imp_${db_name}.log 2>&1 &&
+       echo 'Importing please wait...'
+       echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               > imp_${db_name}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'`   >> imp_${db_name}.log 2>&1 &&
        for sql_file in `ls ${data_folder} | grep -v '^TABLE_' | grep -v '^FKEYS_'`
        do
-         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file} >> imp_${db_name}.log 2>&1
+         echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                         >> imp_${db_name}.log 2>&1
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}              >> imp_${db_name}.log 2>&1
        done &&
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'`                       >> imp_${db_name}.log 2>&1 &&
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"           >> imp_${db_name}.log 2>&1 &
+       echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                         >> imp_${db_name}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'`   >> imp_${db_name}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                     >> imp_${db_name}.log 2>&1 &&
+       echo 'Importing complete at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                  >> imp_${db_name}.log 2>&1 &
      done
 
    echo 'importing complete'
