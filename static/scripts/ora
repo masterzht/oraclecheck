@@ -8102,7 +8102,6 @@ fi
 ######################################################
 if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
 
-
   if [ "$2" = "" ]; then
     echo "Usage: ora ltwait_chain <port>"
     exit 1
