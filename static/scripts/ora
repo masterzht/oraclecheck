@@ -8109,14 +8109,17 @@ if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
   fi
 
  ltsql -p $2 -Ulightdb -c """
- SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_blocking_command,
+SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_blocking_command,
+       pg_blocking_pids(blocking_locks.pid)                         AS blocking_pids,
        blocking_activity.usename                                    AS blocking_user,
        blocking_locks.mode                                          as blocking_locks_mode,
+       blocking_locks.granted                                       as blocking_locks_granted,
        blocking_activity.wait_event                                 as blocking_wait_event,
        blocking_activity.query                                      AS current_statement_in_blocking_process,
        blocked_locks.pid                                            AS blocked_pid,
        blocked_activity.usename                                     AS blocked_user,
        blocked_locks.mode                                           as blocked_locks_mode,
+       blocked_locks.granted                                        as blocked_locks_granted,
        blocked_activity.wait_event                                  as locked_wait_event,
        blocked_activity.query                                       AS blocked_statement
 FROM pg_catalog.pg_locks blocked_locks
