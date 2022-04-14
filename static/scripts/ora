@@ -858,7 +858,6 @@ if [ "$1" = "ora2pg" ]; then
      echo ""
      while true
      do
-
        read -p "please input superuser [exit or EXIT]:" username
        read -p "please input superuser password[exit or EXIT]:" password
        read -p "please input database name[exit or EXIT]:" db_name
@@ -901,7 +900,6 @@ if [ "$1" = "ora2pg" ]; then
        fi
 
        #-v ON_ERROR_STOP=ON
-
 # 如果要单独导入数据，需要先删除掉外键
 # alter table act_ge_bytearray drop constraint if EXISTS act_fk_bytearr_depl;
 # 然后再根据FKEYS_中的内容去创建
@@ -917,17 +915,17 @@ if [ "$1" = "ora2pg" ]; then
          echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           > imp_${db_name}_${data_folder}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
          for sql_file in `ls ${data_folder} | grep -v '^TABLE_' | grep -v '^FKEYS_'`
-         do
+          do
            echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                        >> imp_${db_name}_${data_folder}.log 2>&1
            PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1
-         done &&
+          done &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           >> imp_${db_name}_${data_folder}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                   >> imp_${db_name}_${data_folder}.log 2>&1 &&
          echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                     >> imp_${db_name}_${data_folder}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
          echo 'Importing complete at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              >> imp_${db_name}_${data_folder}.log 2>&1 &
-         done
        fi
+     done
    echo 'importing complete'
    fi
 fi
