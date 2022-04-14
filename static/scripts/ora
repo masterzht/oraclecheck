@@ -896,6 +896,11 @@ if [ "$1" = "ora2pg" ]; then
 
        #-v ON_ERROR_STOP=ON
 
+# 如果要单独导入数据，需要先删除掉外键
+# alter table act_ge_bytearray drop constraint if EXISTS act_fk_bytearr_depl;
+# 然后再根据FKEYS_中的内容去创建
+# ALTER TABLE act_ge_bytearray ADD CONSTRAINT act_fk_bytearr_depl FOREIGN KEY (deployment_id_) REFERENCES act_re_deployment(id_) ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;
+
        echo 'Importing please wait...'
        echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           > imp_${db_name}_${data_folder}.log 2>&1 &&
        PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
