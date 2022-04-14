@@ -897,18 +897,18 @@ if [ "$1" = "ora2pg" ]; then
        #-v ON_ERROR_STOP=ON
 
        echo 'Importing please wait...'
-       echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               > imp_${db_name}.log 2>&1 &&
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'`     >> imp_${db_name}.log 2>&1 &&
+       echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           > imp_${db_name}_${data_folder}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
        for sql_file in `ls ${data_folder} | grep -v '^TABLE_' | grep -v '^FKEYS_'`
        do
-         echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                         >> imp_${db_name}.log 2>&1
-         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}                >> imp_${db_name}.log 2>&1
+         echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                        >> imp_${db_name}_${data_folder}.log 2>&1
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1
        done &&
-       echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}.log 2>&1 &&
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}.log 2>&1 &&
-       echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                         >> imp_${db_name}.log 2>&1 &&
-       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'`     >> imp_${db_name}.log 2>&1 &&
-       echo 'Importing complete at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                  >> imp_${db_name}.log 2>&1 &
+       echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           >> imp_${db_name}_${data_folder}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                   >> imp_${db_name}_${data_folder}.log 2>&1 &&
+       echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                     >> imp_${db_name}_${data_folder}.log 2>&1 &&
+       PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
+       echo 'Importing complete at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              >> imp_${db_name}_${data_folder}.log 2>&1 &
      done
 
    echo 'importing complete'
@@ -8116,6 +8116,7 @@ SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_bloc
        blocking_activity.wait_event                                 as blocking_wait_event,
        blocking_activity.query                                      AS current_statement_in_blocking_process,
        blocked_locks.pid                                            AS blocked_pid,
+       pg_blocking_pids(blocked_locks.pid)                          AS blocked_blocking_pids,
        blocked_activity.usename                                     AS blocked_user,
        blocked_locks.mode                                           as blocked_locks_mode,
        blocked_locks.granted                                        as blocked_locks_granted,

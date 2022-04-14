@@ -1,6 +1,6 @@
 #!/bin/bash
 export SQLPATH=''
-LOGFILE=/home/oracle/luoji/delarch`date +%y%m%d%H`.log
+LOGFILE=/home/oracle/yc/delarch`date +%y%m%d%H`.log
 echo > ${LOGFILE}
 for i in `ps -ef|grep ora_smon|grep -v grep|awk '{print $8}'`
 do
@@ -10,7 +10,7 @@ ORAHOME=$(cat /etc/oratab|grep "^${ORASID}:"|awk -F ':' '{print $2}')
 
 if [ xq$ORAHOME == xq ]
 then
-ORAHOME=$(cat /home/oracle/luoji/oratabs|grep "^${ORASID}:"|awk -F ':' '{print $2}')
+ORAHOME=$(cat /home/oracle/yc/oratabs|grep "^${ORASID}:"|awk -F ':' '{print $2}')
 fi
 
 if [ xq$ORAHOME == xq ]
@@ -44,7 +44,7 @@ fi
 
 done
 
-cd /home/oracle/luoji
+cd /home/oracle/yc
 find . -ctime +7 -name "delarch*.log" | xargs rm -f
 
 
