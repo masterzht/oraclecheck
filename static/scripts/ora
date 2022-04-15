@@ -847,7 +847,7 @@ if [ "$1" = "ora2pg" ]; then
          for data_type in $data_type_list
          do
            echo 'exporting' ${data_type}' please wait...'
-           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
+           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -P 10 -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
          done
          echo 'background exporting...'
        fi
@@ -864,7 +864,7 @@ if [ "$1" = "ora2pg" ]; then
        read -p "please input target ip address[exit or EXIT]:" ip
        read -p "please input target lightdb port[exit or EXIT]:" port
        read -p "please input data folder[exit or EXIT]:" data_folder
-       read -p "import data only? [Y/y or N/n | exit or EXIT]:" data_only
+       read -p "import option? [data_only/index_only/foreign_key_only/all/ | exit or EXIT]:" import_option
 
        if [ -z "${username}" ];then
          echo "The superuser name is empty, program exit"
@@ -890,11 +890,11 @@ if [ "$1" = "ora2pg" ]; then
          echo "The data folder information is empty, program exit"
          exit 0
        fi
-       if [ -z "${data_only}" ];then
-         echo "The data only parameter is empty, program exit"
+       if [ -z "${import_option}" ];then
+         echo "The import option parameter is empty, program exit"
          exit 0
        fi
-       if [ "$data_only" = "exit" -o "$data_only" = "EXIT" -o "$username" = "exit" -o "$username" = "EXIT" -o "$password" = "exit" -o "$password" = "EXIT" -o "$db_name" = "exit" -o "$db_name" = "EXIT" -o "$ip" = "exit" -o "$ip" = "EXIT" -o "$port" = "exit" -o "$port" = "EXIT" -o "$data_folder" = "exit" -o "$data_folder" = "EXIT" ]; then
+       if [ "$import_option" = "exit" -o "$import_option" = "EXIT" -o "$username" = "exit" -o "$username" = "EXIT" -o "$password" = "exit" -o "$password" = "EXIT" -o "$db_name" = "exit" -o "$db_name" = "EXIT" -o "$ip" = "exit" -o "$ip" = "EXIT" -o "$port" = "exit" -o "$port" = "EXIT" -o "$data_folder" = "exit" -o "$data_folder" = "EXIT" ]; then
          echo "input exit, program exit"
 	       exit 0  ###执行退出命令
        fi
@@ -904,13 +904,29 @@ if [ "$1" = "ora2pg" ]; then
 # alter table act_ge_bytearray drop constraint if EXISTS act_fk_bytearr_depl;
 # 然后再根据FKEYS_中的内容去创建
 # ALTER TABLE act_ge_bytearray ADD CONSTRAINT act_fk_bytearr_depl FOREIGN KEY (deployment_id_) REFERENCES act_re_deployment(id_) ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;
-       if [ "$data_only" = "Y" -o "$data_only" = "y" ]; then
-         echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}.log 2>&1 &&
-         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^COPY_'`     >> imp_${db_name}.log 2>&1 &&
-         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}${data_folder}.log 2>&1 &&
-         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}${data_folder}.log 2>&1 &
-       else
-         echo 'Importing please wait...'
+       if [ "$import_option" = "data_only" ]; then
+        for sql_file in `ls ${data_folder} | grep -v '_COPY_'`
+          do
+           echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                        >> imp_${db_name}_${data_folder}.log 2>&1
+           PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1
+          done
+       elif [ "$import_option" = "index_only" ]; then
+         echo 'Importing indexes begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^INDEXES_'`   >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+       elif [ "$import_option" = "foreign_key_only" ]; then
+         echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'`     >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+       elif [ "$import_option" = "table_only" ]; then
+         echo 'Importing only tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'`     >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+       elif [ "$import_option" = "all" ]; then
+         echo 'Importing all folder please wait...'
          ## 如果要不导入表注释掉下两行...
          echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           > imp_${db_name}_${data_folder}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
