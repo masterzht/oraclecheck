@@ -864,7 +864,7 @@ if [ "$1" = "ora2pg" ]; then
        read -p "please input target ip address[exit or EXIT]:" ip
        read -p "please input target lightdb port[exit or EXIT]:" port
        read -p "please input data folder[exit or EXIT]:" data_folder
-       read -p "import option? [data_only/index_only/foreign_key_only/all/ | exit or EXIT]:" import_option
+       read -p "import option? [table_only/data_only/index_only/foreign_key_only/all/ | exit or EXIT]:" import_option
 
        if [ -z "${username}" ];then
          echo "The superuser name is empty, program exit"
@@ -905,10 +905,10 @@ if [ "$1" = "ora2pg" ]; then
 # 然后再根据FKEYS_中的内容去创建
 # ALTER TABLE act_ge_bytearray ADD CONSTRAINT act_fk_bytearr_depl FOREIGN KEY (deployment_id_) REFERENCES act_re_deployment(id_) ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;
        if [ "$import_option" = "data_only" ]; then
-        for sql_file in `ls ${data_folder} | grep -v '_COPY_'`
+        for sql_file in `ls ${data_folder} | grep '_COPY_'`
+          echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                         >> imp_${db_name}_${data_folder}.log 2>&1
           do
-           echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                        >> imp_${db_name}_${data_folder}.log 2>&1
-           PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1
+           PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1 &
           done
        elif [ "$import_option" = "index_only" ]; then
          echo 'Importing indexes begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
