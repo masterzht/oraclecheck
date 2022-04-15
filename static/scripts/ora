@@ -838,12 +838,12 @@ if [ "$1" = "ora2pg" ]; then
          data_type_list='TABLE
          COPY
          SEQUENCE
-         VIEW
-         PROCEDURE
-         GRANT
-         FUNCTION
-         PACKAGE
          SYNONYM'
+         #PROCEDURE
+         #FUNCTION
+         #PACKAGE
+         #GRANT
+         #VIEW
          for data_type in $data_type_list
          do
            echo 'exporting' ${data_type}' please wait...'
@@ -6719,7 +6719,6 @@ if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
 #spool ddl.sql
 #select dbms_metadata.get_ddl(case when object_type like 'PACKAGE%' then 'PACKAGE'
 #                                                     when object_type like 'DATABASE LINK' then 'DB_LINK'
-#                                                     }
 #                                                     when object_type like 'MATERIALIZED VIEW' then 'MATERIALIZED_VIEW'
 #                                                     when object_type = 'INDEX' then 'INDEX'
 #                                                     else object_type end,
