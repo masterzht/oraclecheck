@@ -847,7 +847,8 @@ if [ "$1" = "ora2pg" ]; then
          for data_type in $data_type_list
          do
            echo 'exporting' ${data_type}' please wait...'
-           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -P 10 -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
+           # 添加 -P 10 指定并行
+           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
          done
          echo 'background exporting...'
        fi
@@ -905,11 +906,15 @@ if [ "$1" = "ora2pg" ]; then
 # 然后再根据FKEYS_中的内容去创建
 # ALTER TABLE act_ge_bytearray ADD CONSTRAINT act_fk_bytearr_depl FOREIGN KEY (deployment_id_) REFERENCES act_re_deployment(id_) ON DELETE NO ACTION NOT DEFERRABLE INITIALLY IMMEDIATE;
        if [ "$import_option" = "data_only" ]; then
-        for sql_file in `ls ${data_folder} | grep '_COPY_'`
-          echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                         >> imp_${db_name}_${data_folder}.log 2>&1
-          do
-           PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >> imp_${db_name}_${data_folder}.log 2>&1 &
-          done
+         echo 'Importing data begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                 > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^COPY_'`      >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1
+        #for sql_file in `ls ${data_folder} | grep '_COPY_'`
+        #  do
+        #   echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+        #   PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >>  imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+        #  done
        elif [ "$import_option" = "index_only" ]; then
          echo 'Importing indexes begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^INDEXES_'`   >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
