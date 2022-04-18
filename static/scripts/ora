@@ -804,6 +804,7 @@ if [ "$1" = "ora2pg" ]; then
    if [ "$2" = "exp" ]; then
      echo ""
      echo "First edit ora2pg config file ora2pg.conf to make sure datasource is correct"
+     echo "vim ora set data_type_list parameter to set export object type"
      echo ""
      while true
      do
