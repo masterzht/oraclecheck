@@ -13487,6 +13487,43 @@ exit 0
 !
 exit 0
 fi
+
+######################
+if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltawr/pwr <port>"
+    exit 1
+  fi
+  if [ "$3" = "" -o "$4" = "" ]; then
+   ltsql -U lightdb -c "select * from samples order by sample_time desc;"
+
+   defbid_init=`ltsql -c "select max(sample_id) from samples;"`
+   defbid=`echo $defbid_init | awk '{print $3}'`
+   let defeid=defbid+1
+   read -p "Please input begin snap_id[$defbid]:" bid
+    if [ -z "${bid}" ];then
+         bid=$defbid
+    fi
+   read -p "Please input end   snap_id[$defeid]:" eid
+    if [ -z "${eid}" ];then
+         eid=$defeid
+    fi
+
+    if [ ${bid} -ge ${eid} ];then
+      echo begin_snap_id:$bid end_snap_id:$eid  input error!
+      exit 1
+    fi
+    else
+    bid=$3
+    eid=$4
+  fi
+
+ltsql -U lightdb -p $2 -Aqtc "SELECT get_pwr($bid,$eid)" -o report_${bid}_${eid}.html
+exit 0
+fi
+
+
 ######################
 if [ "$1" = "ltactive" ]; then
 
