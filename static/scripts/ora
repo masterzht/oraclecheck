@@ -13496,7 +13496,7 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
     exit 1
   fi
   if [ "$3" = "" -o "$4" = "" ]; then
-   ltsql -U lightdb -c "select * from samples order by sample_time desc;"
+   ltsql -U lightdb -c "select * from samples order by sample_time;"
 
    defbid_init=`ltsql -c "select max(sample_id) from samples;"`
    defbid=`echo $defbid_init | awk '{print $3}'`
