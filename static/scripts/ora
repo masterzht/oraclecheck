@@ -13498,7 +13498,7 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
   if [ "$3" = "" -o "$4" = "" ]; then
    ltsql -U lightdb -c "select * from samples order by sample_time;"
 
-   defbid_init=`ltsql -c "select max(sample_id) from samples;"`
+   defbid_init=`ltsql -c "select max(sample_id) - 1 from samples;"`
    defbid=`echo $defbid_init | awk '{print $3}'`
    let defeid=defbid+1
    read -p "Please input begin snap_id[$defbid]:" bid
@@ -13522,8 +13522,6 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
 ltsql -U lightdb -p $2 -Aqtc "SELECT get_pwr($bid,$eid)" -o report_${bid}_${eid}.html
 exit 0
 fi
-
-
 ######################
 if [ "$1" = "ltactive" ]; then
 
