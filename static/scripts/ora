@@ -81,6 +81,8 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - ltactive                               ltactive show lightdb database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
+      - lt_dump                                parallel lt_dump
+      - lt_restore                             importing --section=pre-data --section=post-data --section=data
       - mvsnap                                 view all_snapshots (mview) status
       - ora2pg                                 first edit ora2pg.conf to modify ip port and service_name
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
@@ -794,6 +796,112 @@ sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows se
 exit 0
 fi
 ######################################
+if [ "$1" = "lt_dump" ]; then
+
+   if [ "$2" = "" ]; then
+     echo "Usage: ora lt_dump <port>"
+     exit 0
+   fi
+
+        while true
+     do
+
+       read -p "please input username[exit or EXIT]:" username
+       read -p "please input username password[exit or EXIT]:" password
+       read -p "please input database ip [exit or EXIT]:" ip
+       read -p "please input database port [exit or EXIT]:" port
+       read -p "please input database name [exit or EXIT]:" db_name
+       read -p "please input lt_dump parallel [exit or EXIT]:" $j
+
+       if [ -z "${username}" ];then
+       echo "The username or password is empty, program exit"
+       exit 0
+       fi
+       if [ -z "${password}" ];then
+       echo "The username or password is empty, program exit"
+       exit 0
+       fi
+       if [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]; then
+         echo "input exit, program exit"
+	       exit 0            ###执行退出命令
+       fi
+       PGPASSWORD=$password lt_dump -Fd -U $username -h $ip -p $port -d $db_name -j $j -f $db_name > lt_dump_${db_name}.log 2>&1 &
+         echo 'background exporting...'
+       fi
+     done
+ fi
+##############################
+if [ "$1" = "lt_restore" ]; then
+
+   if [ "$2" = "" ]; then
+     echo "Usage: ora lt_restore <port>"
+     exit 0
+   fi
+    while true
+     do
+       read -p "please input superuser [exit or EXIT]:" username
+       read -p "please input superuser password[exit or EXIT]:" PWD
+       read -p "please input database name[exit or EXIT]:" db_name
+       read -p "please input import schema name[exit or EXIT]:" schema_name
+       read -p "please input target ip address[exit or EXIT]:" ip
+       read -p "please input target lightdb port[exit or EXIT]:" port
+       read -p "please input data folder[exit or EXIT]:" data_folder
+       read -p "import option? [metadata_only/data_only/all/ | exit or EXIT]:" import_option
+
+       if [ -z "${username}" ];then
+         echo "The superuser name is empty, program exit"
+         exit 0
+       fi
+       if [ -z "${PWD}" ];then
+         echo "The superuser password is empty, program exit"
+         exit 0
+       fi
+       if [ -z "${db_name}" ];then
+         echo "The target database name empty, program exit"
+         exit 0
+       fi
+       if [ -z "${schema_name}" ];then
+         echo "The target schema name empty, program exit"
+         exit 0
+       fi
+       if [ -z "${ip}" ];then
+         echo "The target database ip information is empty, program exit"
+         exit 0
+       fi
+       if [ -z "${port}" ];then
+         echo "The target database port information is empty, program exit"
+         exit 0
+       fi
+       if [ -z "${data_folder}" ];then
+         echo "The data folder information is empty, program exit"
+         exit 0
+       fi
+       if [ -z "${import_option}" ];then
+         echo "The import option parameter is empty, program exit"
+         exit 0
+       fi
+       if [ "$import_option" = "exit" -o "$import_option" = "EXIT" -o "$username" = "exit" -o "$username" = "EXIT" -o "$password" = "exit" -o "$password" = "EXIT" -o "$db_name" = "exit" -o "$db_name" = "EXIT" -o "$ip" = "exit" -o "$ip" = "EXIT" -o "$port" = "exit" -o "$port" = "EXIT" -o "$data_folder" = "exit" -o "$data_folder" = "EXIT" ]; then
+         echo "input exit, program exit"
+	       exit 0  ###执行退出命令
+       fi
+
+       if [ "$import_option" = "metadata_only" ]; then
+         echo 'Importing metadata_only begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                 > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$PWD lt_restore $data_folder -U $username -h $ip -p $port -d $db_name -n $schema_name  --section=pre-data --section=post-data >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+       elif [ "$import_option" = "data_only" ]; then
+         echo 'Importing data_only begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                      > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$PWD lt_restore $data_folder -U $username -h $ip -p $port -j 30 -d $db_name -n $schema_name --section=data >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+
+       elif [ "$import_option" = "all" ]; then
+         echo 'Importing all data begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                      > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$PWD lt_restore $data_folder -U $username -h $ip -p $port -d $db_name -n $schema_name --section=pre-data --section=post-data >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$PWD lt_restore $data_folder -U $username -h $ip -p $port -d $db_name -n $schema_name -j 30 --section=data                   >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+
+       fi
+     done
+   echo 'importing complete'
+   fi
+######################################
 if [ "$1" = "ora2pg" ]; then
 
    if [ "$2" = "" ]; then
@@ -911,7 +1019,7 @@ if [ "$1" = "ora2pg" ]; then
          echo 'Importing data begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                 > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^COPY_'`      >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
-         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
         #for sql_file in `ls ${data_folder} | grep '_COPY_'`
         #  do
         #   echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
