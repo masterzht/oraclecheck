@@ -16,7 +16,7 @@ fi
 if [ xq$ORAHOME == xq ]
 then
 echo "            "  >> ${LOGFILE}
-echo "实例名${ORASID}未找到匹配的ORACLE_HOME"  >> ${LOGFILE}
+echo "实例名${ ORASID}未找到匹配的ORACLE_HOME"  >> ${LOGFILE}
 echo "            "  >> ${LOGFILE}
 continue
 fi

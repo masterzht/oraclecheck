@@ -797,15 +797,8 @@ exit 0
 fi
 ######################################
 if [ "$1" = "lt_dump" ]; then
-
-   if [ "$2" = "" ]; then
-     echo "Usage: ora lt_dump <port>"
-     exit 0
-   fi
-
-        while true
+    while true
      do
-
        read -p "please input username[exit or EXIT]:" username
        read -p "please input username password[exit or EXIT]:" password
        read -p "please input database ip [exit or EXIT]:" ip
@@ -821,13 +814,24 @@ if [ "$1" = "lt_dump" ]; then
        echo "The username or password is empty, program exit"
        exit 0
        fi
+       if [ -z "${ip}" ];then
+       echo "The database ip address is empty, program exit"
+       exit 0
+       fi
+       if [ -z "${port}" ];then
+       echo "The database port is empty, program exit"
+       exit 0
+       fi
+       if [ -z "${db_name}" ];then
+       echo "The export database name is empty, program exit"
+       exit 0
+       fi
        if [ "$schema" = "exit" -o "$schema" = "EXIT" -o "$schema" = "exit" -o "$schema" = "EXIT" ]; then
          echo "input exit, program exit"
 	       exit 0            ###执行退出命令
        fi
-       PGPASSWORD=$password lt_dump -Fd -U $username -h $ip -p $port -d $db_name -j $j -f $db_name > lt_dump_${db_name}.log 2>&1 &
+       PGPASSWORD=$password lt_dump -Fd -U $username -h $ip -p $port -d $db_name -j $j -f $db_name > lt_dump_${db_name}_${filedate}.log 2>&1 &
          echo 'background exporting...'
-       fi
      done
  fi
 ##############################
