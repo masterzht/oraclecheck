@@ -799,30 +799,35 @@ fi
 if [ "$1" = "lt_dump" ]; then
     while true
      do
-       read -p "please input username[exit or EXIT]:" username
-       read -p "please input username password[exit or EXIT]:" password
-       read -p "please input database ip [exit or EXIT]:" ip
-       read -p "please input database port [exit or EXIT]:" port
-       read -p "please input database name [exit or EXIT]:" db_name
+       read -p "please input username[exit or EXIT]:" USER
+       read -p "please input username password[exit or EXIT]:" PWD
+       read -p "please input database ip [exit or EXIT]:" HOST
+       read -p "please input database port [exit or EXIT]:" PORT
+       read -p "please input database name [exit or EXIT]:" DBNAME
+       read -p "please input schema that need dump [exit or EXIT]:" SCHEMA
        read -p "please input lt_dump parallel [exit or EXIT]:" $j
 
-       if [ -z "${username}" ];then
+       if [ -z "${USER}" ];then
        echo "The username or password is empty, program exit"
        exit 0
        fi
-       if [ -z "${password}" ];then
+       if [ -z "${PWD}" ];then
        echo "The username or password is empty, program exit"
        exit 0
        fi
-       if [ -z "${ip}" ];then
+       if [ -z "${HOST}" ];then
        echo "The database ip address is empty, program exit"
        exit 0
        fi
-       if [ -z "${port}" ];then
+       if [ -z "${PORT}" ];then
        echo "The database port is empty, program exit"
        exit 0
        fi
-       if [ -z "${db_name}" ];then
+       if [ -z "${DBNAME}" ];then
+       echo "The export database name is empty, program exit"
+       exit 0
+       fi
+       if [ -z "${SCHEMA}" ];then
        echo "The export database name is empty, program exit"
        exit 0
        fi
@@ -830,7 +835,7 @@ if [ "$1" = "lt_dump" ]; then
          echo "input exit, program exit"
 	       exit 0            ###执行退出命令
        fi
-       PGPASSWORD=$password lt_dump -Fd -U $username -h $ip -p $port -d $db_name -j $j -f $db_name > lt_dump_${db_name}_${filedate}.log 2>&1 &
+       PGPASSWORD=$PWD lt_dump -U $USER -h$HOST -p$PORT -d$DBNAME -n$SCHEMA -Fd -j $j --no-publications --no-subscriptions --no-unlogged-table-data -f $schema > lt_dump_${DBNAME}_{$schema}${filedate}.log 2>&1 &
          echo 'background exporting...'
      done
  fi
@@ -1024,16 +1029,13 @@ if [ "$1" = "ora2pg" ]; then
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^COPY_'`      >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
-        #for sql_file in `ls ${data_folder} | grep '_COPY_'`
-        #  do
-        #   echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
-        #   PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/${sql_file}               >>  imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
-        #  done
+
        elif [ "$import_option" = "index_only" ]; then
          echo 'Importing indexes begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^INDEXES_'`   >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+
        elif [ "$import_option" = "foreign_key_only" ]; then
          echo 'Importing foreign key begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^FKEYS_'`     >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
