@@ -6845,6 +6845,48 @@ exit 0
 fi
 
 ######################################
+if [ "$1" = "ltddl" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "ora get_ddl <port> <object_name>/<relfilenode>"
+    exit 1
+  fi
+  object_name=$2
+ ltsql -p $2 -Ulightdb -c "
+ SELECT c.oid,
+       (select rolname from pg_authid auth where auth.oid = c.relowner)            as username,
+       (select tbs.spcname from pg_tablespace tbs where tbs.oid = c.reltablespace) as tablesapce_name,
+       (select n.nspname from pg_catalog.pg_namespace n where n.oid = c.relnamespace) || '.' ||
+       c.relname                                                                   as object_name,
+       c.relfilenode                                                               as object_oid,
+       pg_catalog.pg_relation_filepath(c.oid)                                      as object_location,
+       pg_catalog.pg_relation_filepath(c.reltoastrelid)                            as toast_object_location,
+       pg_catalog.pg_size_pretty(pg_catalog.pg_table_size(c.oid))                  as object_size,
+       CASE c.relkind
+           WHEN 'r' THEN 'table'
+           WHEN 'v' THEN 'view'
+           WHEN 'm' THEN 'materialized view'
+           WHEN 'i' THEN 'index'
+           WHEN 'S' THEN 'sequence'
+           WHEN 's' THEN 'special'
+           WHEN 'f' THEN 'foreign table'
+           WHEN 'p' THEN 'partitioned table'
+           WHEN 'I'
+               THEN 'partitioned index' END                                        as object_type,
+       (select am.amname from pg_am am where am.oid = c.relam)                     as object_access_method,
+       CASE c.relpersistence
+           WHEN 'p' THEN 'permanent'
+           WHEN 't' THEN 'temporary'
+           WHEN 'u'
+               THEN 'unlogged' END                                                 as temp_or_nologging,
+       (select type.typname from pg_type type where type.oid = c.reltype)          as typname
+FROM pg_catalog.pg_class c
+WHERE pg_catalog.pg_table_is_visible(c.oid) and c.relname = '$3'
+ORDER BY 1, 2;
+ "
+ exit 0
+fi
+######################################
 if [ "$1" = "get_ddl" -o "$1" = "ddl" ]; then
 
 # for batch getting [view trigger function procedures] definition of SYS user
@@ -8289,6 +8331,7 @@ if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
     echo "Usage: ora ltwait_chain <port>"
     exit 1
   fi
+
 
  ltsql -p $2 -Ulightdb -c """
 SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_blocking_command,
