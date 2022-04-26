@@ -13736,7 +13736,7 @@ if [ "$1" = "ltactive" ]; then
   fi
 
  ltsql -p $2 -Ulightdb -c """
-SELECT 'select pg_terminate_backend(' || pid || ');'                 AS kill_pid_command,
+SELECT 'pg_terminate_backend(' || pid || ');'                 AS kill_pid_command,
        usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' ||
        client_port                                                   AS "client_username_db_addr_port",
        application_name                                              AS appname,
