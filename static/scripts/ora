@@ -6905,7 +6905,7 @@ if [ "$1" = "ltddl" ]; then
        (select tbs.spcname from pg_tablespace tbs where tbs.oid = c.reltablespace) as tablesapce_name,
        (select n.nspname from pg_catalog.pg_namespace n where n.oid = c.relnamespace) || '.' ||
        c.relname                                                                   as object_name,
-       c.relfilenode                                                               as object_oid,
+       c.relfilenode                                                               as relfilenode,
        pg_catalog.pg_relation_filepath(c.oid)                                      as object_location,
        pg_catalog.pg_relation_filepath(c.reltoastrelid)                            as toast_object_location,
        pg_catalog.pg_size_pretty(pg_catalog.pg_table_size(c.oid))                  as object_size,
@@ -6918,18 +6918,17 @@ if [ "$1" = "ltddl" ]; then
            WHEN 's' THEN 'special'
            WHEN 'f' THEN 'foreign table'
            WHEN 'p' THEN 'partitioned table'
-           WHEN 'I'
-               THEN 'partitioned index' END                                        as object_type,
+           WHEN 'I' THEN 'partitioned index' END                                   as object_type,
        (select am.amname from pg_am am where am.oid = c.relam)                     as object_access_method,
        CASE c.relpersistence
            WHEN 'p' THEN 'permanent'
            WHEN 't' THEN 'temporary'
-           WHEN 'u'
-               THEN 'unlogged' END                                                 as temp_or_nologging,
+           WHEN 'u' THEN 'unlogged' END                                            as temp_or_nologging,
        (select type.typname from pg_type type where type.oid = c.reltype)          as typname
 FROM pg_catalog.pg_class c
 WHERE pg_catalog.pg_table_is_visible(c.oid) and c.relname = '$3'
 ORDER BY 1, 2;
+lt_dump -d
  "
  exit 0
 fi
