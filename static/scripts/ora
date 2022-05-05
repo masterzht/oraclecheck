@@ -8440,7 +8440,8 @@ FROM pg_catalog.pg_locks blocked_locks
          JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
 WHERE NOT blocked_locks.granted) s,r where s.blocking_pids = r.pids
 )
-select r.sub_level || 'pg_terminate_backend('||r.pids||')' || ';' as pids, r.username,r.wait_event,r.sub_level || r.query as query
+select distinct pids, username,wait_event,query
+                from (select r.sub_level || 'pg_terminate_backend('||r.pids||')' || ';' as pids, r.username,r.wait_event,r.sub_level || r.query as query
   from (SELECT distinct blocking_locks.pid AS pids,
        (pg_blocking_pids(blocking_locks.pid))[array_upper(pg_blocking_pids(blocking_locks.pid), 1)]  AS blocking_pids,
        blocking_activity.usename                                    AS username,
@@ -8464,7 +8465,7 @@ FROM pg_catalog.pg_locks blocked_locks
          JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
 WHERE NOT blocked_locks.granted) sessions, r
  where sessions.pids = r.pids
- order by r.path;
+ order by r.path);
  """
 !
 exit 0
