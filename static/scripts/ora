@@ -6926,9 +6926,8 @@ if [ "$1" = "ltddl" ]; then
            WHEN 'u' THEN 'unlogged' END                                            as temp_or_nologging,
        (select type.typname from pg_type type where type.oid = c.reltype)          as typname
 FROM pg_catalog.pg_class c
-WHERE  c.relname = '$3' or c.oid = '$3' and pg_catalog.pg_table_is_visible(c.oid)
+WHERE (c.relname = '$3' or c.oid = '$3' or c.relfilenode = '$3') -- and pg_catalog.pg_table_is_visible(c.oid)
 ORDER BY 1, 2;
-lt_dump -d
  "
  exit 0
 fi
