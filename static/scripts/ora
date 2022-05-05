@@ -4152,8 +4152,10 @@ echo "Usage: ./ora batch_event -i 2 <begin_snap_id> <end_snap_id>"
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
+
     set trimspool on
     spool ora_batch_event_${INST}_$filedate.log
+/**
 prompt Display Event by Minutes Top 3
 prompt ======================
     set linesize 300 pages 1000
@@ -4173,7 +4175,8 @@ select * from (
     select event, sample_time, cnt, row_number() over (partition by sample_time order by sample_time,cnt desc) as rn
 from tmp
     ) where rn < 4;
-    set linesize 300 pagesize 8
+**/
+    set linesize 300 pagesize
     col event format a30 trunc
     col inst_id format 9999
     col wait_class format a15
