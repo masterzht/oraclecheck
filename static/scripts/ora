@@ -8380,20 +8380,17 @@ if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
 
 
  ltsql -p $2 -Ulightdb -c """
-SELECT 'select pg_terminate_backend(' || blocking_locks.pid || ');' AS kill_blocking_command,
-       pg_blocking_pids(blocking_locks.pid)                         AS blocking_pids,
-       blocking_activity.usename                                    AS blocking_user,
-       blocking_locks.mode                                          as blocking_locks_mode,
-       blocking_locks.granted                                       as blocking_locks_granted,
-       blocking_activity.wait_event                                 as blocking_wait_event,
-       blocking_activity.query                                      AS current_statement_in_blocking_process,
-       blocked_locks.pid                                            AS blocked_pid,
-       pg_blocking_pids(blocked_locks.pid)                          AS blocked_blocking_pids,
-       blocked_activity.usename                                     AS blocked_user,
-       blocked_locks.mode                                           as blocked_locks_mode,
-       blocked_locks.granted                                        as blocked_locks_granted,
-       blocked_activity.wait_event                                  as locked_wait_event,
-       blocked_activity.query                                       AS blocked_statement
+with recursive r as (
+SELECT distinct blocking_locks.pid AS pids,
+       (pg_blocking_pids(blocking_locks.pid))[array_upper(pg_blocking_pids(blocking_locks.pid), 1)]  AS blocking_pids,
+       array[blocking_locks.pid] as path,
+	   '' sub_level,
+	   1 dept_level,
+       blocking_activity.usename                                    AS username,
+       blocking_locks.granted                                       AS locks_granted,
+       blocking_locks.locktype                                      AS locktype,
+       blocking_activity.wait_event                                 AS wait_event,
+       blocking_activity.query                                      AS query
 FROM pg_catalog.pg_locks blocked_locks
          JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
          JOIN pg_catalog.pg_locks blocking_locks
@@ -8409,7 +8406,72 @@ FROM pg_catalog.pg_locks blocked_locks
                   AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
                   AND blocking_locks.pid != blocked_locks.pid
          JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
-WHERE NOT blocked_locks.granted;
+WHERE NOT blocked_locks.granted and (pg_blocking_pids(blocking_locks.pid))[array_upper(pg_blocking_pids(blocking_locks.pid), 1)] is null
+union all
+select s.pids,
+       s.blocking_pids,
+       r.path||s.pids as path,
+       r.sub_level || '    ' as sub_level,
+	   r.dept_level + 1 as dept_level,
+       s.username,
+       s.locks_granted,
+       s.locktype,
+       s.wait_event,
+       s.query
+from
+    (SELECT distinct blocking_locks.pid AS pids,
+       (pg_blocking_pids(blocking_locks.pid))[array_upper(pg_blocking_pids(blocking_locks.pid), 1)]  AS blocking_pids,
+       blocking_activity.usename                                    AS username,
+       blocking_locks.granted                                       as locks_granted,
+       blocking_locks.locktype                                      AS locktype,
+       blocking_activity.wait_event                                 as wait_event,
+       blocking_activity.query                                      AS query
+FROM pg_catalog.pg_locks blocked_locks
+         JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+         JOIN pg_catalog.pg_locks blocking_locks
+              ON blocking_locks.locktype = blocked_locks.locktype
+                  AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+                  AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+                  AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+                  AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+                  AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+                  AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+                  AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+                  AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+                  AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+                  AND blocking_locks.pid != blocked_locks.pid
+         JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted) s,r where s.blocking_pids = r.pids
+)
+select r.sub_level || 'pg_terminate_backend('||r.pids||')' || ';' as pids, r.username,r.wait_event,r.locktype,r.sub_level || r.query as query
+  from (SELECT distinct blocking_locks.pid AS pids,
+       (pg_blocking_pids(blocking_locks.pid))[array_upper(pg_blocking_pids(blocking_locks.pid), 1)]  AS blocking_pids,
+       blocking_activity.usename                                    AS username,
+       blocking_locks.granted                                       as locks_granted,
+       blocking_activity.wait_event                                 as wait_event,
+       blocking_activity.query                                      AS query
+FROM pg_catalog.pg_locks blocked_locks
+         JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+         JOIN pg_catalog.pg_locks blocking_locks
+              ON blocking_locks.locktype = blocked_locks.locktype
+                  AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+                  AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+                  AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+                  AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+                  AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+                  AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+                  AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+                  AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+                  AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+                  AND blocking_locks.pid != blocked_locks.pid
+         JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted) sessions, r
+ where sessions.pids = r.pids
+ order by r.path;
+
+
+
+select pg_terminate_backend(798);
  """
 !
 exit 0
