@@ -1,0 +1,28 @@
+LOAD DATABASE
+FROM mysql://root:123456@10.20.39.60:33061/scheduler_light
+INTO postgresql://scheduler_light:scheduler_light@10.19.36.28:5432/scheduler_light
+WITH include drop, create tables, create indexes, reset sequences, foreign keys
+
+CAST type int with extra auto_increment to serial drop typemod,
+type int to int drop typemod,
+type tinyint with extra auto_increment to serial drop typemod,
+type smallint with extra auto_increment to serial drop typemod,
+type mediumint with extra auto_increment to serial drop typemod,
+type bigint with extra auto_increment to bigserial drop typemod,
+type bit when (= 1 precision) to boolean drop typemod using bits-to-boolean,
+type bit to bit drop typemod using bits-to-hex-bitstring,
+type tinyint when unsigned to smallint drop typemod,
+type smallint when unsigned to integer drop typemod,
+type mediumint when unsigned to integer drop typemod,
+type integer when unsigned to bigint drop typemod,
+type tinyint to smallint drop typemod,
+type smallint to smallint drop typemod,
+type mediumint to integer drop typemod,
+type integer to integer drop typemod,
+type bigint to bigint drop typemod,
+type float to numeric,
+type double to numeric,
+type numeric to numeric keep typemod,
+type decimal to decimal keep typemod
+BEFORE LOAD DO
+$$ select 1; $$;
