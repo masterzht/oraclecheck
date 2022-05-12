@@ -1031,7 +1031,7 @@ if [ "$1" = "ora2pg" ]; then
        read -p "please input target ip address[exit or EXIT]:" ip
        read -p "please input target lightdb port[exit or EXIT]:" port
        read -p "please input data folder[exit or EXIT]:" data_folder
-       read -p "import option? [table_only/data_only/index_only/foreign_key_only/all/ | exit or EXIT]:" import_option
+       read -p "import option? [table_only/view_only/data_only/index_only/foreign_key_only/all/ | exit or EXIT]:" import_option
 
        if [ -z "${username}" ];then
          echo "The superuser name is empty, program exit"
@@ -1074,6 +1074,12 @@ if [ "$1" = "ora2pg" ]; then
        if [ "$import_option" = "data_only" ]; then
          echo 'Importing data begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                                 > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^COPY_'`      >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
+
+       elif [ "$import_option" = "view_only" ]; then
+         echo 'Importing views begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                              > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^VIEW_'`      >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
 
@@ -13759,9 +13765,9 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
     exit 1
   fi
   if [ "$3" = "" -o "$4" = "" ]; then
-   ltsql -U lightdb -c "select * from samples order by sample_time;"
+   ltsql -U lightdb -c -p $2 "select * from samples order by sample_time;"
 
-   defbid_init=`ltsql -c "select max(sample_id) - 1 from samples;"`
+   defbid_init=`ltsql -c -p $2 "select max(sample_id) - 1 from samples;"`
    defbid=`echo $defbid_init | awk '{print $3}'`
    let defeid=defbid+1
    read -p "Please input begin snap_id[$defbid]:" bid
