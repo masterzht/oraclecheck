@@ -24,6 +24,7 @@ usage()
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
       - ltawr/pwr <port> [bid] [eid]           lightdb pwr top parameter <pg_profile.topn;> sql;default is last 2 snapshots interval
+      - ltsnap/take_sample <port>              lightdb select take_sample(); to create a snapshot
       - awrsqrpt [bid] [eid] <sql_id>          ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
@@ -13791,6 +13792,25 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
 ltsql -U lightdb -p $2 -Aqtc "SELECT get_pwr($bid,$eid)" -o report_${bid}_${eid}_${filedate}.html
 exit 0
 fi
+######################################################
+if [ "$1" = "ltsnap" -o "$1" = "take_sample" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltsnap/take_sample <port>"
+    exit 1
+  fi
+
+   read -p "This Command will execute select take_sample(); ,cont? y/[n]:" cont
+
+    if [ "${cont}" = "y" -o "${cont}" = "Y" ];then
+      ltsql -U lightdb -p $2 -c "select take_sample();"
+   else
+      echo "command canceled"
+      exit 1
+    fi
+exit 0
+fi
+
 ######################################################
 if [ "$1" = "ltactive" ]; then
 
