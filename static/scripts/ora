@@ -13788,7 +13788,7 @@ if [  "$1" = "ltawr" -o "$1" = "pwr" ]; then
     eid=$4
   fi
 
-ltsql -U lightdb -p $2 -Aqtc "SELECT get_pwr($bid,$eid)" -o report_${bid}_${eid}.html
+ltsql -U lightdb -p $2 -Aqtc "SELECT get_pwr($bid,$eid)" -o report_${bid}_${eid}_${filedate}.html
 exit 0
 fi
 ######################################################
