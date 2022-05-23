@@ -24,7 +24,7 @@ usage()
       - asm                                    Show asm space/free space
       - awr [bid] [eid]                        ora awr bid eid (all nodes and RAC),top 50 sql;default is last 2 snapshots interval
       - ltawr/pwr <port> [bid] [eid]           lightdb pwr top parameter <pg_profile.topn;> sql;default is last 2 snapshots interval
-      - ltsnap/take_sample <port>              lightdb select take_sample(); to create a snapshot
+      - ltsnap/take_sample <port>              select take_sample(); to create a snapshot for lightdb
       - awrsqrpt [bid] [eid] <sql_id>          ora awrsqrpt bid eid sql_id (all nodes), display awrsqrpt html and text information
       - awrsnap | listsnap  [3]                list snapshots of recent [3] days,alias : listsnap
       - awr_baseline [bid] [eid]               create an awr baseline for given bid eid
