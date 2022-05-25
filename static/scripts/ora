@@ -233,7 +233,7 @@ done
 if [ $# -lt 1 ]; then
   usage
   exit 1
-fi
+fiƒ
 
 ###usage ver2=`get_ver 2` / ver4=`get_ver 4`
 function get_ver
@@ -2139,9 +2139,7 @@ from final_total a
 )where rn<=5
 order by inst_id,eid;
 
-
 set linesize 500
-
 set arraysize 100
 set long 20000 longchunksize 100000000
 set serveroutput on size 100000
