@@ -2229,7 +2229,7 @@ and a.snap_id = b.snap_id
 v_io c_io%rowtype;
 
 begin
-
+  dbms_output.enable(buffer_size => NULL);
   dbms_output.put_line('
 LF_SYNC    Means Log File Sync
 LFP_WRITE  Means Log File Parallel Write
