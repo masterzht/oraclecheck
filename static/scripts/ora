@@ -322,8 +322,12 @@ if [ "$1" = "lt" -o "$1" = "lt" ]; then
   ltsql -p $2 -Ulightdb
 fi
 #####################################
-
 if [ "$1" = "ltdg" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltdg <port>"
+    exit 1
+  fi
 
   ltsql -p $2 -x -c"
    SELECT application_name                            AS appname,
@@ -356,9 +360,7 @@ if [ "$1" = "ltdg" ]; then
   "
 fi
 ######################################
-
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
-
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
 
