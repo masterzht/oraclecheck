@@ -840,7 +840,6 @@ sqlplus -s /NOLOG << ! | egrep -v "Statement processed|Function returned|rows se
       oradebug dump processstate $level
       oradebug tracefile_name
 !
-
 exit 0
 fi
 ######################################
