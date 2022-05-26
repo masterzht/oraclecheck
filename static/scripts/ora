@@ -449,10 +449,7 @@ from
                ads.DB_UNIQUE_NAME,
                ads.DESTINATION,
                ads.GAP_STATUS,
-               (SELECT sequence#
-                  FROM v\$log na
-                 WHERE na.thread# = al.thread#
-                   and status = 'CURRENT') Current_Seq#,
+               (SELECT sequence# FROM v\$log na WHERE na.thread# = al.thread# and status = 'CURRENT') Current_Seq#,
                Last_Archived,
                al.APPLIED_SEQ#,
                ad.applied_scn,
