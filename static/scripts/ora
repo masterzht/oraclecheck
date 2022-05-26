@@ -331,19 +331,8 @@ if [ "$1" = "ltdg" ]; then
         coalesce(client_addr::TEXT, 'localhost')    AS address,
         pid::TEXT,
         client_port,
-        CASE state
-            WHEN 'streaming' THEN 0
-            WHEN 'startup' THEN 1
-            WHEN 'catchup' THEN 2
-            WHEN 'backup' THEN 3
-            WHEN 'stopping' THEN 4
-            ELSE -1 END                             AS state,
-        CASE sync_state
-            WHEN 'async' THEN 0
-            WHEN 'potential' THEN 1
-            WHEN 'sync' THEN 2
-            WHEN 'quorum' THEN 3
-            ELSE -1 END                             AS sync_state,
+        CASE state WHEN 'streaming' THEN 0 WHEN 'startup' THEN 1 WHEN 'catchup' THEN 2 WHEN 'backup' THEN 3 WHEN 'stopping' THEN 4 ELSE -1 END AS state,
+        CASE sync_state WHEN 'async' THEN 0 WHEN 'potential' THEN 1 WHEN 'sync' THEN 2 WHEN 'quorum' THEN 3 ELSE -1 END AS sync_state,
         sync_priority,
         backend_xmin::TEXT::BIGINT                  AS backend_xmin,
         current.lsn - '0/0'                         AS lsn,
@@ -371,7 +360,6 @@ fi
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
-
     connect $DBUSER
 
 Pro DataGuard Config Info:
