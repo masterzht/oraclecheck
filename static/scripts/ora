@@ -233,7 +233,7 @@ done
 if [ $# -lt 1 ]; then
   usage
   exit 1
-fiƒ
+fi
 
 ###usage ver2=`get_ver 2` / ver4=`get_ver 4`
 function get_ver
