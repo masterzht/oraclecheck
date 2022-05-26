@@ -2263,8 +2263,7 @@ echo "ora iostat <bid> <eid> (defualt is 48 recent snapshots)"
 exit 0
 fi
 
-
-################################################################################
+##############################################################
 if [ "$1" = "file" -o "$1" = "files" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
@@ -13751,8 +13750,6 @@ if [  "$1" = "ltsnap" -o "$1" = "ltsnapshot" -o "$1" = "take_sample" ]; then
     ltsql -p $2 -Ulightdb -c "select take_sample();"
     echo "select take_sample() executed!"
   fi
-exit 0
-!
 exit 0
 fi
 
