@@ -13799,8 +13799,9 @@ if [ "$1" = "ltactive" ]; then
     echo "Usage: ora ltactive <port>"
     exit 1
   fi
+
 echo "select pg_terminate_backend('pid);"
- ltsql -p $2 -Ulightdb -c """
+ ltsql -p $2 -U lightdb -c """
 SELECT pid                                                           AS os_pid,
        usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' ||
        client_port || '@' ||application_name                       AS "client_username_db_addr_port_appname",
