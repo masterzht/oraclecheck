@@ -13803,7 +13803,7 @@ echo "select pg_terminate_backend('pid);"
  ltsql -p $2 -Ulightdb -c """
 SELECT pid                                                           AS os_pid,
        usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' ||
-       client_port || '@' ||application_name                       AS "client_username_db_addr_port@appname",
+       client_port || '@' ||application_name                       AS "client_username_db_addr_port_appname",
        backend_type,
        wait_event ||'@'||wait_event_type                             AS wait_event_class,
        state,
