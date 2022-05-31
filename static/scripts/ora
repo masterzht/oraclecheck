@@ -13832,7 +13832,7 @@ if [ "$1" = "ltcenter" ]; then
 ltcenter top -U lightdb -dpostgres -h127.0.0.1 -p $2
 exit 0
 fi
-##########################################
+##################################################
 if [ "$1" = "active" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
     connect $DBUSER
