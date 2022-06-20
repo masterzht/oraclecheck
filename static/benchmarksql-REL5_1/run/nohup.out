@@ -1,0 +1,4507 @@
+
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/tableCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+create table bmsql_config (
+cfg_name    varchar(30) primary key,
+cfg_value   varchar(50)
+);
+Table 'bmsql_config' already exists
+create table bmsql_warehouse (
+w_id        integer   not null,
+w_ytd       decimal(12,2),
+w_tax       decimal(4,4),
+w_name      varchar(10),
+w_street_1  varchar(20),
+w_street_2  varchar(20),
+w_city      varchar(20),
+w_state     char(2),
+w_zip       char(9)
+);
+Table 'bmsql_warehouse' already exists
+create table bmsql_district (
+d_w_id       integer       not null,
+d_id         integer       not null,
+d_ytd        decimal(12,2),
+d_tax        decimal(4,4),
+d_next_o_id  integer,
+d_name       varchar(10),
+d_street_1   varchar(20),
+d_street_2   varchar(20),
+d_city       varchar(20),
+d_state      char(2),
+d_zip        char(9)
+);
+Table 'bmsql_district' already exists
+create table bmsql_customer (
+c_w_id         integer        not null,
+c_d_id         integer        not null,
+c_id           integer        not null,
+c_discount     decimal(4,4),
+c_credit       char(2),
+c_last         varchar(16),
+c_first        varchar(16),
+c_credit_lim   decimal(12,2),
+c_balance      decimal(12,2),
+c_ytd_payment  decimal(12,2),
+c_payment_cnt  integer,
+c_delivery_cnt integer,
+c_street_1     varchar(20),
+c_street_2     varchar(20),
+c_city         varchar(20),
+c_state        char(2),
+c_zip          char(9),
+c_phone        char(16),
+c_since        timestamp,
+c_middle       char(2),
+c_data         varchar(500)
+);
+Table 'bmsql_customer' already exists
+create sequence bmsql_hist_id_seq;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'sequence bmsql_hist_id_seq' at line 1
+create table bmsql_history (
+hist_id  integer,
+h_c_id   integer,
+h_c_d_id integer,
+h_c_w_id integer,
+h_d_id   integer,
+h_w_id   integer,
+h_date   timestamp,
+h_amount decimal(6,2),
+h_data   varchar(24)
+);
+Table 'bmsql_history' already exists
+create table bmsql_new_order (
+no_w_id  integer   not null,
+no_d_id  integer   not null,
+no_o_id  integer   not null
+);
+Table 'bmsql_new_order' already exists
+create table bmsql_oorder (
+o_w_id       integer      not null,
+o_d_id       integer      not null,
+o_id         integer      not null,
+o_c_id       integer,
+o_carrier_id integer,
+o_ol_cnt     integer,
+o_all_local  integer,
+o_entry_d    timestamp
+);
+Table 'bmsql_oorder' already exists
+create table bmsql_order_line (
+ol_w_id         integer   not null,
+ol_d_id         integer   not null,
+ol_o_id         integer   not null,
+ol_number       integer   not null,
+ol_i_id         integer   not null,
+ol_delivery_d   timestamp,
+ol_amount       decimal(6,2),
+ol_supply_w_id  integer,
+ol_quantity     integer,
+ol_dist_info    char(24)
+);
+Table 'bmsql_order_line' already exists
+create table bmsql_item (
+i_id     integer      not null,
+i_name   varchar(24),
+i_price  decimal(5,2),
+i_data   varchar(50),
+i_im_id  integer
+);
+Table 'bmsql_item' already exists
+create table bmsql_stock (
+s_w_id       integer       not null,
+s_i_id       integer       not null,
+s_quantity   integer,
+s_ytd        integer,
+s_order_cnt  integer,
+s_remote_cnt integer,
+s_data       varchar(50),
+s_dist_01    char(24),
+s_dist_02    char(24),
+s_dist_03    char(24),
+s_dist_04    char(24),
+s_dist_05    char(24),
+s_dist_06    char(24),
+s_dist_07    char(24),
+s_dist_08    char(24),
+s_dist_09    char(24),
+s_dist_10    char(24)
+);
+Table 'bmsql_stock' already exists
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/extraCommandsBeforeLoad.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- sql.common/extraCommandsBeforeLoad.sql
+--
+--	Empty placeholder file. Some databases might require
+--	extra commands to be run between creating the schema
+--	and loading the data. For example PostgreSQL, where we
+--	set the FILLFACTOR on some tables.
+-- ----
+# ------------------------------------------------------------
+# Loading SQL file ./sql.mysql/storedProcedureCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- {
+CREATE OR REPLACE PACKAGE tpccc_oracle AS
+
+    TYPE varchar50_array IS TABLE OF VARCHAR2(50) INDEX BY BINARY_INTEGER;
+
+    TYPE rowidarray IS TABLE OF ROWID INDEX BY BINARY_INTEGER;
+
+    TYPE rec1 IS RECORD(
+	name varchar2(24),
+        price number,
+	data varchar2(50)
+    );
+
+    TYPE rec2 IS RECORD(
+	quantity integer,
+        s_data varchar2(50),
+	s_dist1 varchar2(24),
+	s_dist2 varchar2(24),
+	s_dist3 varchar2(24),
+	s_dist4 varchar2(24),
+	s_dist5 varchar2(24),
+	s_dist6 varchar2(24),
+	s_dist7 varchar2(24),
+	s_dist8 varchar2(24),
+	s_dist9 varchar2(24),
+	s_dist10 varchar2(24)
+    );
+
+    TYPE rec3 IS RECORD(
+	ol_i_id integer,
+	ol_supply_w_id integer,
+	ol_quantity integer,
+	ol_amount number,
+	ol_delivery_d timestamp
+    );
+
+    FUNCTION oracle_rowid_from_clast(
+	in_c_w_id IN integer,
+	in_c_d_id IN integer,
+	in_c_last IN varchar
+    ) RETURN ROWID;
+
+    PROCEDURE oracle_proc_stock_level(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_threshold IN integer,
+        out_low_stock OUT integer
+    );
+
+    PROCEDURE oracle_proc_new_order(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN integer,
+        in_ol_supply_w_id IN int_array,
+	in_ol_i_id IN int_array,
+        in_ol_quantity IN int_array,
+	out_ol_amount OUT num_array,
+        out_i_name OUT varchar24_array,
+	out_i_price OUT num_array,
+        out_s_quantity OUT int_array,
+	out_brand_generic OUT char_array,
+        out_w_tax OUT number,
+	out_d_tax OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_ol_cnt OUT integer,
+	out_total_amount OUT number,
+        out_c_last OUT varchar2,
+	out_c_credit OUT varchar2,
+        out_c_discount OUT number
+    );
+
+    PROCEDURE oracle_proc_delivery_bg(
+	in_w_id IN integer,
+        in_o_carrier_id IN integer,
+	in_ol_delivery_d IN timestamp,
+        out_delivered_o_id OUT int_array
+    );
+
+    PROCEDURE oracle_proc_payment_clast(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+	out_c_since OUT timestamp,
+        out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_payment_cid(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_payment(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_c_id IN OUT integer,
+	in_c_d_id IN integer,
+        in_c_w_id IN integer,
+	in_c_last IN OUT varchar2,
+        in_h_amount IN number,
+	out_w_name OUT varchar2,
+        out_w_street_1 OUT varchar2,
+	out_w_street_2 OUT varchar2,
+        out_w_city OUT varchar2,
+	out_w_state OUT varchar2,
+        out_w_zip OUT varchar2,
+	out_d_name OUT varchar2,
+        out_d_street_1 OUT varchar2,
+	out_d_street_2 OUT varchar2,
+        out_d_city OUT varchar2,
+	out_d_state OUT varchar2,
+        out_d_zip OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_street_1 OUT varchar2,
+        out_c_street_2 OUT varchar2,
+	out_c_city OUT varchar2,
+        out_c_state OUT varchar2,
+	out_c_zip OUT varchar2,
+        out_c_phone OUT varchar2,
+	out_c_since OUT timestamp,
+        out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_order_status(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_last IN OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_balance OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_o_carrier_id OUT integer,
+	out_ol_supply_w_id OUT int_array,
+        out_ol_i_id OUT int_array,
+	out_ol_quantity OUT int_array,
+        out_ol_amount OUT num_array,
+	out_ol_delivery_d OUT varchar16_array
+    );
+
+END tpccc_oracle;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PACKAGE tpccc_oracle AS
+
+    TYPE varchar50_array IS TABLE OF VARCHAR2(50) INDEX' at line 2
+-- {
+CREATE OR REPLACE PACKAGE BODY tpccc_oracle AS
+
+    FUNCTION oracle_rowid_from_clast(
+        in_c_w_id IN integer,
+	in_c_d_id IN integer,
+        in_c_last IN varchar
+    ) RETURN ROWID AS
+	rowArr rowidarray;
+        rowNumber rowid;
+	rowCnt integer;
+        customer integer;
+    BEGIN
+	-- Clause 2.5.2.2 Case 2, customer selected based on c_last.
+	SELECT rowid
+            BULK COLLECT INTO rowARR
+	FROM bmsql_customer
+        WHERE c_w_id = in_c_w_id AND c_d_id = in_c_d_id AND c_last = in_c_last
+	ORDER BY c_first;
+
+	rowCnt := SQL%ROWCOUNT;
+        rowNumber := rowArr((rowCnt + 1 )/ 2);
+
+	RETURN rowNumber;
+    END;
+
+    PROCEDURE oracle_proc_stock_level(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_threshold IN integer,
+	out_low_stock OUT integer
+    ) AS
+    BEGIN
+	--Selects and counts the number of recently sold items that have
+        --a stock level below the specified threshold.
+	SELECT count(*)
+        INTO out_low_stock
+	    FROM(
+	        SELECT s_w_id, s_i_id, s_quantity
+                    FROM bmsql_stock
+		    WHERE s_w_id = in_w_id AND s_quantity < in_threshold
+		      AND s_i_id IN (
+	                    SELECT ol_i_id
+	                        FROM bmsql_district
+                                JOIN bmsql_order_line ON ol_w_id = d_w_id
+			          AND ol_d_id = d_id
+			          AND ol_o_id >= d_next_o_id - 20
+		                  AND ol_o_id < d_next_o_id
+		                WHERE d_w_id = in_w_id AND d_id = in_d_id
+	                    )
+	        );
+    END;
+
+    PROCEDURE oracle_proc_new_order(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN integer,
+        in_ol_supply_w_id IN int_array,
+	in_ol_i_id IN int_array,
+        in_ol_quantity IN int_array,
+	out_ol_amount OUT num_array,
+        out_i_name OUT varchar24_array,
+	out_i_price OUT num_array,
+        out_s_quantity OUT int_array,
+	out_brand_generic OUT char_array,
+        out_w_tax OUT number,
+	out_d_tax OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_ol_cnt OUT integer,
+	out_total_amount OUT number,
+        out_c_last OUT varchar2,
+	out_c_credit OUT varchar2,
+        out_c_discount OUT number
+    ) AS
+	var_all_local integer := 1;
+        var_x integer;
+	var_y integer;
+        var_tmp integer;
+	var_seq int_array := int_array();
+        var_item_row rec1;
+	var_stock_row rec2;
+        CURSOR item_cursor IS
+	    SELECT i_name, i_price, i_data
+	        FROM bmsql_item
+		WHERE i_id = in_ol_i_id(var_y);
+	CURSOR stock_cursor IS
+            SELECT s_quantity, s_data, s_dist_01, s_dist_02,
+	           s_dist_03, s_dist_04, s_dist_05, s_dist_06,
+		   s_dist_07, s_dist_08, s_dist_09, s_dist_10
+                FROM bmsql_stock
+	        WHERE s_w_id = in_ol_supply_w_id(var_y)
+	          AND s_i_id = in_ol_i_id(var_y)
+		FOR UPDATE;
+	item_not_found Exception;
+        stock_not_found Exception;
+	PRAGMA EXCEPTION_INIT (item_not_found, -20001);
+	PRAGMA EXCEPTION_INIT (stock_not_found, -20002);
+    BEGIN
+	out_brand_generic := char_array();
+	out_s_quantity := int_array();
+	out_i_price := num_array();
+	out_i_name := varchar24_array();
+	out_ol_amount := num_array();
+	-- The o_entry_d is now.
+        out_o_entry_d := CURRENT_TIMESTAMP;
+	out_total_amount := 0.00;
+
+        -- When processing the order lines we must select the STOCK rows
+	-- FOR UPDATE. This is because we must perform business logic
+        -- (the juggling with the S_QUANTITY) here in the application
+	-- and cannot do that in an atomic UPDATE statement while getting
+        -- the original value back at the same time (UPDATE ... RETURNING
+	-- may not vendor neutral). This can lead to possible deadlocks
+        -- if two transactions try to lock the same two stock rows in
+	-- opposite order. To avoid that we process the order lines in
+        -- the order of the order of ol_supply_w_id, ol_i_id.
+	out_ol_cnt := 0;
+
+        FOR var_x IN 1 .. in_ol_i_id.COUNT LOOP
+	    IF in_ol_i_id(var_x) IS NOT NULL AND in_ol_i_id(var_x) <> 0 THEN
+		var_seq.EXTEND;
+                out_ol_cnt := out_ol_cnt + 1;
+	        var_seq(var_x) := var_x;
+	        IF in_ol_supply_w_id(var_x) <> in_w_id THEN
+		    var_all_local := 0;
+                END IF;
+	    END IF;
+        END LOOP;
+
+	FOR var_x IN 1 .. out_ol_cnt - 1 LOOP
+	    FOR var_y IN var_x + 1 .. out_ol_cnt LOOP
+                IF in_ol_supply_w_id(var_seq(var_y)) < in_ol_supply_w_id(var_seq(var_x)) THEN
+	            var_tmp := var_seq(var_x);
+	            var_seq(var_x) := var_seq(var_y);
+		    var_seq(var_y) := var_tmp;
+                ELSE
+	            IF in_ol_supply_w_id(var_seq(var_y)) = in_ol_supply_w_id(var_seq(var_x))
+		     AND in_ol_i_id(var_seq(var_y)) < in_ol_i_id(var_seq(var_x)) THEN
+		        var_tmp := var_seq(var_x);
+                        var_seq(var_x) := var_seq(var_y);
+                        var_seq(var_y) := var_tmp;
+		    END IF;
+		END IF;
+	    END LOOP;
+	END LOOP;
+
+        -- Retrieve the required data from DISTRICT
+	SELECT d_tax, d_next_o_id
+        INTO out_d_tax, out_o_id
+	    FROM bmsql_district
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+            FOR UPDATE;
+
+	-- Retrieve the required data for CUSTOMER and WAREHOUSE
+        SELECT w_tax, c_last, c_credit, c_discount
+	INTO out_w_tax, out_c_last, out_c_credit, out_c_discount
+	    FROM bmsql_customer
+            JOIN bmsql_warehouse ON (w_id = c_w_id)
+            WHERE c_w_id = in_w_id AND c_d_id = in_d_id AND c_id = in_c_id;
+
+	-- Update the district bumping the D_NEXT_O_ID
+	UPDATE bmsql_district
+	    SET d_next_o_id = d_next_o_id + 1
+        WHERE d_w_id = in_w_id AND d_id = in_d_id;
+
+	-- Insert the ORDER row
+        INSERT INTO bmsql_oorder (
+	        o_id, o_d_id, o_w_id, o_c_id,
+	        o_entry_d, o_ol_cnt, o_all_local)
+	VALUES (
+	        out_o_id, in_d_id, in_w_id, in_c_id,
+		out_o_entry_d, out_ol_cnt, var_all_local);
+
+        -- Insert the NEW_ORER row
+	INSERT INTO bmsql_new_order (
+                no_o_id, no_d_id, no_w_id)
+	VALUES (
+	        out_o_id, in_d_id, in_w_id);
+
+        -- Per ORDER_LINE
+	FOR var_x in 1 .. out_ol_cnt LOOP
+	    -- We process the lines in the sequence ordered by warehouse, item.
+            var_y := var_seq(var_x);
+
+	    out_i_name.EXTEND(var_y);
+	    out_i_price.EXTEND(var_y);
+	    out_s_quantity.EXTEND(var_y);
+	    out_ol_amount.EXTEND(var_y);
+	    out_brand_generic.EXTEND(var_y);
+
+	    OPEN item_cursor;
+	    FETCH item_cursor INTO var_item_row;
+	    IF item_cursor%NOTFOUND THEN
+		RAISE item_not_found;
+	    END IF;
+	    CLOSE item_cursor;
+
+	    -- Found ITEM
+            out_i_name(var_y) := var_item_row.name;
+	    out_i_price(var_y) := var_item_row.price;
+
+	    OPEN stock_cursor;
+            FETCH stock_cursor INTO var_stock_row;
+	    IF stock_cursor%NOTFOUND THEN
+	        RAISE stock_not_found;
+            END IF;
+	    CLOSE stock_cursor;
+
+	    out_s_quantity(var_y) := var_stock_row.quantity;
+            out_ol_amount(var_y) := out_i_price(var_y) * in_ol_quantity(var_y);
+            IF var_item_row.data LIKE '%ORIGINAL%'
+	      AND var_stock_row.s_data LIKE '%ORIGINAL%' THEN
+	        out_brand_generic(var_y) := 'B';
+	    ELSE
+		out_brand_generic(var_y) := 'G';
+	    END IF;
+            out_total_amount := out_total_amount + out_ol_amount(var_y) * (1.0 - out_c_discount) * (1.0 + out_w_tax + out_d_tax);
+
+	    -- Update the STOCK row.
+	    UPDATE bmsql_stock SET
+                s_quantity = CASE
+		    WHEN var_stock_row.quantity >= in_ol_quantity(var_y) + 10 THEN
+	                var_stock_row.quantity - in_ol_quantity(var_y)
+	            ELSE
+		        var_stock_row.quantity + 91
+		    END,
+                s_ytd = s_ytd + in_ol_quantity(var_y),
+                s_order_cnt = s_order_cnt + 1,
+                s_remote_cnt = s_remote_cnt + CASE
+		    WHEN in_w_id <> in_ol_supply_w_id(var_y) THEN
+			1
+		    ELSE
+			0
+		    END
+		WHERE s_w_id = in_ol_supply_w_id(var_y)
+                  AND s_i_id = in_ol_i_id(var_y);
+
+	    --Insert the ORDER_LINE row.
+	    INSERT INTO bmsql_order_line (
+		    ol_o_id, ol_d_id, ol_w_id, ol_number,
+		    ol_i_id, ol_supply_w_id, ol_quantity,
+		    ol_amount, ol_dist_info)
+	    VALUES (
+		    out_o_id, in_d_id, in_w_id, var_y,
+                    in_ol_i_id(var_y), in_ol_supply_w_id(var_y),
+                    in_ol_quantity(var_y), out_ol_amount(var_y),
+	            CASE
+	                WHEN in_d_id = 1 THEN var_stock_row.s_dist1
+		        WHEN in_d_id = 2 THEN var_stock_row.s_dist2
+		        WHEN in_d_id = 3 THEN var_stock_row.s_dist3
+			WHEN in_d_id = 4 THEN var_stock_row.s_dist4
+                        WHEN in_d_id = 5 THEN var_stock_row.s_dist5
+	                WHEN in_d_id = 6 THEN var_stock_row.s_dist6
+	                WHEN in_d_id = 7 THEN var_stock_row.s_dist7
+		        WHEN in_d_id = 8 THEN var_stock_row.s_dist8
+		        WHEN in_d_id = 9 THEN var_stock_row.s_dist9
+			WHEN in_d_id = 10 THEN var_stock_row.s_dist10
+                    END
+	        );
+	END LOOP;
+    EXCEPTION
+	WHEN item_not_found THEN
+	    RAISE_APPLICATION_ERROR(-20001, 'Item number is not valid');
+	WHEN stock_not_found THEN
+	    RAISE_APPLICATION_ERROR(-20002, 'STOCK not found');
+    END;
+
+    PROCEDURE oracle_proc_delivery_bg(
+	in_w_id IN integer,
+        in_o_carrier_id IN integer,
+	in_ol_delivery_d IN timestamp,
+        out_delivered_o_id OUT int_array
+    ) AS
+	sums num_array;
+        var_d_id int_array;
+	var_o_c_id int_array;
+        var_dist int_array;
+	var_x integer;
+        order_count integer;
+    BEGIN
+	var_dist := int_array();
+        FOR var_x IN 1..10 LOOP
+	    var_dist.EXTEND;
+	    var_dist(var_x) := var_x;
+        END LOOP;
+
+	FORALL i in 1..10
+	    DELETE FROM bmsql_new_order N
+            WHERE no_d_id = var_dist(i)
+	      AND no_w_id = in_w_id
+	      AND no_o_id = (SELECT min(no_o_id)
+		                FROM bmsql_new_order
+		             WHERE no_d_id = N.no_d_id
+			       AND no_w_id = N.no_w_id)
+            RETURNING no_d_id, no_o_id
+	    BULK COLLECT INTO var_d_id, out_delivered_o_id;
+
+        order_count := SQL%ROWCOUNT;
+
+	FORALL i IN 1..order_count
+	    UPDATE bmsql_oorder
+		SET o_carrier_id = in_o_carrier_id
+	    WHERE o_id = out_delivered_o_id(i)
+	      AND o_d_id = var_d_id(i)
+	      AND o_w_id = in_w_id
+	    RETURNING o_c_id
+	    BULK COLLECT INTO var_o_c_id;
+
+        FORALL i IN 1..order_count
+	    UPDATE bmsql_order_line
+	        SET ol_delivery_d = CURRENT_TIMESTAMP
+            WHERE ol_w_id = in_w_id
+	      AND ol_d_id = var_d_id(i)
+	      AND ol_o_id = out_delivered_o_id(i)
+            RETURNING sum(ol_amount)
+	    BULK COLLECT INTO sums;
+
+        FORALL i IN 1..order_count
+	    UPDATE bmsql_customer
+	        SET c_balance = c_balance + sums(i),
+		    c_delivery_cnt = c_delivery_cnt + 1
+            WHERE c_w_id = in_w_id
+	      AND c_d_id = var_d_id(i)
+	      AND c_id = var_o_c_id(i);
+    END;
+
+    -- Stored procedure to be called if the customer last name is given rather
+    -- than the customer id for the payment transaction.
+    PROCEDURE oracle_proc_payment_clast(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+	row_id rowid;
+    BEGIN
+
+	out_h_date := CURRENT_TIMESTAMP;
+
+	--Update and Select the WAREHOUSE
+        UPDATE bmsql_warehouse
+	    SET w_ytd = w_ytd + in_h_amount
+	    WHERE w_id = in_w_id
+        RETURNING w_name, w_street_1, w_street_2, w_city,
+	          w_state, w_zip
+	INTO out_w_name, out_w_street_1, out_w_street_2,
+             out_w_city, out_w_state, out_w_zip;
+
+        row_id := oracle_rowid_from_clast(in_c_w_id, in_c_d_id, in_c_last);
+
+	--Update and Select the DISTRICT
+        UPDATE bmsql_district
+	    SET d_ytd = d_ytd + in_h_amount
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+        RETURNING d_name, d_street_1, d_street_2,
+	          d_city, d_state, d_zip
+	INTO out_d_name, out_d_street_1, out_d_street_2,
+             out_d_city, out_d_state, out_d_zip;
+
+        -- Update and Select the CUSTOMER
+	UPDATE bmsql_customer
+	    SET c_balance = c_balance - in_h_amount,
+		c_ytd_payment = c_ytd_payment + in_h_amount,
+                c_payment_cnt = c_payment_cnt + 1
+	    WHERE rowid = row_id
+        RETURNING c_id, c_first, c_middle, c_last, c_street_1,
+	          c_street_2, c_city, c_state, c_zip,
+	          c_phone, c_since, c_credit, c_credit_lim,
+		  c_discount, c_balance
+        INTO in_c_id, out_c_first, out_c_middle, in_c_last,
+             out_c_street_1, out_c_street_2, out_c_city,
+             out_c_state, out_c_zip, out_c_phone, out_c_since,
+             out_c_credit, out_c_credit_lim, out_c_discount,
+             out_c_balance;
+
+        out_c_balance := out_c_balance - in_h_amount;
+	out_c_data := ' ';
+
+        --Customer with bad credit, need to do the C_DATA work.
+	IF out_c_credit = 'BC' THEN
+            UPDATE bmsql_customer
+	        SET c_data = SUBSTR('C_ID='   || TO_CHAR(in_c_id)   ||
+	                         ' C_D_ID='   || TO_CHAR(in_c_d_id) ||
+		                 ' C_W_ID='   || TO_CHAR(in_c_w_id) ||
+		                 ' D_ID='     || TO_CHAR(in_d_id)   ||
+			         ' W_ID='     || TO_CHAR(in_w_id)   ||
+			         ' H_AMOUNT=' || ROUND(in_h_amount,2), 1, 500)
+                WHERE rowid = row_id
+	    RETURNING c_data
+            INTO out_c_data;
+        END IF;
+
+	--Insert the HISTORY row
+        INSERT INTO bmsql_history (
+	        h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
+	        h_date, h_amount, h_data)
+        VALUES (
+	        in_c_id, in_c_d_id, in_c_w_id, in_d_id, in_w_id,
+	        out_h_date, in_h_amount, out_w_name||'    '||out_d_name);
+    END;
+
+    -- Stored procedure to be called if the custoemr id is given rather
+    -- than the customer last name.
+    PROCEDURE oracle_proc_payment_cid(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+	var_c_rowid rowid;
+    BEGIN
+
+	out_h_date := CURRENT_TIMESTAMP;
+
+	--Update and Select the WAREHOUSE
+        UPDATE bmsql_warehouse
+	    SET w_ytd = w_ytd + in_h_amount
+	    WHERE w_id = in_w_id
+        RETURNING w_name, w_street_1, w_street_2, w_city,
+	          w_state, w_zip
+        INTO out_w_name, out_w_street_1, out_w_street_2,
+             out_w_city, out_w_state, out_w_zip;
+
+        --Update and Select the DISTRICT
+        UPDATE bmsql_district
+	    SET d_ytd = d_ytd + in_h_amount
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+        RETURNING d_name, d_street_1, d_street_2,
+	          d_city, d_state, d_zip
+        INTO out_d_name, out_d_street_1, out_d_street_2,
+             out_d_city, out_d_state, out_d_zip;
+
+        -- Update and Select the CUSTOMER
+	UPDATE bmsql_customer
+	    SET c_balance = c_balance - in_h_amount,
+		c_ytd_payment = c_ytd_payment + in_h_amount,
+	        c_payment_cnt = c_payment_cnt + 1
+            WHERE c_w_id = in_c_w_id AND c_d_id = in_c_d_id AND c_id = in_c_id
+	RETURNING rowid, c_first, c_middle, c_last, c_street_1,
+	          c_street_2, c_city, c_state, c_zip,
+		  c_phone, c_since, c_credit, c_credit_lim,
+		c_discount, c_balance
+        INTO var_c_rowid, out_c_first, out_c_middle, in_c_last,
+             out_c_street_1, out_c_street_2, out_c_city,
+             out_c_state, out_c_zip, out_c_phone, out_c_since,
+             out_c_credit, out_c_credit_lim, out_c_discount,
+             out_c_balance;
+
+        out_c_balance := out_c_balance - in_h_amount;
+	out_c_data := ' ';
+
+        --Customer with bad credit, need to do the C_DATA work.
+	IF out_c_credit = 'BC' THEN
+            UPDATE bmsql_customer
+	        SET c_data = SUBSTR('C_ID='      || TO_CHAR(in_c_id)   ||
+				    ' C_D_ID='   || TO_CHAR(in_c_d_id) ||
+				    ' C_W_ID='   || TO_CHAR(in_c_w_id) ||
+				    ' D_ID='     || TO_CHAR(in_d_id)   ||
+				    ' W_ID='     || TO_CHAR(in_w_id)   ||
+				    ' H_AMOUNT=' || ROUND(in_h_amount,2), 1, 500)
+                WHERE rowid = var_c_rowid
+	    RETURNING c_data
+            INTO out_c_data;
+        END IF;
+
+	--Insert the HISTORY row
+        INSERT INTO bmsql_history (
+	        h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
+	        h_date, h_amount, h_data)
+        VALUES (
+	        in_c_id, in_c_d_id, in_c_w_id, in_d_id, in_w_id,
+	        out_h_date, in_h_amount, out_w_name||'    '||out_d_name);
+    END;
+
+    PROCEDURE oracle_proc_payment(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+BEGIN
+	IF in_c_last is NOT NULL THEN
+            oracle_proc_payment_clast(in_w_id, in_d_id, in_c_id, in_c_d_id, in_c_w_id, in_c_last, in_h_amount,
+			                out_w_name, out_w_street_1, out_w_street_2, out_w_city, out_w_state, out_w_zip,
+			                out_d_name, out_d_street_1, out_d_street_2, out_d_city, out_d_state, out_d_zip,
+		                        out_c_first, out_c_middle, out_c_street_1, out_c_street_2, out_c_city, out_c_state,
+		                        out_c_zip, out_c_phone, out_c_since, out_c_credit, out_c_credit_lim, out_c_discount,
+	                                out_c_balance, out_c_data, out_h_date);
+	ELSE
+            oracle_proc_payment_cid(in_w_id, in_d_id, in_c_id, in_c_d_id, in_c_w_id, in_c_last, in_h_amount,
+			                out_w_name, out_w_street_1, out_w_street_2, out_w_city, out_w_state, out_w_zip,
+			                out_d_name, out_d_street_1, out_d_street_2, out_d_city, out_d_state, out_d_zip,
+		                        out_c_first, out_c_middle, out_c_street_1, out_c_street_2, out_c_city, out_c_state,
+		                        out_c_zip, out_c_phone, out_c_since, out_c_credit, out_c_credit_lim, out_c_discount,
+	                                out_c_balance, out_c_data, out_h_date);
+	END IF;
+    END;
+
+    PROCEDURE oracle_proc_order_status(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_last IN OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_balance OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_o_carrier_id OUT integer,
+	out_ol_supply_w_id OUT int_array,
+        out_ol_i_id OUT int_array,
+	out_ol_quantity OUT int_array,
+        out_ol_amount OUT num_array,
+	out_ol_delivery_d OUT varchar16_array
+    ) AS
+	var_ol_delivery_d timestamp_array;
+	cust_row_id rowid;
+        v_order_line rec3;
+	v_order_line_check integer;
+        v_ol_idx integer := 1;
+	var_cnt integer;
+        CURSOR cursor_1 IS
+	    SELECT ol_i_id, ol_supply_w_id, ol_quantity,
+	           ol_amount, ol_delivery_d
+		FROM bmsql_order_line
+                WHERE ol_w_id = in_w_id AND ol_d_id = in_d_id
+	          AND ol_o_id = out_o_id
+	        ORDER BY ol_w_id, ol_d_id, ol_o_id, ol_number;
+    BEGIN
+
+	out_ol_supply_w_id := int_array();
+	out_ol_i_id := int_array();
+	out_ol_quantity := int_array();
+	out_ol_amount := num_array();
+	out_ol_delivery_d := varchar16_array();
+	var_ol_delivery_d := timestamp_array();
+
+	out_ol_supply_w_id.EXTEND(15);
+	out_ol_i_id.EXTEND(15);
+	out_ol_quantity.EXTEND(15);
+	out_ol_amount.EXTEND(15);
+	out_ol_delivery_d.EXTEND(15);
+	var_ol_delivery_d.EXTEND(15);
+
+        IF in_c_last IS NOT NULL THEN
+	    --If C_LAST is given instead of C_ID (60%), determine the C_ID and
+	    --Select the CUSTOMER using the ROWID.
+            cust_row_id := oracle_rowid_from_clast(in_w_id, in_d_id, in_c_last);
+	    SELECT c_first, c_middle, c_balance, c_id
+	        INTO out_c_first, out_c_middle, out_c_balance, in_c_id
+            FROM bmsql_customer
+	    WHERE rowid = cust_row_id;
+	ELSE
+            --If C_ID is given instead of C_LAST, select the CUSTOMER.
+	    SELECT c_first, c_middle, c_last, c_balance
+	        INTO out_c_first, out_c_middle, in_c_last, out_c_balance
+            FROM bmsql_customer
+	    WHERE c_w_id = in_w_id AND c_d_id = in_d_id AND c_id = in_c_id;
+        END IF;
+
+	--Select the last ORDER for this customer.
+        SELECT o_id, o_entry_d, coalesce(o_carrier_id, -1)
+	    INTO out_o_id, out_o_entry_d, out_o_carrier_id
+        FROM bmsql_oorder
+        WHERE o_w_id = in_w_id AND o_d_id = in_d_id AND o_c_id = in_c_id
+          AND o_id = (
+		    SELECT max(o_id)
+                    FROM bmsql_oorder
+	                WHERE o_w_id = in_w_id AND o_d_id = in_d_id AND o_c_id = in_c_id
+	            );
+
+        v_order_line_check := 1;
+
+	OPEN cursor_1;
+        FETCH cursor_1 INTO v_order_line;
+
+	WHILE cursor_1%found LOOP
+            out_ol_i_id(v_ol_idx) := v_order_line.ol_i_id;
+            out_ol_supply_w_id(v_ol_idx) := v_order_line.ol_supply_w_id;
+	    out_ol_quantity(v_ol_idx) := v_order_line.ol_quantity;
+            out_ol_amount(v_ol_idx) := v_order_line.ol_amount;
+	    var_ol_delivery_d(v_ol_idx) := v_order_line.ol_delivery_d;
+	    v_ol_idx := v_ol_idx + 1;
+            FETCH cursor_1 INTO v_order_line;
+	END LOOP;
+
+        CLOSE cursor_1;
+
+	WHILE v_ol_idx < 16 LOOP
+            out_ol_i_id (v_ol_idx) := 0;
+	    out_ol_supply_w_id(v_ol_idx) := 0;
+	    out_ol_quantity(v_ol_idx) := 0;
+            out_ol_amount(v_ol_idx) := 0.0;
+	    var_ol_delivery_d(v_ol_idx) := NULL;
+	    v_ol_idx := v_ol_idx + 1;
+        END LOOP;
+
+	FOR var_cnt IN 1..15 LOOP
+	    out_ol_delivery_d(var_cnt) := TO_CHAR(var_ol_delivery_d(var_cnt), 'YYYY-MM-DD');
+        END LOOP;
+
+    EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+	    v_order_line_check := 0;
+    END;
+
+END tpccc_oracle;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PACKAGE BODY tpccc_oracle AS
+
+    FUNCTION oracle_rowid_from_clast(
+        in_c' at line 2
+-- {
+CREATE OR REPLACE TYPE num_array IS TABLE OF NUMBER;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE num_array IS TABLE OF NUMBER;
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE char_array IS TABLE OF char(1);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE char_array IS TABLE OF char(1);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE varchar24_array IS TABLE OF VARCHAR2(24);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE varchar24_array IS TABLE OF VARCHAR2(24);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE int_array IS TABLE OF INTEGER;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE int_array IS TABLE OF INTEGER;
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE varchar16_array IS TABLE OF VARCHAR2(16);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE varchar16_array IS TABLE OF VARCHAR2(16);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE timestamp_array IS TABLE OF timestamp;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE timestamp_array IS TABLE OF timestamp;
+-- }' at line 2
+Starting BenchmarkSQL LoadData
+
+random initialized
+driver=com.mysql.cj.jdbc.Driver
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+conn=jdbc:mysql://10.20.30.199:13306/benchmarksql1000?useUnicode=true&characterEncoding=UTF-8
+user=benchmarksql1000
+password=***********
+warehouses=1000
+loadWorkers=50
+fileLocation (not defined)
+csvNullValue (not defined - using default 'NULL')
+
+Worker 000: Loading ITEM
+Worker 000: ERROR: Duplicate entry 'warehouses' for key 'bmsql_config.PRIMARY'
+Worker 001: Loading Warehouse      1
+Worker 001: ERROR: Duplicate entry '1' for key 'bmsql_warehouse.PRIMARY'
+Worker 002: Loading Warehouse      2
+Worker 002: ERROR: Duplicate entry '2' for key 'bmsql_warehouse.PRIMARY'
+Worker 003: Loading Warehouse      3
+Worker 003: ERROR: Duplicate entry '3' for key 'bmsql_warehouse.PRIMARY'
+Worker 004: Loading Warehouse      4
+Worker 004: ERROR: Duplicate entry '4' for key 'bmsql_warehouse.PRIMARY'
+Worker 005: Loading Warehouse      5
+Worker 005: ERROR: Duplicate entry '5' for key 'bmsql_warehouse.PRIMARY'
+Worker 006: Loading Warehouse      6
+Worker 006: ERROR: Duplicate entry '6' for key 'bmsql_warehouse.PRIMARY'
+Worker 007: Loading Warehouse      7
+Worker 007: ERROR: Duplicate entry '7' for key 'bmsql_warehouse.PRIMARY'
+Worker 008: Loading Warehouse      8
+Worker 008: ERROR: Duplicate entry '8' for key 'bmsql_warehouse.PRIMARY'
+Worker 009: Loading Warehouse      9
+Worker 009: ERROR: Duplicate entry '9' for key 'bmsql_warehouse.PRIMARY'
+Worker 010: Loading Warehouse     10
+Worker 010: ERROR: Duplicate entry '10' for key 'bmsql_warehouse.PRIMARY'
+Worker 011: Loading Warehouse     11
+Worker 011: ERROR: Duplicate entry '11' for key 'bmsql_warehouse.PRIMARY'
+Worker 012: Loading Warehouse     12
+Worker 012: ERROR: Duplicate entry '12' for key 'bmsql_warehouse.PRIMARY'
+Worker 013: Loading Warehouse     13
+Worker 013: ERROR: Duplicate entry '13' for key 'bmsql_warehouse.PRIMARY'
+Worker 014: Loading Warehouse     14
+Worker 014: ERROR: Duplicate entry '14' for key 'bmsql_warehouse.PRIMARY'
+Worker 015: Loading Warehouse     15
+Worker 015: ERROR: Duplicate entry '15' for key 'bmsql_warehouse.PRIMARY'
+Worker 016: Loading Warehouse     16
+Worker 016: ERROR: Duplicate entry '16' for key 'bmsql_warehouse.PRIMARY'
+Worker 017: Loading Warehouse     17
+Worker 017: ERROR: Duplicate entry '17' for key 'bmsql_warehouse.PRIMARY'
+Worker 018: Loading Warehouse     18
+Worker 018: ERROR: Duplicate entry '18' for key 'bmsql_warehouse.PRIMARY'
+Worker 019: Loading Warehouse     19
+Worker 019: ERROR: Duplicate entry '19' for key 'bmsql_warehouse.PRIMARY'
+Worker 020: Loading Warehouse     20
+Worker 020: ERROR: Duplicate entry '20' for key 'bmsql_warehouse.PRIMARY'
+Worker 021: Loading Warehouse     21
+Worker 021: ERROR: Duplicate entry '21' for key 'bmsql_warehouse.PRIMARY'
+Worker 022: Loading Warehouse     22
+Worker 022: ERROR: Duplicate entry '22' for key 'bmsql_warehouse.PRIMARY'
+Worker 023: Loading Warehouse     23
+Worker 023: ERROR: Duplicate entry '23' for key 'bmsql_warehouse.PRIMARY'
+Worker 024: Loading Warehouse     24
+Worker 024: ERROR: Duplicate entry '24' for key 'bmsql_warehouse.PRIMARY'
+Worker 025: Loading Warehouse     25
+Worker 025: ERROR: Duplicate entry '25' for key 'bmsql_warehouse.PRIMARY'
+Worker 026: Loading Warehouse     26
+Worker 026: ERROR: Duplicate entry '26' for key 'bmsql_warehouse.PRIMARY'
+Worker 027: Loading Warehouse     27
+Worker 027: ERROR: Duplicate entry '27' for key 'bmsql_warehouse.PRIMARY'
+Worker 028: Loading Warehouse     28
+Worker 028: ERROR: Duplicate entry '28' for key 'bmsql_warehouse.PRIMARY'
+Worker 029: Loading Warehouse     29
+Worker 029: ERROR: Duplicate entry '29' for key 'bmsql_warehouse.PRIMARY'
+Worker 030: Loading Warehouse     30
+Worker 030: ERROR: Duplicate entry '30' for key 'bmsql_warehouse.PRIMARY'
+Worker 031: Loading Warehouse     31
+Worker 031: ERROR: Duplicate entry '31' for key 'bmsql_warehouse.PRIMARY'
+Worker 032: Loading Warehouse     32
+Worker 032: ERROR: Duplicate entry '32' for key 'bmsql_warehouse.PRIMARY'
+Worker 033: Loading Warehouse     33
+Worker 033: ERROR: Duplicate entry '33' for key 'bmsql_warehouse.PRIMARY'
+Worker 034: Loading Warehouse     34
+Worker 034: ERROR: Duplicate entry '34' for key 'bmsql_warehouse.PRIMARY'
+Worker 035: Loading Warehouse     35
+Worker 035: ERROR: Duplicate entry '35' for key 'bmsql_warehouse.PRIMARY'
+Worker 036: Loading Warehouse     36
+Worker 036: ERROR: Duplicate entry '36' for key 'bmsql_warehouse.PRIMARY'
+Worker 037: Loading Warehouse     37
+Worker 037: ERROR: Duplicate entry '37' for key 'bmsql_warehouse.PRIMARY'
+Worker 038: Loading Warehouse     38
+Worker 038: ERROR: Duplicate entry '38' for key 'bmsql_warehouse.PRIMARY'
+Worker 039: Loading Warehouse     39
+Worker 039: ERROR: Duplicate entry '39' for key 'bmsql_warehouse.PRIMARY'
+Worker 040: Loading Warehouse     40
+Worker 040: ERROR: Duplicate entry '40' for key 'bmsql_warehouse.PRIMARY'
+Worker 041: Loading Warehouse     41
+Worker 041: ERROR: Duplicate entry '41' for key 'bmsql_warehouse.PRIMARY'
+Worker 042: Loading Warehouse     42
+Worker 042: ERROR: Duplicate entry '42' for key 'bmsql_warehouse.PRIMARY'
+Worker 043: Loading Warehouse     43
+Worker 043: ERROR: Duplicate entry '43' for key 'bmsql_warehouse.PRIMARY'
+Worker 044: Loading Warehouse     44
+Worker 044: ERROR: Duplicate entry '44' for key 'bmsql_warehouse.PRIMARY'
+Worker 045: Loading Warehouse     45
+Worker 045: ERROR: Duplicate entry '45' for key 'bmsql_warehouse.PRIMARY'
+Worker 046: Loading Warehouse     46
+Worker 046: ERROR: Duplicate entry '46' for key 'bmsql_warehouse.PRIMARY'
+Worker 047: Loading Warehouse     47
+Worker 047: ERROR: Duplicate entry '47' for key 'bmsql_warehouse.PRIMARY'
+Worker 048: Loading Warehouse     48
+Worker 048: ERROR: Duplicate entry '48' for key 'bmsql_warehouse.PRIMARY'
+Worker 049: Loading Warehouse     49
+Worker 049: ERROR: Duplicate entry '49' for key 'bmsql_warehouse.PRIMARY'
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/indexCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+alter table bmsql_warehouse add constraint bmsql_warehouse_pkey
+primary key (w_id);
+Multiple primary key defined
+alter table bmsql_district add constraint bmsql_district_pkey
+primary key (d_w_id, d_id);
+Multiple primary key defined
+alter table bmsql_customer add constraint bmsql_customer_pkey
+primary key (c_w_id, c_d_id, c_id);
+Multiple primary key defined
+create index bmsql_customer_idx1
+on  bmsql_customer (c_w_id, c_d_id, c_last, c_first);
+Duplicate key name 'bmsql_customer_idx1'
+alter table bmsql_oorder add constraint bmsql_oorder_pkey
+primary key (o_w_id, o_d_id, o_id);
+Multiple primary key defined
+create unique index bmsql_oorder_idx1
+on  bmsql_oorder (o_w_id, o_d_id, o_carrier_id, o_id);
+Duplicate key name 'bmsql_oorder_idx1'
+alter table bmsql_new_order add constraint bmsql_new_order_pkey
+primary key (no_w_id, no_d_id, no_o_id);
+Multiple primary key defined
+alter table bmsql_order_line add constraint bmsql_order_line_pkey
+primary key (ol_w_id, ol_d_id, ol_o_id, ol_number);
+Multiple primary key defined
+alter table bmsql_stock add constraint bmsql_stock_pkey
+primary key (s_w_id, s_i_id);
+Multiple primary key defined
+alter table bmsql_item add constraint bmsql_item_pkey
+primary key (i_id);
+Multiple primary key defined
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/foreignKeys.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+alter table bmsql_district add constraint d_warehouse_fkey
+foreign key (d_w_id)
+references bmsql_warehouse (w_id);
+Duplicate foreign key constraint name 'd_warehouse_fkey'
+alter table bmsql_customer add constraint c_district_fkey
+foreign key (c_w_id, c_d_id)
+references bmsql_district (d_w_id, d_id);
+Duplicate foreign key constraint name 'c_district_fkey'
+alter table bmsql_history add constraint h_customer_fkey
+foreign key (h_c_w_id, h_c_d_id, h_c_id)
+references bmsql_customer (c_w_id, c_d_id, c_id);
+Duplicate foreign key constraint name 'h_customer_fkey'
+alter table bmsql_history add constraint h_district_fkey
+foreign key (h_w_id, h_d_id)
+references bmsql_district (d_w_id, d_id);
+Duplicate foreign key constraint name 'h_district_fkey'
+alter table bmsql_new_order add constraint no_order_fkey
+foreign key (no_w_id, no_d_id, no_o_id)
+references bmsql_oorder (o_w_id, o_d_id, o_id);
+Duplicate foreign key constraint name 'no_order_fkey'
+alter table bmsql_oorder add constraint o_customer_fkey
+foreign key (o_w_id, o_d_id, o_c_id)
+references bmsql_customer (c_w_id, c_d_id, c_id);
+Duplicate foreign key constraint name 'o_customer_fkey'
+alter table bmsql_order_line add constraint ol_order_fkey
+foreign key (ol_w_id, ol_d_id, ol_o_id)
+references bmsql_oorder (o_w_id, o_d_id, o_id);
+Duplicate foreign key constraint name 'ol_order_fkey'
+alter table bmsql_order_line add constraint ol_stock_fkey
+foreign key (ol_supply_w_id, ol_i_id)
+references bmsql_stock (s_w_id, s_i_id);
+Duplicate foreign key constraint name 'ol_stock_fkey'
+alter table bmsql_stock add constraint s_warehouse_fkey
+foreign key (s_w_id)
+references bmsql_warehouse (w_id);
+Duplicate foreign key constraint name 's_warehouse_fkey'
+alter table bmsql_stock add constraint s_item_fkey
+foreign key (s_i_id)
+references bmsql_item (i_id);
+Duplicate foreign key constraint name 's_item_fkey'
+# ------------------------------------------------------------
+# Loading SQL file ./sql.mysql/extraHistID.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- Extra Schema objects/definitions for history.hist_id in Oracle
+-- ----
+-- ----
+--	This is an extra column not present in the TPC-C
+--	specs. It is useful for replication systems like
+--	Bucardo and Slony-I, which like to have a primary
+--	key on a table. It is an auto-increment or serial
+--	column type. The definition below is compatible
+--	with Oracle 11g, using the sequence in a trigger.
+-- ----
+-- Adjust the sequence above the current max(hist_id)
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/buildFinish.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- Extra commands to run after the tables are created, loaded,
+-- indexes built and extra's created.
+-- ----
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/tableCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+create table bmsql_config (
+cfg_name    varchar(30) primary key,
+cfg_value   varchar(50)
+);
+create table bmsql_warehouse (
+w_id        integer   not null,
+w_ytd       decimal(12,2),
+w_tax       decimal(4,4),
+w_name      varchar(10),
+w_street_1  varchar(20),
+w_street_2  varchar(20),
+w_city      varchar(20),
+w_state     char(2),
+w_zip       char(9)
+);
+create table bmsql_district (
+d_w_id       integer       not null,
+d_id         integer       not null,
+d_ytd        decimal(12,2),
+d_tax        decimal(4,4),
+d_next_o_id  integer,
+d_name       varchar(10),
+d_street_1   varchar(20),
+d_street_2   varchar(20),
+d_city       varchar(20),
+d_state      char(2),
+d_zip        char(9)
+);
+create table bmsql_customer (
+c_w_id         integer        not null,
+c_d_id         integer        not null,
+c_id           integer        not null,
+c_discount     decimal(4,4),
+c_credit       char(2),
+c_last         varchar(16),
+c_first        varchar(16),
+c_credit_lim   decimal(12,2),
+c_balance      decimal(12,2),
+c_ytd_payment  decimal(12,2),
+c_payment_cnt  integer,
+c_delivery_cnt integer,
+c_street_1     varchar(20),
+c_street_2     varchar(20),
+c_city         varchar(20),
+c_state        char(2),
+c_zip          char(9),
+c_phone        char(16),
+c_since        timestamp,
+c_middle       char(2),
+c_data         varchar(500)
+);
+create sequence bmsql_hist_id_seq;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'sequence bmsql_hist_id_seq' at line 1
+create table bmsql_history (
+hist_id  integer,
+h_c_id   integer,
+h_c_d_id integer,
+h_c_w_id integer,
+h_d_id   integer,
+h_w_id   integer,
+h_date   timestamp,
+h_amount decimal(6,2),
+h_data   varchar(24)
+);
+create table bmsql_new_order (
+no_w_id  integer   not null,
+no_d_id  integer   not null,
+no_o_id  integer   not null
+);
+create table bmsql_oorder (
+o_w_id       integer      not null,
+o_d_id       integer      not null,
+o_id         integer      not null,
+o_c_id       integer,
+o_carrier_id integer,
+o_ol_cnt     integer,
+o_all_local  integer,
+o_entry_d    timestamp
+);
+create table bmsql_order_line (
+ol_w_id         integer   not null,
+ol_d_id         integer   not null,
+ol_o_id         integer   not null,
+ol_number       integer   not null,
+ol_i_id         integer   not null,
+ol_delivery_d   timestamp,
+ol_amount       decimal(6,2),
+ol_supply_w_id  integer,
+ol_quantity     integer,
+ol_dist_info    char(24)
+);
+create table bmsql_item (
+i_id     integer      not null,
+i_name   varchar(24),
+i_price  decimal(5,2),
+i_data   varchar(50),
+i_im_id  integer
+);
+create table bmsql_stock (
+s_w_id       integer       not null,
+s_i_id       integer       not null,
+s_quantity   integer,
+s_ytd        integer,
+s_order_cnt  integer,
+s_remote_cnt integer,
+s_data       varchar(50),
+s_dist_01    char(24),
+s_dist_02    char(24),
+s_dist_03    char(24),
+s_dist_04    char(24),
+s_dist_05    char(24),
+s_dist_06    char(24),
+s_dist_07    char(24),
+s_dist_08    char(24),
+s_dist_09    char(24),
+s_dist_10    char(24)
+);
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/extraCommandsBeforeLoad.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- sql.common/extraCommandsBeforeLoad.sql
+--
+--	Empty placeholder file. Some databases might require
+--	extra commands to be run between creating the schema
+--	and loading the data. For example PostgreSQL, where we
+--	set the FILLFACTOR on some tables.
+-- ----
+# ------------------------------------------------------------
+# Loading SQL file ./sql.mysql/storedProcedureCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- {
+CREATE OR REPLACE PACKAGE tpccc_oracle AS
+
+    TYPE varchar50_array IS TABLE OF VARCHAR2(50) INDEX BY BINARY_INTEGER;
+
+    TYPE rowidarray IS TABLE OF ROWID INDEX BY BINARY_INTEGER;
+
+    TYPE rec1 IS RECORD(
+	name varchar2(24),
+        price number,
+	data varchar2(50)
+    );
+
+    TYPE rec2 IS RECORD(
+	quantity integer,
+        s_data varchar2(50),
+	s_dist1 varchar2(24),
+	s_dist2 varchar2(24),
+	s_dist3 varchar2(24),
+	s_dist4 varchar2(24),
+	s_dist5 varchar2(24),
+	s_dist6 varchar2(24),
+	s_dist7 varchar2(24),
+	s_dist8 varchar2(24),
+	s_dist9 varchar2(24),
+	s_dist10 varchar2(24)
+    );
+
+    TYPE rec3 IS RECORD(
+	ol_i_id integer,
+	ol_supply_w_id integer,
+	ol_quantity integer,
+	ol_amount number,
+	ol_delivery_d timestamp
+    );
+
+    FUNCTION oracle_rowid_from_clast(
+	in_c_w_id IN integer,
+	in_c_d_id IN integer,
+	in_c_last IN varchar
+    ) RETURN ROWID;
+
+    PROCEDURE oracle_proc_stock_level(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_threshold IN integer,
+        out_low_stock OUT integer
+    );
+
+    PROCEDURE oracle_proc_new_order(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN integer,
+        in_ol_supply_w_id IN int_array,
+	in_ol_i_id IN int_array,
+        in_ol_quantity IN int_array,
+	out_ol_amount OUT num_array,
+        out_i_name OUT varchar24_array,
+	out_i_price OUT num_array,
+        out_s_quantity OUT int_array,
+	out_brand_generic OUT char_array,
+        out_w_tax OUT number,
+	out_d_tax OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_ol_cnt OUT integer,
+	out_total_amount OUT number,
+        out_c_last OUT varchar2,
+	out_c_credit OUT varchar2,
+        out_c_discount OUT number
+    );
+
+    PROCEDURE oracle_proc_delivery_bg(
+	in_w_id IN integer,
+        in_o_carrier_id IN integer,
+	in_ol_delivery_d IN timestamp,
+        out_delivered_o_id OUT int_array
+    );
+
+    PROCEDURE oracle_proc_payment_clast(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+	out_c_since OUT timestamp,
+        out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_payment_cid(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_payment(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_c_id IN OUT integer,
+	in_c_d_id IN integer,
+        in_c_w_id IN integer,
+	in_c_last IN OUT varchar2,
+        in_h_amount IN number,
+	out_w_name OUT varchar2,
+        out_w_street_1 OUT varchar2,
+	out_w_street_2 OUT varchar2,
+        out_w_city OUT varchar2,
+	out_w_state OUT varchar2,
+        out_w_zip OUT varchar2,
+	out_d_name OUT varchar2,
+        out_d_street_1 OUT varchar2,
+	out_d_street_2 OUT varchar2,
+        out_d_city OUT varchar2,
+	out_d_state OUT varchar2,
+        out_d_zip OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_street_1 OUT varchar2,
+        out_c_street_2 OUT varchar2,
+	out_c_city OUT varchar2,
+        out_c_state OUT varchar2,
+	out_c_zip OUT varchar2,
+        out_c_phone OUT varchar2,
+	out_c_since OUT timestamp,
+        out_c_credit OUT varchar2,
+	out_c_credit_lim OUT number,
+        out_c_discount OUT number,
+	out_c_balance OUT number,
+        out_c_data OUT varchar2,
+	out_h_date OUT timestamp
+    );
+
+    PROCEDURE oracle_proc_order_status(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_last IN OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_balance OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_o_carrier_id OUT integer,
+	out_ol_supply_w_id OUT int_array,
+        out_ol_i_id OUT int_array,
+	out_ol_quantity OUT int_array,
+        out_ol_amount OUT num_array,
+	out_ol_delivery_d OUT varchar16_array
+    );
+
+END tpccc_oracle;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PACKAGE tpccc_oracle AS
+
+    TYPE varchar50_array IS TABLE OF VARCHAR2(50) INDEX' at line 2
+-- {
+CREATE OR REPLACE PACKAGE BODY tpccc_oracle AS
+
+    FUNCTION oracle_rowid_from_clast(
+        in_c_w_id IN integer,
+	in_c_d_id IN integer,
+        in_c_last IN varchar
+    ) RETURN ROWID AS
+	rowArr rowidarray;
+        rowNumber rowid;
+	rowCnt integer;
+        customer integer;
+    BEGIN
+	-- Clause 2.5.2.2 Case 2, customer selected based on c_last.
+	SELECT rowid
+            BULK COLLECT INTO rowARR
+	FROM bmsql_customer
+        WHERE c_w_id = in_c_w_id AND c_d_id = in_c_d_id AND c_last = in_c_last
+	ORDER BY c_first;
+
+	rowCnt := SQL%ROWCOUNT;
+        rowNumber := rowArr((rowCnt + 1 )/ 2);
+
+	RETURN rowNumber;
+    END;
+
+    PROCEDURE oracle_proc_stock_level(
+        in_w_id IN integer,
+	in_d_id IN integer,
+        in_threshold IN integer,
+	out_low_stock OUT integer
+    ) AS
+    BEGIN
+	--Selects and counts the number of recently sold items that have
+        --a stock level below the specified threshold.
+	SELECT count(*)
+        INTO out_low_stock
+	    FROM(
+	        SELECT s_w_id, s_i_id, s_quantity
+                    FROM bmsql_stock
+		    WHERE s_w_id = in_w_id AND s_quantity < in_threshold
+		      AND s_i_id IN (
+	                    SELECT ol_i_id
+	                        FROM bmsql_district
+                                JOIN bmsql_order_line ON ol_w_id = d_w_id
+			          AND ol_d_id = d_id
+			          AND ol_o_id >= d_next_o_id - 20
+		                  AND ol_o_id < d_next_o_id
+		                WHERE d_w_id = in_w_id AND d_id = in_d_id
+	                    )
+	        );
+    END;
+
+    PROCEDURE oracle_proc_new_order(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN integer,
+        in_ol_supply_w_id IN int_array,
+	in_ol_i_id IN int_array,
+        in_ol_quantity IN int_array,
+	out_ol_amount OUT num_array,
+        out_i_name OUT varchar24_array,
+	out_i_price OUT num_array,
+        out_s_quantity OUT int_array,
+	out_brand_generic OUT char_array,
+        out_w_tax OUT number,
+	out_d_tax OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_ol_cnt OUT integer,
+	out_total_amount OUT number,
+        out_c_last OUT varchar2,
+	out_c_credit OUT varchar2,
+        out_c_discount OUT number
+    ) AS
+	var_all_local integer := 1;
+        var_x integer;
+	var_y integer;
+        var_tmp integer;
+	var_seq int_array := int_array();
+        var_item_row rec1;
+	var_stock_row rec2;
+        CURSOR item_cursor IS
+	    SELECT i_name, i_price, i_data
+	        FROM bmsql_item
+		WHERE i_id = in_ol_i_id(var_y);
+	CURSOR stock_cursor IS
+            SELECT s_quantity, s_data, s_dist_01, s_dist_02,
+	           s_dist_03, s_dist_04, s_dist_05, s_dist_06,
+		   s_dist_07, s_dist_08, s_dist_09, s_dist_10
+                FROM bmsql_stock
+	        WHERE s_w_id = in_ol_supply_w_id(var_y)
+	          AND s_i_id = in_ol_i_id(var_y)
+		FOR UPDATE;
+	item_not_found Exception;
+        stock_not_found Exception;
+	PRAGMA EXCEPTION_INIT (item_not_found, -20001);
+	PRAGMA EXCEPTION_INIT (stock_not_found, -20002);
+    BEGIN
+	out_brand_generic := char_array();
+	out_s_quantity := int_array();
+	out_i_price := num_array();
+	out_i_name := varchar24_array();
+	out_ol_amount := num_array();
+	-- The o_entry_d is now.
+        out_o_entry_d := CURRENT_TIMESTAMP;
+	out_total_amount := 0.00;
+
+        -- When processing the order lines we must select the STOCK rows
+	-- FOR UPDATE. This is because we must perform business logic
+        -- (the juggling with the S_QUANTITY) here in the application
+	-- and cannot do that in an atomic UPDATE statement while getting
+        -- the original value back at the same time (UPDATE ... RETURNING
+	-- may not vendor neutral). This can lead to possible deadlocks
+        -- if two transactions try to lock the same two stock rows in
+	-- opposite order. To avoid that we process the order lines in
+        -- the order of the order of ol_supply_w_id, ol_i_id.
+	out_ol_cnt := 0;
+
+        FOR var_x IN 1 .. in_ol_i_id.COUNT LOOP
+	    IF in_ol_i_id(var_x) IS NOT NULL AND in_ol_i_id(var_x) <> 0 THEN
+		var_seq.EXTEND;
+                out_ol_cnt := out_ol_cnt + 1;
+	        var_seq(var_x) := var_x;
+	        IF in_ol_supply_w_id(var_x) <> in_w_id THEN
+		    var_all_local := 0;
+                END IF;
+	    END IF;
+        END LOOP;
+
+	FOR var_x IN 1 .. out_ol_cnt - 1 LOOP
+	    FOR var_y IN var_x + 1 .. out_ol_cnt LOOP
+                IF in_ol_supply_w_id(var_seq(var_y)) < in_ol_supply_w_id(var_seq(var_x)) THEN
+	            var_tmp := var_seq(var_x);
+	            var_seq(var_x) := var_seq(var_y);
+		    var_seq(var_y) := var_tmp;
+                ELSE
+	            IF in_ol_supply_w_id(var_seq(var_y)) = in_ol_supply_w_id(var_seq(var_x))
+		     AND in_ol_i_id(var_seq(var_y)) < in_ol_i_id(var_seq(var_x)) THEN
+		        var_tmp := var_seq(var_x);
+                        var_seq(var_x) := var_seq(var_y);
+                        var_seq(var_y) := var_tmp;
+		    END IF;
+		END IF;
+	    END LOOP;
+	END LOOP;
+
+        -- Retrieve the required data from DISTRICT
+	SELECT d_tax, d_next_o_id
+        INTO out_d_tax, out_o_id
+	    FROM bmsql_district
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+            FOR UPDATE;
+
+	-- Retrieve the required data for CUSTOMER and WAREHOUSE
+        SELECT w_tax, c_last, c_credit, c_discount
+	INTO out_w_tax, out_c_last, out_c_credit, out_c_discount
+	    FROM bmsql_customer
+            JOIN bmsql_warehouse ON (w_id = c_w_id)
+            WHERE c_w_id = in_w_id AND c_d_id = in_d_id AND c_id = in_c_id;
+
+	-- Update the district bumping the D_NEXT_O_ID
+	UPDATE bmsql_district
+	    SET d_next_o_id = d_next_o_id + 1
+        WHERE d_w_id = in_w_id AND d_id = in_d_id;
+
+	-- Insert the ORDER row
+        INSERT INTO bmsql_oorder (
+	        o_id, o_d_id, o_w_id, o_c_id,
+	        o_entry_d, o_ol_cnt, o_all_local)
+	VALUES (
+	        out_o_id, in_d_id, in_w_id, in_c_id,
+		out_o_entry_d, out_ol_cnt, var_all_local);
+
+        -- Insert the NEW_ORER row
+	INSERT INTO bmsql_new_order (
+                no_o_id, no_d_id, no_w_id)
+	VALUES (
+	        out_o_id, in_d_id, in_w_id);
+
+        -- Per ORDER_LINE
+	FOR var_x in 1 .. out_ol_cnt LOOP
+	    -- We process the lines in the sequence ordered by warehouse, item.
+            var_y := var_seq(var_x);
+
+	    out_i_name.EXTEND(var_y);
+	    out_i_price.EXTEND(var_y);
+	    out_s_quantity.EXTEND(var_y);
+	    out_ol_amount.EXTEND(var_y);
+	    out_brand_generic.EXTEND(var_y);
+
+	    OPEN item_cursor;
+	    FETCH item_cursor INTO var_item_row;
+	    IF item_cursor%NOTFOUND THEN
+		RAISE item_not_found;
+	    END IF;
+	    CLOSE item_cursor;
+
+	    -- Found ITEM
+            out_i_name(var_y) := var_item_row.name;
+	    out_i_price(var_y) := var_item_row.price;
+
+	    OPEN stock_cursor;
+            FETCH stock_cursor INTO var_stock_row;
+	    IF stock_cursor%NOTFOUND THEN
+	        RAISE stock_not_found;
+            END IF;
+	    CLOSE stock_cursor;
+
+	    out_s_quantity(var_y) := var_stock_row.quantity;
+            out_ol_amount(var_y) := out_i_price(var_y) * in_ol_quantity(var_y);
+            IF var_item_row.data LIKE '%ORIGINAL%'
+	      AND var_stock_row.s_data LIKE '%ORIGINAL%' THEN
+	        out_brand_generic(var_y) := 'B';
+	    ELSE
+		out_brand_generic(var_y) := 'G';
+	    END IF;
+            out_total_amount := out_total_amount + out_ol_amount(var_y) * (1.0 - out_c_discount) * (1.0 + out_w_tax + out_d_tax);
+
+	    -- Update the STOCK row.
+	    UPDATE bmsql_stock SET
+                s_quantity = CASE
+		    WHEN var_stock_row.quantity >= in_ol_quantity(var_y) + 10 THEN
+	                var_stock_row.quantity - in_ol_quantity(var_y)
+	            ELSE
+		        var_stock_row.quantity + 91
+		    END,
+                s_ytd = s_ytd + in_ol_quantity(var_y),
+                s_order_cnt = s_order_cnt + 1,
+                s_remote_cnt = s_remote_cnt + CASE
+		    WHEN in_w_id <> in_ol_supply_w_id(var_y) THEN
+			1
+		    ELSE
+			0
+		    END
+		WHERE s_w_id = in_ol_supply_w_id(var_y)
+                  AND s_i_id = in_ol_i_id(var_y);
+
+	    --Insert the ORDER_LINE row.
+	    INSERT INTO bmsql_order_line (
+		    ol_o_id, ol_d_id, ol_w_id, ol_number,
+		    ol_i_id, ol_supply_w_id, ol_quantity,
+		    ol_amount, ol_dist_info)
+	    VALUES (
+		    out_o_id, in_d_id, in_w_id, var_y,
+                    in_ol_i_id(var_y), in_ol_supply_w_id(var_y),
+                    in_ol_quantity(var_y), out_ol_amount(var_y),
+	            CASE
+	                WHEN in_d_id = 1 THEN var_stock_row.s_dist1
+		        WHEN in_d_id = 2 THEN var_stock_row.s_dist2
+		        WHEN in_d_id = 3 THEN var_stock_row.s_dist3
+			WHEN in_d_id = 4 THEN var_stock_row.s_dist4
+                        WHEN in_d_id = 5 THEN var_stock_row.s_dist5
+	                WHEN in_d_id = 6 THEN var_stock_row.s_dist6
+	                WHEN in_d_id = 7 THEN var_stock_row.s_dist7
+		        WHEN in_d_id = 8 THEN var_stock_row.s_dist8
+		        WHEN in_d_id = 9 THEN var_stock_row.s_dist9
+			WHEN in_d_id = 10 THEN var_stock_row.s_dist10
+                    END
+	        );
+	END LOOP;
+    EXCEPTION
+	WHEN item_not_found THEN
+	    RAISE_APPLICATION_ERROR(-20001, 'Item number is not valid');
+	WHEN stock_not_found THEN
+	    RAISE_APPLICATION_ERROR(-20002, 'STOCK not found');
+    END;
+
+    PROCEDURE oracle_proc_delivery_bg(
+	in_w_id IN integer,
+        in_o_carrier_id IN integer,
+	in_ol_delivery_d IN timestamp,
+        out_delivered_o_id OUT int_array
+    ) AS
+	sums num_array;
+        var_d_id int_array;
+	var_o_c_id int_array;
+        var_dist int_array;
+	var_x integer;
+        order_count integer;
+    BEGIN
+	var_dist := int_array();
+        FOR var_x IN 1..10 LOOP
+	    var_dist.EXTEND;
+	    var_dist(var_x) := var_x;
+        END LOOP;
+
+	FORALL i in 1..10
+	    DELETE FROM bmsql_new_order N
+            WHERE no_d_id = var_dist(i)
+	      AND no_w_id = in_w_id
+	      AND no_o_id = (SELECT min(no_o_id)
+		                FROM bmsql_new_order
+		             WHERE no_d_id = N.no_d_id
+			       AND no_w_id = N.no_w_id)
+            RETURNING no_d_id, no_o_id
+	    BULK COLLECT INTO var_d_id, out_delivered_o_id;
+
+        order_count := SQL%ROWCOUNT;
+
+	FORALL i IN 1..order_count
+	    UPDATE bmsql_oorder
+		SET o_carrier_id = in_o_carrier_id
+	    WHERE o_id = out_delivered_o_id(i)
+	      AND o_d_id = var_d_id(i)
+	      AND o_w_id = in_w_id
+	    RETURNING o_c_id
+	    BULK COLLECT INTO var_o_c_id;
+
+        FORALL i IN 1..order_count
+	    UPDATE bmsql_order_line
+	        SET ol_delivery_d = CURRENT_TIMESTAMP
+            WHERE ol_w_id = in_w_id
+	      AND ol_d_id = var_d_id(i)
+	      AND ol_o_id = out_delivered_o_id(i)
+            RETURNING sum(ol_amount)
+	    BULK COLLECT INTO sums;
+
+        FORALL i IN 1..order_count
+	    UPDATE bmsql_customer
+	        SET c_balance = c_balance + sums(i),
+		    c_delivery_cnt = c_delivery_cnt + 1
+            WHERE c_w_id = in_w_id
+	      AND c_d_id = var_d_id(i)
+	      AND c_id = var_o_c_id(i);
+    END;
+
+    -- Stored procedure to be called if the customer last name is given rather
+    -- than the customer id for the payment transaction.
+    PROCEDURE oracle_proc_payment_clast(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+	row_id rowid;
+    BEGIN
+
+	out_h_date := CURRENT_TIMESTAMP;
+
+	--Update and Select the WAREHOUSE
+        UPDATE bmsql_warehouse
+	    SET w_ytd = w_ytd + in_h_amount
+	    WHERE w_id = in_w_id
+        RETURNING w_name, w_street_1, w_street_2, w_city,
+	          w_state, w_zip
+	INTO out_w_name, out_w_street_1, out_w_street_2,
+             out_w_city, out_w_state, out_w_zip;
+
+        row_id := oracle_rowid_from_clast(in_c_w_id, in_c_d_id, in_c_last);
+
+	--Update and Select the DISTRICT
+        UPDATE bmsql_district
+	    SET d_ytd = d_ytd + in_h_amount
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+        RETURNING d_name, d_street_1, d_street_2,
+	          d_city, d_state, d_zip
+	INTO out_d_name, out_d_street_1, out_d_street_2,
+             out_d_city, out_d_state, out_d_zip;
+
+        -- Update and Select the CUSTOMER
+	UPDATE bmsql_customer
+	    SET c_balance = c_balance - in_h_amount,
+		c_ytd_payment = c_ytd_payment + in_h_amount,
+                c_payment_cnt = c_payment_cnt + 1
+	    WHERE rowid = row_id
+        RETURNING c_id, c_first, c_middle, c_last, c_street_1,
+	          c_street_2, c_city, c_state, c_zip,
+	          c_phone, c_since, c_credit, c_credit_lim,
+		  c_discount, c_balance
+        INTO in_c_id, out_c_first, out_c_middle, in_c_last,
+             out_c_street_1, out_c_street_2, out_c_city,
+             out_c_state, out_c_zip, out_c_phone, out_c_since,
+             out_c_credit, out_c_credit_lim, out_c_discount,
+             out_c_balance;
+
+        out_c_balance := out_c_balance - in_h_amount;
+	out_c_data := ' ';
+
+        --Customer with bad credit, need to do the C_DATA work.
+	IF out_c_credit = 'BC' THEN
+            UPDATE bmsql_customer
+	        SET c_data = SUBSTR('C_ID='   || TO_CHAR(in_c_id)   ||
+	                         ' C_D_ID='   || TO_CHAR(in_c_d_id) ||
+		                 ' C_W_ID='   || TO_CHAR(in_c_w_id) ||
+		                 ' D_ID='     || TO_CHAR(in_d_id)   ||
+			         ' W_ID='     || TO_CHAR(in_w_id)   ||
+			         ' H_AMOUNT=' || ROUND(in_h_amount,2), 1, 500)
+                WHERE rowid = row_id
+	    RETURNING c_data
+            INTO out_c_data;
+        END IF;
+
+	--Insert the HISTORY row
+        INSERT INTO bmsql_history (
+	        h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
+	        h_date, h_amount, h_data)
+        VALUES (
+	        in_c_id, in_c_d_id, in_c_w_id, in_d_id, in_w_id,
+	        out_h_date, in_h_amount, out_w_name||'    '||out_d_name);
+    END;
+
+    -- Stored procedure to be called if the custoemr id is given rather
+    -- than the customer last name.
+    PROCEDURE oracle_proc_payment_cid(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+	var_c_rowid rowid;
+    BEGIN
+
+	out_h_date := CURRENT_TIMESTAMP;
+
+	--Update and Select the WAREHOUSE
+        UPDATE bmsql_warehouse
+	    SET w_ytd = w_ytd + in_h_amount
+	    WHERE w_id = in_w_id
+        RETURNING w_name, w_street_1, w_street_2, w_city,
+	          w_state, w_zip
+        INTO out_w_name, out_w_street_1, out_w_street_2,
+             out_w_city, out_w_state, out_w_zip;
+
+        --Update and Select the DISTRICT
+        UPDATE bmsql_district
+	    SET d_ytd = d_ytd + in_h_amount
+	    WHERE d_w_id = in_w_id AND d_id = in_d_id
+        RETURNING d_name, d_street_1, d_street_2,
+	          d_city, d_state, d_zip
+        INTO out_d_name, out_d_street_1, out_d_street_2,
+             out_d_city, out_d_state, out_d_zip;
+
+        -- Update and Select the CUSTOMER
+	UPDATE bmsql_customer
+	    SET c_balance = c_balance - in_h_amount,
+		c_ytd_payment = c_ytd_payment + in_h_amount,
+	        c_payment_cnt = c_payment_cnt + 1
+            WHERE c_w_id = in_c_w_id AND c_d_id = in_c_d_id AND c_id = in_c_id
+	RETURNING rowid, c_first, c_middle, c_last, c_street_1,
+	          c_street_2, c_city, c_state, c_zip,
+		  c_phone, c_since, c_credit, c_credit_lim,
+		c_discount, c_balance
+        INTO var_c_rowid, out_c_first, out_c_middle, in_c_last,
+             out_c_street_1, out_c_street_2, out_c_city,
+             out_c_state, out_c_zip, out_c_phone, out_c_since,
+             out_c_credit, out_c_credit_lim, out_c_discount,
+             out_c_balance;
+
+        out_c_balance := out_c_balance - in_h_amount;
+	out_c_data := ' ';
+
+        --Customer with bad credit, need to do the C_DATA work.
+	IF out_c_credit = 'BC' THEN
+            UPDATE bmsql_customer
+	        SET c_data = SUBSTR('C_ID='      || TO_CHAR(in_c_id)   ||
+				    ' C_D_ID='   || TO_CHAR(in_c_d_id) ||
+				    ' C_W_ID='   || TO_CHAR(in_c_w_id) ||
+				    ' D_ID='     || TO_CHAR(in_d_id)   ||
+				    ' W_ID='     || TO_CHAR(in_w_id)   ||
+				    ' H_AMOUNT=' || ROUND(in_h_amount,2), 1, 500)
+                WHERE rowid = var_c_rowid
+	    RETURNING c_data
+            INTO out_c_data;
+        END IF;
+
+	--Insert the HISTORY row
+        INSERT INTO bmsql_history (
+	        h_c_id, h_c_d_id, h_c_w_id, h_d_id, h_w_id,
+	        h_date, h_amount, h_data)
+        VALUES (
+	        in_c_id, in_c_d_id, in_c_w_id, in_d_id, in_w_id,
+	        out_h_date, in_h_amount, out_w_name||'    '||out_d_name);
+    END;
+
+    PROCEDURE oracle_proc_payment(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_d_id IN integer,
+	in_c_w_id IN integer,
+        in_c_last IN OUT varchar2,
+	in_h_amount IN number,
+        out_w_name OUT varchar2,
+	out_w_street_1 OUT varchar2,
+        out_w_street_2 OUT varchar2,
+	out_w_city OUT varchar2,
+        out_w_state OUT varchar2,
+	out_w_zip OUT varchar2,
+        out_d_name OUT varchar2,
+	out_d_street_1 OUT varchar2,
+        out_d_street_2 OUT varchar2,
+	out_d_city OUT varchar2,
+        out_d_state OUT varchar2,
+	out_d_zip OUT varchar2,
+        out_c_first OUT varchar2,
+	out_c_middle OUT varchar2,
+        out_c_street_1 OUT varchar2,
+	out_c_street_2 OUT varchar2,
+        out_c_city OUT varchar2,
+	out_c_state OUT varchar2,
+        out_c_zip OUT varchar2,
+	out_c_phone OUT varchar2,
+        out_c_since OUT timestamp,
+	out_c_credit OUT varchar2,
+        out_c_credit_lim OUT number,
+	out_c_discount OUT number,
+        out_c_balance OUT number,
+	out_c_data OUT varchar2,
+        out_h_date OUT timestamp
+    ) IS
+BEGIN
+	IF in_c_last is NOT NULL THEN
+            oracle_proc_payment_clast(in_w_id, in_d_id, in_c_id, in_c_d_id, in_c_w_id, in_c_last, in_h_amount,
+			                out_w_name, out_w_street_1, out_w_street_2, out_w_city, out_w_state, out_w_zip,
+			                out_d_name, out_d_street_1, out_d_street_2, out_d_city, out_d_state, out_d_zip,
+		                        out_c_first, out_c_middle, out_c_street_1, out_c_street_2, out_c_city, out_c_state,
+		                        out_c_zip, out_c_phone, out_c_since, out_c_credit, out_c_credit_lim, out_c_discount,
+	                                out_c_balance, out_c_data, out_h_date);
+	ELSE
+            oracle_proc_payment_cid(in_w_id, in_d_id, in_c_id, in_c_d_id, in_c_w_id, in_c_last, in_h_amount,
+			                out_w_name, out_w_street_1, out_w_street_2, out_w_city, out_w_state, out_w_zip,
+			                out_d_name, out_d_street_1, out_d_street_2, out_d_city, out_d_state, out_d_zip,
+		                        out_c_first, out_c_middle, out_c_street_1, out_c_street_2, out_c_city, out_c_state,
+		                        out_c_zip, out_c_phone, out_c_since, out_c_credit, out_c_credit_lim, out_c_discount,
+	                                out_c_balance, out_c_data, out_h_date);
+	END IF;
+    END;
+
+    PROCEDURE oracle_proc_order_status(
+	in_w_id IN integer,
+        in_d_id IN integer,
+	in_c_id IN OUT integer,
+        in_c_last IN OUT varchar2,
+	out_c_first OUT varchar2,
+        out_c_middle OUT varchar2,
+	out_c_balance OUT number,
+        out_o_id OUT integer,
+	out_o_entry_d OUT timestamp,
+        out_o_carrier_id OUT integer,
+	out_ol_supply_w_id OUT int_array,
+        out_ol_i_id OUT int_array,
+	out_ol_quantity OUT int_array,
+        out_ol_amount OUT num_array,
+	out_ol_delivery_d OUT varchar16_array
+    ) AS
+	var_ol_delivery_d timestamp_array;
+	cust_row_id rowid;
+        v_order_line rec3;
+	v_order_line_check integer;
+        v_ol_idx integer := 1;
+	var_cnt integer;
+        CURSOR cursor_1 IS
+	    SELECT ol_i_id, ol_supply_w_id, ol_quantity,
+	           ol_amount, ol_delivery_d
+		FROM bmsql_order_line
+                WHERE ol_w_id = in_w_id AND ol_d_id = in_d_id
+	          AND ol_o_id = out_o_id
+	        ORDER BY ol_w_id, ol_d_id, ol_o_id, ol_number;
+    BEGIN
+
+	out_ol_supply_w_id := int_array();
+	out_ol_i_id := int_array();
+	out_ol_quantity := int_array();
+	out_ol_amount := num_array();
+	out_ol_delivery_d := varchar16_array();
+	var_ol_delivery_d := timestamp_array();
+
+	out_ol_supply_w_id.EXTEND(15);
+	out_ol_i_id.EXTEND(15);
+	out_ol_quantity.EXTEND(15);
+	out_ol_amount.EXTEND(15);
+	out_ol_delivery_d.EXTEND(15);
+	var_ol_delivery_d.EXTEND(15);
+
+        IF in_c_last IS NOT NULL THEN
+	    --If C_LAST is given instead of C_ID (60%), determine the C_ID and
+	    --Select the CUSTOMER using the ROWID.
+            cust_row_id := oracle_rowid_from_clast(in_w_id, in_d_id, in_c_last);
+	    SELECT c_first, c_middle, c_balance, c_id
+	        INTO out_c_first, out_c_middle, out_c_balance, in_c_id
+            FROM bmsql_customer
+	    WHERE rowid = cust_row_id;
+	ELSE
+            --If C_ID is given instead of C_LAST, select the CUSTOMER.
+	    SELECT c_first, c_middle, c_last, c_balance
+	        INTO out_c_first, out_c_middle, in_c_last, out_c_balance
+            FROM bmsql_customer
+	    WHERE c_w_id = in_w_id AND c_d_id = in_d_id AND c_id = in_c_id;
+        END IF;
+
+	--Select the last ORDER for this customer.
+        SELECT o_id, o_entry_d, coalesce(o_carrier_id, -1)
+	    INTO out_o_id, out_o_entry_d, out_o_carrier_id
+        FROM bmsql_oorder
+        WHERE o_w_id = in_w_id AND o_d_id = in_d_id AND o_c_id = in_c_id
+          AND o_id = (
+		    SELECT max(o_id)
+                    FROM bmsql_oorder
+	                WHERE o_w_id = in_w_id AND o_d_id = in_d_id AND o_c_id = in_c_id
+	            );
+
+        v_order_line_check := 1;
+
+	OPEN cursor_1;
+        FETCH cursor_1 INTO v_order_line;
+
+	WHILE cursor_1%found LOOP
+            out_ol_i_id(v_ol_idx) := v_order_line.ol_i_id;
+            out_ol_supply_w_id(v_ol_idx) := v_order_line.ol_supply_w_id;
+	    out_ol_quantity(v_ol_idx) := v_order_line.ol_quantity;
+            out_ol_amount(v_ol_idx) := v_order_line.ol_amount;
+	    var_ol_delivery_d(v_ol_idx) := v_order_line.ol_delivery_d;
+	    v_ol_idx := v_ol_idx + 1;
+            FETCH cursor_1 INTO v_order_line;
+	END LOOP;
+
+        CLOSE cursor_1;
+
+	WHILE v_ol_idx < 16 LOOP
+            out_ol_i_id (v_ol_idx) := 0;
+	    out_ol_supply_w_id(v_ol_idx) := 0;
+	    out_ol_quantity(v_ol_idx) := 0;
+            out_ol_amount(v_ol_idx) := 0.0;
+	    var_ol_delivery_d(v_ol_idx) := NULL;
+	    v_ol_idx := v_ol_idx + 1;
+        END LOOP;
+
+	FOR var_cnt IN 1..15 LOOP
+	    out_ol_delivery_d(var_cnt) := TO_CHAR(var_ol_delivery_d(var_cnt), 'YYYY-MM-DD');
+        END LOOP;
+
+    EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+	    v_order_line_check := 0;
+    END;
+
+END tpccc_oracle;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PACKAGE BODY tpccc_oracle AS
+
+    FUNCTION oracle_rowid_from_clast(
+        in_c' at line 2
+-- {
+CREATE OR REPLACE TYPE num_array IS TABLE OF NUMBER;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE num_array IS TABLE OF NUMBER;
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE char_array IS TABLE OF char(1);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE char_array IS TABLE OF char(1);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE varchar24_array IS TABLE OF VARCHAR2(24);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE varchar24_array IS TABLE OF VARCHAR2(24);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE int_array IS TABLE OF INTEGER;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE int_array IS TABLE OF INTEGER;
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE varchar16_array IS TABLE OF VARCHAR2(16);
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE varchar16_array IS TABLE OF VARCHAR2(16);
+-- }' at line 2
+-- {
+CREATE OR REPLACE TYPE timestamp_array IS TABLE OF timestamp;
+-- }
+;
+You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE timestamp_array IS TABLE OF timestamp;
+-- }' at line 2
+Starting BenchmarkSQL LoadData
+
+random initialized
+driver=com.mysql.cj.jdbc.Driver
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+conn=jdbc:mysql://10.20.30.199:13306/benchmarksql1000?useUnicode=true&characterEncoding=UTF-8
+user=benchmarksql1000
+password=***********
+warehouses=1000
+loadWorkers=50
+fileLocation (not defined)
+csvNullValue (not defined - using default 'NULL')
+
+Worker 000: Loading ITEM
+Worker 001: Loading Warehouse      1
+Worker 002: Loading Warehouse      2
+Worker 003: Loading Warehouse      3
+Worker 004: Loading Warehouse      4
+Worker 005: Loading Warehouse      5
+Worker 006: Loading Warehouse      6
+Worker 007: Loading Warehouse      7
+Worker 008: Loading Warehouse      8
+Worker 009: Loading Warehouse      9
+Worker 010: Loading Warehouse     10
+Worker 011: Loading Warehouse     11
+Worker 012: Loading Warehouse     12
+Worker 013: Loading Warehouse     13
+Worker 014: Loading Warehouse     14
+Worker 015: Loading Warehouse     15
+Worker 016: Loading Warehouse     16
+Worker 017: Loading Warehouse     17
+Worker 018: Loading Warehouse     18
+Worker 019: Loading Warehouse     19
+Worker 020: Loading Warehouse     20
+Worker 021: Loading Warehouse     21
+Worker 022: Loading Warehouse     22
+Worker 023: Loading Warehouse     23
+Worker 024: Loading Warehouse     24
+Worker 025: Loading Warehouse     25
+Worker 026: Loading Warehouse     26
+Worker 027: Loading Warehouse     27
+Worker 028: Loading Warehouse     28
+Worker 029: Loading Warehouse     29
+Worker 030: Loading Warehouse     30
+Worker 031: Loading Warehouse     31
+Worker 032: Loading Warehouse     32
+Worker 033: Loading Warehouse     33
+Worker 034: Loading Warehouse     34
+Worker 035: Loading Warehouse     35
+Worker 036: Loading Warehouse     36
+Worker 037: Loading Warehouse     37
+Worker 038: Loading Warehouse     38
+Worker 039: Loading Warehouse     39
+Worker 040: Loading Warehouse     40
+Worker 041: Loading Warehouse     41
+Worker 042: Loading Warehouse     42
+Worker 043: Loading Warehouse     43
+Worker 044: Loading Warehouse     44
+Worker 045: Loading Warehouse     45
+Worker 046: Loading Warehouse     46
+Worker 047: Loading Warehouse     47
+Worker 048: Loading Warehouse     48
+Worker 049: Loading Warehouse     49
+Worker 000: Loading ITEM done
+Worker 000: Loading Warehouse     50
+Worker 023: Loading Warehouse     23 done
+Worker 023: Loading Warehouse     51
+Worker 031: Loading Warehouse     31 done
+Worker 031: Loading Warehouse     52
+Worker 020: Loading Warehouse     20 done
+Worker 020: Loading Warehouse     53
+Worker 018: Loading Warehouse     18 done
+Worker 018: Loading Warehouse     54
+Worker 019: Loading Warehouse     19 done
+Worker 019: Loading Warehouse     55
+Worker 025: Loading Warehouse     25 done
+Worker 025: Loading Warehouse     56
+Worker 028: Loading Warehouse     28 done
+Worker 028: Loading Warehouse     57
+Worker 027: Loading Warehouse     27 done
+Worker 027: Loading Warehouse     58
+Worker 026: Loading Warehouse     26 done
+Worker 026: Loading Warehouse     59
+Worker 022: Loading Warehouse     22 done
+Worker 022: Loading Warehouse     60
+Worker 021: Loading Warehouse     21 done
+Worker 021: Loading Warehouse     61
+Worker 029: Loading Warehouse     29 done
+Worker 029: Loading Warehouse     62
+Worker 024: Loading Warehouse     24 done
+Worker 024: Loading Warehouse     63
+Worker 030: Loading Warehouse     30 done
+Worker 030: Loading Warehouse     64
+Worker 032: Loading Warehouse     32 done
+Worker 032: Loading Warehouse     65
+Worker 011: Loading Warehouse     11 done
+Worker 011: Loading Warehouse     66
+Worker 043: Loading Warehouse     43 done
+Worker 043: Loading Warehouse     67
+Worker 003: Loading Warehouse      3 done
+Worker 003: Loading Warehouse     68
+Worker 009: Loading Warehouse      9 done
+Worker 009: Loading Warehouse     69
+Worker 007: Loading Warehouse      7 done
+Worker 007: Loading Warehouse     70
+Worker 041: Loading Warehouse     41 done
+Worker 002: Loading Warehouse      2 done
+Worker 041: Loading Warehouse     71
+Worker 002: Loading Warehouse     72
+Worker 001: Loading Warehouse      1 done
+Worker 015: Loading Warehouse     15 done
+Worker 001: Loading Warehouse     73
+Worker 015: Loading Warehouse     74
+Worker 035: Loading Warehouse     35 done
+Worker 013: Loading Warehouse     13 done
+Worker 035: Loading Warehouse     75
+Worker 013: Loading Warehouse     76
+Worker 005: Loading Warehouse      5 done
+Worker 005: Loading Warehouse     77
+Worker 006: Loading Warehouse      6 done
+Worker 004: Loading Warehouse      4 done
+Worker 039: Loading Warehouse     39 done
+Worker 004: Loading Warehouse     79
+Worker 006: Loading Warehouse     78
+Worker 039: Loading Warehouse     80
+Worker 016: Loading Warehouse     16 done
+Worker 016: Loading Warehouse     81
+Worker 033: Loading Warehouse     33 done
+Worker 038: Loading Warehouse     38 done
+Worker 036: Loading Warehouse     36 done
+Worker 038: Loading Warehouse     83
+Worker 036: Loading Warehouse     84
+Worker 044: Loading Warehouse     44 done
+Worker 034: Loading Warehouse     34 done
+Worker 044: Loading Warehouse     85
+Worker 014: Loading Warehouse     14 done
+Worker 010: Loading Warehouse     10 done
+Worker 017: Loading Warehouse     17 done
+Worker 008: Loading Warehouse      8 done
+Worker 047: Loading Warehouse     47 done
+Worker 010: Loading Warehouse     88
+Worker 014: Loading Warehouse     87
+Worker 034: Loading Warehouse     86
+Worker 033: Loading Warehouse     82
+Worker 017: Loading Warehouse     89
+Worker 047: Loading Warehouse     91
+Worker 008: Loading Warehouse     90
+Worker 012: Loading Warehouse     12 done
+Worker 012: Loading Warehouse     92
+Worker 049: Loading Warehouse     49 done
+Worker 042: Loading Warehouse     42 done
+Worker 046: Loading Warehouse     46 done
+Worker 045: Loading Warehouse     45 done
+Worker 040: Loading Warehouse     40 done
+Worker 045: Loading Warehouse     96
+Worker 046: Loading Warehouse     95
+Worker 042: Loading Warehouse     94
+Worker 049: Loading Warehouse     93
+Worker 040: Loading Warehouse     97
+Worker 037: Loading Warehouse     37 done
+Worker 037: Loading Warehouse     98
+Worker 048: Loading Warehouse     48 done
+Worker 048: Loading Warehouse     99
+Worker 000: Loading Warehouse     50 done
+Worker 000: Loading Warehouse    100
+Worker 031: Loading Warehouse     52 done
+Worker 031: Loading Warehouse    101
+Worker 023: Loading Warehouse     51 done
+Worker 023: Loading Warehouse    102
+Worker 020: Loading Warehouse     53 done
+Worker 020: Loading Warehouse    103
+Worker 018: Loading Warehouse     54 done
+Worker 018: Loading Warehouse    104
+Worker 019: Loading Warehouse     55 done
+Worker 019: Loading Warehouse    105
+Worker 028: Loading Warehouse     57 done
+Worker 028: Loading Warehouse    106
+Worker 025: Loading Warehouse     56 done
+Worker 025: Loading Warehouse    107
+Worker 026: Loading Warehouse     59 done
+Worker 026: Loading Warehouse    108
+Worker 027: Loading Warehouse     58 done
+Worker 027: Loading Warehouse    109
+Worker 022: Loading Warehouse     60 done
+Worker 022: Loading Warehouse    110
+Worker 021: Loading Warehouse     61 done
+Worker 021: Loading Warehouse    111
+Worker 029: Loading Warehouse     62 done
+Worker 029: Loading Warehouse    112
+Worker 024: Loading Warehouse     63 done
+Worker 024: Loading Warehouse    113
+Worker 030: Loading Warehouse     64 done
+Worker 030: Loading Warehouse    114
+Worker 011: Loading Warehouse     66 done
+Worker 011: Loading Warehouse    115
+Worker 043: Loading Warehouse     67 done
+Worker 043: Loading Warehouse    116
+Worker 009: Loading Warehouse     69 done
+Worker 009: Loading Warehouse    117
+Worker 032: Loading Warehouse     65 done
+Worker 032: Loading Warehouse    118
+Worker 003: Loading Warehouse     68 done
+Worker 003: Loading Warehouse    119
+Worker 041: Loading Warehouse     71 done
+Worker 041: Loading Warehouse    120
+Worker 007: Loading Warehouse     70 done
+Worker 007: Loading Warehouse    121
+Worker 039: Loading Warehouse     80 done
+Worker 039: Loading Warehouse    122
+Worker 035: Loading Warehouse     75 done
+Worker 035: Loading Warehouse    123
+Worker 015: Loading Warehouse     74 done
+Worker 015: Loading Warehouse    124
+Worker 004: Loading Warehouse     79 done
+Worker 004: Loading Warehouse    125
+Worker 001: Loading Warehouse     73 done
+Worker 001: Loading Warehouse    126
+Worker 006: Loading Warehouse     78 done
+Worker 006: Loading Warehouse    127
+Worker 016: Loading Warehouse     81 done
+Worker 016: Loading Warehouse    128
+Worker 002: Loading Warehouse     72 done
+Worker 002: Loading Warehouse    129
+Worker 005: Loading Warehouse     77 done
+Worker 005: Loading Warehouse    130
+Worker 012: Loading Warehouse     92 done
+Worker 012: Loading Warehouse    131
+Worker 013: Loading Warehouse     76 done
+Worker 013: Loading Warehouse    132
+Worker 047: Loading Warehouse     91 done
+Worker 036: Loading Warehouse     84 done
+Worker 047: Loading Warehouse    133
+Worker 036: Loading Warehouse    134
+Worker 033: Loading Warehouse     82 done
+Worker 033: Loading Warehouse    135
+Worker 044: Loading Warehouse     85 done
+Worker 044: Loading Warehouse    136
+Worker 014: Loading Warehouse     87 done
+Worker 038: Loading Warehouse     83 done
+Worker 014: Loading Warehouse    137
+Worker 038: Loading Warehouse    138
+Worker 017: Loading Warehouse     89 done
+Worker 008: Loading Warehouse     90 done
+Worker 017: Loading Warehouse    139
+Worker 008: Loading Warehouse    140
+Worker 010: Loading Warehouse     88 done
+Worker 010: Loading Warehouse    141
+Worker 046: Loading Warehouse     95 done
+Worker 046: Loading Warehouse    142
+Worker 034: Loading Warehouse     86 done
+Worker 034: Loading Warehouse    143
+Worker 049: Loading Warehouse     93 done
+Worker 049: Loading Warehouse    144
+Worker 040: Loading Warehouse     97 done
+Worker 040: Loading Warehouse    145
+Worker 042: Loading Warehouse     94 done
+Worker 042: Loading Warehouse    146
+Worker 048: Loading Warehouse     99 done
+Worker 048: Loading Warehouse    147
+Worker 045: Loading Warehouse     96 done
+Worker 045: Loading Warehouse    148
+Worker 037: Loading Warehouse     98 done
+Worker 037: Loading Warehouse    149
+Worker 000: Loading Warehouse    100 done
+Worker 000: Loading Warehouse    150
+Worker 031: Loading Warehouse    101 done
+Worker 031: Loading Warehouse    151
+Worker 023: Loading Warehouse    102 done
+Worker 023: Loading Warehouse    152
+Worker 020: Loading Warehouse    103 done
+Worker 020: Loading Warehouse    153
+Worker 018: Loading Warehouse    104 done
+Worker 018: Loading Warehouse    154
+Worker 019: Loading Warehouse    105 done
+Worker 019: Loading Warehouse    155
+Worker 028: Loading Warehouse    106 done
+Worker 028: Loading Warehouse    156
+Worker 025: Loading Warehouse    107 done
+Worker 025: Loading Warehouse    157
+Worker 026: Loading Warehouse    108 done
+Worker 026: Loading Warehouse    158
+Worker 027: Loading Warehouse    109 done
+Worker 027: Loading Warehouse    159
+Worker 022: Loading Warehouse    110 done
+Worker 022: Loading Warehouse    160
+Worker 021: Loading Warehouse    111 done
+Worker 021: Loading Warehouse    161
+Worker 029: Loading Warehouse    112 done
+Worker 029: Loading Warehouse    162
+Worker 024: Loading Warehouse    113 done
+Worker 024: Loading Warehouse    163
+Worker 030: Loading Warehouse    114 done
+Worker 030: Loading Warehouse    164
+Worker 011: Loading Warehouse    115 done
+Worker 011: Loading Warehouse    165
+Worker 043: Loading Warehouse    116 done
+Worker 043: Loading Warehouse    166
+Worker 009: Loading Warehouse    117 done
+Worker 009: Loading Warehouse    167
+Worker 041: Loading Warehouse    120 done
+Worker 041: Loading Warehouse    168
+Worker 003: Loading Warehouse    119 done
+Worker 003: Loading Warehouse    169
+Worker 007: Loading Warehouse    121 done
+Worker 007: Loading Warehouse    170
+Worker 039: Loading Warehouse    122 done
+Worker 039: Loading Warehouse    171
+Worker 035: Loading Warehouse    123 done
+Worker 035: Loading Warehouse    172
+Worker 015: Loading Warehouse    124 done
+Worker 015: Loading Warehouse    173
+Worker 006: Loading Warehouse    127 done
+Worker 006: Loading Warehouse    174
+Worker 032: Loading Warehouse    118 done
+Worker 032: Loading Warehouse    175
+Worker 004: Loading Warehouse    125 done
+Worker 004: Loading Warehouse    176
+Worker 012: Loading Warehouse    131 done
+Worker 012: Loading Warehouse    177
+Worker 001: Loading Warehouse    126 done
+Worker 001: Loading Warehouse    178
+Worker 002: Loading Warehouse    129 done
+Worker 002: Loading Warehouse    179
+Worker 044: Loading Warehouse    136 done
+Worker 044: Loading Warehouse    180
+Worker 013: Loading Warehouse    132 done
+Worker 013: Loading Warehouse    181
+Worker 047: Loading Warehouse    133 done
+Worker 047: Loading Warehouse    182
+Worker 036: Loading Warehouse    134 done
+Worker 036: Loading Warehouse    183
+Worker 014: Loading Warehouse    137 done
+Worker 014: Loading Warehouse    184
+Worker 046: Loading Warehouse    142 done
+Worker 033: Loading Warehouse    135 done
+Worker 046: Loading Warehouse    185
+Worker 033: Loading Warehouse    186
+Worker 038: Loading Warehouse    138 done
+Worker 038: Loading Warehouse    187
+Worker 017: Loading Warehouse    139 done
+Worker 017: Loading Warehouse    188
+Worker 008: Loading Warehouse    140 done
+Worker 008: Loading Warehouse    189
+Worker 016: Loading Warehouse    128 done
+Worker 016: Loading Warehouse    190
+Worker 034: Loading Warehouse    143 done
+Worker 034: Loading Warehouse    191
+Worker 010: Loading Warehouse    141 done
+Worker 010: Loading Warehouse    192
+Worker 005: Loading Warehouse    130 done
+Worker 005: Loading Warehouse    193
+Worker 040: Loading Warehouse    145 done
+Worker 040: Loading Warehouse    194
+Worker 049: Loading Warehouse    144 done
+Worker 049: Loading Warehouse    195
+Worker 042: Loading Warehouse    146 done
+Worker 042: Loading Warehouse    196
+Worker 045: Loading Warehouse    148 done
+Worker 045: Loading Warehouse    197
+Worker 048: Loading Warehouse    147 done
+Worker 048: Loading Warehouse    198
+Worker 037: Loading Warehouse    149 done
+Worker 037: Loading Warehouse    199
+Worker 031: Loading Warehouse    151 done
+Worker 031: Loading Warehouse    200
+Worker 023: Loading Warehouse    152 done
+Worker 023: Loading Warehouse    201
+Worker 018: Loading Warehouse    154 done
+Worker 018: Loading Warehouse    202
+Worker 020: Loading Warehouse    153 done
+Worker 020: Loading Warehouse    203
+Worker 019: Loading Warehouse    155 done
+Worker 019: Loading Warehouse    204
+Worker 028: Loading Warehouse    156 done
+Worker 028: Loading Warehouse    205
+Worker 025: Loading Warehouse    157 done
+Worker 025: Loading Warehouse    206
+Worker 000: Loading Warehouse    150 done
+Worker 000: Loading Warehouse    207
+Worker 027: Loading Warehouse    159 done
+Worker 027: Loading Warehouse    208
+Worker 026: Loading Warehouse    158 done
+Worker 026: Loading Warehouse    209
+Worker 022: Loading Warehouse    160 done
+Worker 022: Loading Warehouse    210
+Worker 021: Loading Warehouse    161 done
+Worker 021: Loading Warehouse    211
+Worker 029: Loading Warehouse    162 done
+Worker 029: Loading Warehouse    212
+Worker 024: Loading Warehouse    163 done
+Worker 024: Loading Warehouse    213
+Worker 030: Loading Warehouse    164 done
+Worker 030: Loading Warehouse    214
+Worker 011: Loading Warehouse    165 done
+Worker 011: Loading Warehouse    215
+Worker 043: Loading Warehouse    166 done
+Worker 043: Loading Warehouse    216
+Worker 009: Loading Warehouse    167 done
+Worker 009: Loading Warehouse    217
+Worker 031: Loading Warehouse    200 done
+Worker 031: Loading Warehouse    218
+Worker 023: Loading Warehouse    201 done
+Worker 023: Loading Warehouse    219
+Worker 041: Loading Warehouse    168 done
+Worker 041: Loading Warehouse    220
+Worker 003: Loading Warehouse    169 done
+Worker 003: Loading Warehouse    221
+Worker 007: Loading Warehouse    170 done
+Worker 007: Loading Warehouse    222
+Worker 018: Loading Warehouse    202 done
+Worker 018: Loading Warehouse    223
+Worker 039: Loading Warehouse    171 done
+Worker 039: Loading Warehouse    224
+Worker 020: Loading Warehouse    203 done
+Worker 020: Loading Warehouse    225
+Worker 019: Loading Warehouse    204 done
+Worker 019: Loading Warehouse    226
+Worker 035: Loading Warehouse    172 done
+Worker 035: Loading Warehouse    227
+Worker 028: Loading Warehouse    205 done
+Worker 028: Loading Warehouse    228
+Worker 025: Loading Warehouse    206 done
+Worker 025: Loading Warehouse    229
+Worker 012: Loading Warehouse    177 done
+Worker 012: Loading Warehouse    230
+Worker 004: Loading Warehouse    176 done
+Worker 004: Loading Warehouse    231
+Worker 001: Loading Warehouse    178 done
+Worker 001: Loading Warehouse    232
+Worker 044: Loading Warehouse    180 done
+Worker 044: Loading Warehouse    233
+Worker 006: Loading Warehouse    174 done
+Worker 006: Loading Warehouse    234
+Worker 015: Loading Warehouse    173 done
+Worker 032: Loading Warehouse    175 done
+Worker 015: Loading Warehouse    235
+Worker 032: Loading Warehouse    236
+Worker 002: Loading Warehouse    179 done
+Worker 002: Loading Warehouse    237
+Worker 046: Loading Warehouse    185 done
+Worker 013: Loading Warehouse    181 done
+Worker 046: Loading Warehouse    238
+Worker 013: Loading Warehouse    239
+Worker 014: Loading Warehouse    184 done
+Worker 014: Loading Warehouse    240
+Worker 036: Loading Warehouse    183 done
+Worker 036: Loading Warehouse    241
+Worker 033: Loading Warehouse    186 done
+Worker 008: Loading Warehouse    189 done
+Worker 033: Loading Warehouse    242
+Worker 008: Loading Warehouse    243
+Worker 017: Loading Warehouse    188 done
+Worker 017: Loading Warehouse    244
+Worker 010: Loading Warehouse    192 done
+Worker 040: Loading Warehouse    194 done
+Worker 010: Loading Warehouse    245
+Worker 040: Loading Warehouse    246
+Worker 049: Loading Warehouse    195 done
+Worker 049: Loading Warehouse    247
+Worker 038: Loading Warehouse    187 done
+Worker 005: Loading Warehouse    193 done
+Worker 038: Loading Warehouse    248
+Worker 005: Loading Warehouse    249
+Worker 042: Loading Warehouse    196 done
+Worker 042: Loading Warehouse    250
+Worker 034: Loading Warehouse    191 done
+Worker 034: Loading Warehouse    251
+Worker 016: Loading Warehouse    190 done
+Worker 016: Loading Warehouse    252
+Worker 047: Loading Warehouse    182 done
+Worker 047: Loading Warehouse    253
+Worker 045: Loading Warehouse    197 done
+Worker 045: Loading Warehouse    254
+Worker 037: Loading Warehouse    199 done
+Worker 037: Loading Warehouse    255
+Worker 048: Loading Warehouse    198 done
+Worker 048: Loading Warehouse    256
+Worker 000: Loading Warehouse    207 done
+Worker 000: Loading Warehouse    257
+Worker 027: Loading Warehouse    208 done
+Worker 027: Loading Warehouse    258
+Worker 026: Loading Warehouse    209 done
+Worker 026: Loading Warehouse    259
+Worker 022: Loading Warehouse    210 done
+Worker 022: Loading Warehouse    260
+Worker 021: Loading Warehouse    211 done
+Worker 021: Loading Warehouse    261
+Worker 029: Loading Warehouse    212 done
+Worker 029: Loading Warehouse    262
+Worker 024: Loading Warehouse    213 done
+Worker 024: Loading Warehouse    263
+Worker 030: Loading Warehouse    214 done
+Worker 030: Loading Warehouse    264
+Worker 031: Loading Warehouse    218 done
+Worker 031: Loading Warehouse    265
+Worker 023: Loading Warehouse    219 done
+Worker 023: Loading Warehouse    266
+Worker 011: Loading Warehouse    215 done
+Worker 011: Loading Warehouse    267
+Worker 043: Loading Warehouse    216 done
+Worker 043: Loading Warehouse    268
+Worker 018: Loading Warehouse    223 done
+Worker 018: Loading Warehouse    269
+Worker 020: Loading Warehouse    225 done
+Worker 020: Loading Warehouse    270
+Worker 019: Loading Warehouse    226 done
+Worker 019: Loading Warehouse    271
+Worker 028: Loading Warehouse    228 done
+Worker 028: Loading Warehouse    272
+Worker 025: Loading Warehouse    229 done
+Worker 025: Loading Warehouse    273
+Worker 009: Loading Warehouse    217 done
+Worker 009: Loading Warehouse    274
+Worker 041: Loading Warehouse    220 done
+Worker 041: Loading Warehouse    275
+Worker 003: Loading Warehouse    221 done
+Worker 003: Loading Warehouse    276
+Worker 007: Loading Warehouse    222 done
+Worker 007: Loading Warehouse    277
+Worker 039: Loading Warehouse    224 done
+Worker 039: Loading Warehouse    278
+Worker 035: Loading Warehouse    227 done
+Worker 035: Loading Warehouse    279
+Worker 012: Loading Warehouse    230 done
+Worker 012: Loading Warehouse    280
+Worker 044: Loading Warehouse    233 done
+Worker 044: Loading Warehouse    281
+Worker 004: Loading Warehouse    231 done
+Worker 004: Loading Warehouse    282
+Worker 001: Loading Warehouse    232 done
+Worker 001: Loading Warehouse    283
+Worker 015: Loading Warehouse    235 done
+Worker 015: Loading Warehouse    284
+Worker 032: Loading Warehouse    236 done
+Worker 032: Loading Warehouse    285
+Worker 014: Loading Warehouse    240 done
+Worker 014: Loading Warehouse    286
+Worker 046: Loading Warehouse    238 done
+Worker 046: Loading Warehouse    287
+Worker 013: Loading Warehouse    239 done
+Worker 013: Loading Warehouse    288
+Worker 008: Loading Warehouse    243 done
+Worker 005: Loading Warehouse    249 done
+Worker 008: Loading Warehouse    289
+Worker 005: Loading Warehouse    290
+Worker 002: Loading Warehouse    237 done
+Worker 002: Loading Warehouse    291
+Worker 006: Loading Warehouse    234 done
+Worker 006: Loading Warehouse    292
+Worker 040: Loading Warehouse    246 done
+Worker 033: Loading Warehouse    242 done
+Worker 040: Loading Warehouse    293
+Worker 033: Loading Warehouse    294
+Worker 036: Loading Warehouse    241 done
+Worker 036: Loading Warehouse    295
+Worker 049: Loading Warehouse    247 done
+Worker 049: Loading Warehouse    296
+Worker 010: Loading Warehouse    245 done
+Worker 010: Loading Warehouse    297
+Worker 017: Loading Warehouse    244 done
+Worker 017: Loading Warehouse    298
+Worker 042: Loading Warehouse    250 done
+Worker 042: Loading Warehouse    299
+Worker 047: Loading Warehouse    253 done
+Worker 047: Loading Warehouse    300
+Worker 038: Loading Warehouse    248 done
+Worker 038: Loading Warehouse    301
+Worker 034: Loading Warehouse    251 done
+Worker 034: Loading Warehouse    302
+Worker 045: Loading Warehouse    254 done
+Worker 045: Loading Warehouse    303
+Worker 016: Loading Warehouse    252 done
+Worker 016: Loading Warehouse    304
+Worker 037: Loading Warehouse    255 done
+Worker 037: Loading Warehouse    305
+Worker 048: Loading Warehouse    256 done
+Worker 048: Loading Warehouse    306
+Worker 000: Loading Warehouse    257 done
+Worker 000: Loading Warehouse    307
+Worker 026: Loading Warehouse    259 done
+Worker 026: Loading Warehouse    308
+Worker 027: Loading Warehouse    258 done
+Worker 027: Loading Warehouse    309
+Worker 022: Loading Warehouse    260 done
+Worker 022: Loading Warehouse    310
+Worker 021: Loading Warehouse    261 done
+Worker 021: Loading Warehouse    311
+Worker 029: Loading Warehouse    262 done
+Worker 029: Loading Warehouse    312
+Worker 030: Loading Warehouse    264 done
+Worker 030: Loading Warehouse    313
+Worker 024: Loading Warehouse    263 done
+Worker 024: Loading Warehouse    314
+Worker 031: Loading Warehouse    265 done
+Worker 031: Loading Warehouse    315
+Worker 023: Loading Warehouse    266 done
+Worker 023: Loading Warehouse    316
+Worker 018: Loading Warehouse    269 done
+Worker 018: Loading Warehouse    317
+Worker 020: Loading Warehouse    270 done
+Worker 020: Loading Warehouse    318
+Worker 019: Loading Warehouse    271 done
+Worker 019: Loading Warehouse    319
+Worker 028: Loading Warehouse    272 done
+Worker 028: Loading Warehouse    320
+Worker 025: Loading Warehouse    273 done
+Worker 025: Loading Warehouse    321
+Worker 011: Loading Warehouse    267 done
+Worker 011: Loading Warehouse    322
+Worker 043: Loading Warehouse    268 done
+Worker 043: Loading Warehouse    323
+Worker 009: Loading Warehouse    274 done
+Worker 009: Loading Warehouse    324
+Worker 041: Loading Warehouse    275 done
+Worker 041: Loading Warehouse    325
+Worker 007: Loading Warehouse    277 done
+Worker 007: Loading Warehouse    326
+Worker 003: Loading Warehouse    276 done
+Worker 003: Loading Warehouse    327
+Worker 039: Loading Warehouse    278 done
+Worker 039: Loading Warehouse    328
+Worker 035: Loading Warehouse    279 done
+Worker 035: Loading Warehouse    329
+Worker 012: Loading Warehouse    280 done
+Worker 012: Loading Warehouse    330
+Worker 044: Loading Warehouse    281 done
+Worker 044: Loading Warehouse    331
+Worker 004: Loading Warehouse    282 done
+Worker 004: Loading Warehouse    332
+Worker 014: Loading Warehouse    286 done
+Worker 014: Loading Warehouse    333
+Worker 015: Loading Warehouse    284 done
+Worker 015: Loading Warehouse    334
+Worker 046: Loading Warehouse    287 done
+Worker 046: Loading Warehouse    335
+Worker 032: Loading Warehouse    285 done
+Worker 032: Loading Warehouse    336
+Worker 001: Loading Warehouse    283 done
+Worker 001: Loading Warehouse    337
+Worker 013: Loading Warehouse    288 done
+Worker 013: Loading Warehouse    338
+Worker 008: Loading Warehouse    289 done
+Worker 008: Loading Warehouse    339
+Worker 005: Loading Warehouse    290 done
+Worker 005: Loading Warehouse    340
+Worker 036: Loading Warehouse    295 done
+Worker 036: Loading Warehouse    341
+Worker 049: Loading Warehouse    296 done
+Worker 040: Loading Warehouse    293 done
+Worker 049: Loading Warehouse    342
+Worker 040: Loading Warehouse    343
+Worker 010: Loading Warehouse    297 done
+Worker 010: Loading Warehouse    344
+Worker 033: Loading Warehouse    294 done
+Worker 033: Loading Warehouse    345
+Worker 002: Loading Warehouse    291 done
+Worker 002: Loading Warehouse    346
+Worker 017: Loading Warehouse    298 done
+Worker 017: Loading Warehouse    347
+Worker 042: Loading Warehouse    299 done
+Worker 006: Loading Warehouse    292 done
+Worker 042: Loading Warehouse    348
+Worker 006: Loading Warehouse    349
+Worker 047: Loading Warehouse    300 done
+Worker 047: Loading Warehouse    350
+Worker 016: Loading Warehouse    304 done
+Worker 016: Loading Warehouse    351
+Worker 034: Loading Warehouse    302 done
+Worker 034: Loading Warehouse    352
+Worker 038: Loading Warehouse    301 done
+Worker 038: Loading Warehouse    353
+Worker 037: Loading Warehouse    305 done
+Worker 037: Loading Warehouse    354
+Worker 045: Loading Warehouse    303 done
+Worker 045: Loading Warehouse    355
+Worker 048: Loading Warehouse    306 done
+Worker 048: Loading Warehouse    356
+Worker 026: Loading Warehouse    308 done
+Worker 026: Loading Warehouse    357
+Worker 027: Loading Warehouse    309 done
+Worker 027: Loading Warehouse    358
+Worker 000: Loading Warehouse    307 done
+Worker 000: Loading Warehouse    359
+Worker 022: Loading Warehouse    310 done
+Worker 022: Loading Warehouse    360
+Worker 021: Loading Warehouse    311 done
+Worker 021: Loading Warehouse    361
+Worker 031: Loading Warehouse    315 done
+Worker 031: Loading Warehouse    362
+Worker 030: Loading Warehouse    313 done
+Worker 030: Loading Warehouse    363
+Worker 024: Loading Warehouse    314 done
+Worker 024: Loading Warehouse    364
+Worker 029: Loading Warehouse    312 done
+Worker 029: Loading Warehouse    365
+Worker 023: Loading Warehouse    316 done
+Worker 023: Loading Warehouse    366
+Worker 018: Loading Warehouse    317 done
+Worker 018: Loading Warehouse    367
+Worker 020: Loading Warehouse    318 done
+Worker 020: Loading Warehouse    368
+Worker 019: Loading Warehouse    319 done
+Worker 019: Loading Warehouse    369
+Worker 028: Loading Warehouse    320 done
+Worker 028: Loading Warehouse    370
+Worker 025: Loading Warehouse    321 done
+Worker 025: Loading Warehouse    371
+Worker 011: Loading Warehouse    322 done
+Worker 011: Loading Warehouse    372
+Worker 043: Loading Warehouse    323 done
+Worker 043: Loading Warehouse    373
+Worker 009: Loading Warehouse    324 done
+Worker 009: Loading Warehouse    374
+Worker 041: Loading Warehouse    325 done
+Worker 041: Loading Warehouse    375
+Worker 007: Loading Warehouse    326 done
+Worker 007: Loading Warehouse    376
+Worker 003: Loading Warehouse    327 done
+Worker 003: Loading Warehouse    377
+Worker 039: Loading Warehouse    328 done
+Worker 039: Loading Warehouse    378
+Worker 035: Loading Warehouse    329 done
+Worker 035: Loading Warehouse    379
+Worker 012: Loading Warehouse    330 done
+Worker 012: Loading Warehouse    380
+Worker 044: Loading Warehouse    331 done
+Worker 044: Loading Warehouse    381
+Worker 014: Loading Warehouse    333 done
+Worker 014: Loading Warehouse    382
+Worker 046: Loading Warehouse    335 done
+Worker 046: Loading Warehouse    383
+Worker 015: Loading Warehouse    334 done
+Worker 015: Loading Warehouse    384
+Worker 001: Loading Warehouse    337 done
+Worker 001: Loading Warehouse    385
+Worker 004: Loading Warehouse    332 done
+Worker 004: Loading Warehouse    386
+Worker 013: Loading Warehouse    338 done
+Worker 013: Loading Warehouse    387
+Worker 008: Loading Warehouse    339 done
+Worker 008: Loading Warehouse    388
+Worker 033: Loading Warehouse    345 done
+Worker 033: Loading Warehouse    389
+Worker 049: Loading Warehouse    342 done
+Worker 002: Loading Warehouse    346 done
+Worker 049: Loading Warehouse    390
+Worker 002: Loading Warehouse    391
+Worker 036: Loading Warehouse    341 done
+Worker 040: Loading Warehouse    343 done
+Worker 036: Loading Warehouse    392
+Worker 040: Loading Warehouse    393
+Worker 010: Loading Warehouse    344 done
+Worker 006: Loading Warehouse    349 done
+Worker 047: Loading Warehouse    350 done
+Worker 047: Loading Warehouse    396
+Worker 006: Loading Warehouse    395
+Worker 010: Loading Warehouse    394
+Worker 005: Loading Warehouse    340 done
+Worker 005: Loading Warehouse    397
+Worker 032: Loading Warehouse    336 done
+Worker 032: Loading Warehouse    398
+Worker 017: Loading Warehouse    347 done
+Worker 042: Loading Warehouse    348 done
+Worker 017: Loading Warehouse    399
+Worker 042: Loading Warehouse    400
+Worker 034: Loading Warehouse    352 done
+Worker 034: Loading Warehouse    401
+Worker 016: Loading Warehouse    351 done
+Worker 016: Loading Warehouse    402
+Worker 038: Loading Warehouse    353 done
+Worker 038: Loading Warehouse    403
+Worker 045: Loading Warehouse    355 done
+Worker 045: Loading Warehouse    404
+Worker 048: Loading Warehouse    356 done
+Worker 048: Loading Warehouse    405
+Worker 037: Loading Warehouse    354 done
+Worker 037: Loading Warehouse    406
+Worker 026: Loading Warehouse    357 done
+Worker 026: Loading Warehouse    407
+Worker 027: Loading Warehouse    358 done
+Worker 027: Loading Warehouse    408
+Worker 031: Loading Warehouse    362 done
+Worker 031: Loading Warehouse    409
+Worker 022: Loading Warehouse    360 done
+Worker 022: Loading Warehouse    410
+Worker 023: Loading Warehouse    366 done
+Worker 023: Loading Warehouse    411
+Worker 021: Loading Warehouse    361 done
+Worker 021: Loading Warehouse    412
+Worker 018: Loading Warehouse    367 done
+Worker 018: Loading Warehouse    413
+Worker 019: Loading Warehouse    369 done
+Worker 019: Loading Warehouse    414
+Worker 020: Loading Warehouse    368 done
+Worker 020: Loading Warehouse    415
+Worker 000: Loading Warehouse    359 done
+Worker 000: Loading Warehouse    416
+Worker 028: Loading Warehouse    370 done
+Worker 028: Loading Warehouse    417
+Worker 025: Loading Warehouse    371 done
+Worker 025: Loading Warehouse    418
+Worker 030: Loading Warehouse    363 done
+Worker 030: Loading Warehouse    419
+Worker 029: Loading Warehouse    365 done
+Worker 029: Loading Warehouse    420
+Worker 024: Loading Warehouse    364 done
+Worker 024: Loading Warehouse    421
+Worker 011: Loading Warehouse    372 done
+Worker 011: Loading Warehouse    422
+Worker 043: Loading Warehouse    373 done
+Worker 043: Loading Warehouse    423
+Worker 009: Loading Warehouse    374 done
+Worker 009: Loading Warehouse    424
+Worker 041: Loading Warehouse    375 done
+Worker 041: Loading Warehouse    425
+Worker 007: Loading Warehouse    376 done
+Worker 007: Loading Warehouse    426
+Worker 003: Loading Warehouse    377 done
+Worker 003: Loading Warehouse    427
+Worker 039: Loading Warehouse    378 done
+Worker 039: Loading Warehouse    428
+Worker 035: Loading Warehouse    379 done
+Worker 035: Loading Warehouse    429
+Worker 031: Loading Warehouse    409 done
+Worker 031: Loading Warehouse    430
+Worker 012: Loading Warehouse    380 done
+Worker 012: Loading Warehouse    431
+Worker 044: Loading Warehouse    381 done
+Worker 044: Loading Warehouse    432
+Worker 023: Loading Warehouse    411 done
+Worker 023: Loading Warehouse    433
+Worker 014: Loading Warehouse    382 done
+Worker 014: Loading Warehouse    434
+Worker 046: Loading Warehouse    383 done
+Worker 046: Loading Warehouse    435
+Worker 026: Loading Warehouse    407 done
+Worker 026: Loading Warehouse    436
+Worker 001: Loading Warehouse    385 done
+Worker 001: Loading Warehouse    437
+Worker 015: Loading Warehouse    384 done
+Worker 015: Loading Warehouse    438
+Worker 027: Loading Warehouse    408 done
+Worker 027: Loading Warehouse    439
+Worker 018: Loading Warehouse    413 done
+Worker 018: Loading Warehouse    440
+Worker 033: Loading Warehouse    389 done
+Worker 033: Loading Warehouse    441
+Worker 019: Loading Warehouse    414 done
+Worker 019: Loading Warehouse    442
+Worker 020: Loading Warehouse    415 done
+Worker 020: Loading Warehouse    443
+Worker 008: Loading Warehouse    388 done
+Worker 008: Loading Warehouse    444
+Worker 013: Loading Warehouse    387 done
+Worker 013: Loading Warehouse    445
+Worker 004: Loading Warehouse    386 done
+Worker 004: Loading Warehouse    446
+Worker 002: Loading Warehouse    391 done
+Worker 002: Loading Warehouse    447
+Worker 040: Loading Warehouse    393 done
+Worker 040: Loading Warehouse    448
+Worker 028: Loading Warehouse    417 done
+Worker 028: Loading Warehouse    449
+Worker 006: Loading Warehouse    395 done
+Worker 006: Loading Warehouse    450
+Worker 005: Loading Warehouse    397 done
+Worker 005: Loading Warehouse    451
+Worker 010: Loading Warehouse    394 done
+Worker 010: Loading Warehouse    452
+Worker 049: Loading Warehouse    390 done
+Worker 049: Loading Warehouse    453
+Worker 034: Loading Warehouse    401 done
+Worker 034: Loading Warehouse    454
+Worker 042: Loading Warehouse    400 done
+Worker 038: Loading Warehouse    403 done
+Worker 042: Loading Warehouse    455
+Worker 038: Loading Warehouse    456
+Worker 032: Loading Warehouse    398 done
+Worker 032: Loading Warehouse    457
+Worker 017: Loading Warehouse    399 done
+Worker 017: Loading Warehouse    458
+Worker 016: Loading Warehouse    402 done
+Worker 016: Loading Warehouse    459
+Worker 036: Loading Warehouse    392 done
+Worker 036: Loading Warehouse    460
+Worker 047: Loading Warehouse    396 done
+Worker 047: Loading Warehouse    461
+Worker 022: Loading Warehouse    410 done
+Worker 022: Loading Warehouse    462
+Worker 025: Loading Warehouse    418 done
+Worker 025: Loading Warehouse    463
+Worker 045: Loading Warehouse    404 done
+Worker 045: Loading Warehouse    464
+Worker 048: Loading Warehouse    405 done
+Worker 048: Loading Warehouse    465
+Worker 037: Loading Warehouse    406 done
+Worker 037: Loading Warehouse    466
+Worker 021: Loading Warehouse    412 done
+Worker 021: Loading Warehouse    467
+Worker 030: Loading Warehouse    419 done
+Worker 030: Loading Warehouse    468
+Worker 029: Loading Warehouse    420 done
+Worker 029: Loading Warehouse    469
+Worker 024: Loading Warehouse    421 done
+Worker 024: Loading Warehouse    470
+Worker 000: Loading Warehouse    416 done
+Worker 000: Loading Warehouse    471
+Worker 011: Loading Warehouse    422 done
+Worker 011: Loading Warehouse    472
+Worker 043: Loading Warehouse    423 done
+Worker 043: Loading Warehouse    473
+Worker 031: Loading Warehouse    430 done
+Worker 031: Loading Warehouse    474
+Worker 023: Loading Warehouse    433 done
+Worker 023: Loading Warehouse    475
+Worker 009: Loading Warehouse    424 done
+Worker 009: Loading Warehouse    476
+Worker 041: Loading Warehouse    425 done
+Worker 041: Loading Warehouse    477
+Worker 018: Loading Warehouse    440 done
+Worker 018: Loading Warehouse    478
+Worker 019: Loading Warehouse    442 done
+Worker 019: Loading Warehouse    479
+Worker 020: Loading Warehouse    443 done
+Worker 020: Loading Warehouse    480
+Worker 007: Loading Warehouse    426 done
+Worker 007: Loading Warehouse    481
+Worker 003: Loading Warehouse    427 done
+Worker 003: Loading Warehouse    482
+Worker 039: Loading Warehouse    428 done
+Worker 039: Loading Warehouse    483
+Worker 028: Loading Warehouse    449 done
+Worker 028: Loading Warehouse    484
+Worker 035: Loading Warehouse    429 done
+Worker 035: Loading Warehouse    485
+Worker 025: Loading Warehouse    463 done
+Worker 025: Loading Warehouse    486
+Worker 026: Loading Warehouse    436 done
+Worker 026: Loading Warehouse    487
+Worker 027: Loading Warehouse    439 done
+Worker 027: Loading Warehouse    488
+Worker 012: Loading Warehouse    431 done
+Worker 012: Loading Warehouse    489
+Worker 044: Loading Warehouse    432 done
+Worker 044: Loading Warehouse    490
+Worker 022: Loading Warehouse    462 done
+Worker 022: Loading Warehouse    491
+Worker 021: Loading Warehouse    467 done
+Worker 021: Loading Warehouse    492
+Worker 014: Loading Warehouse    434 done
+Worker 014: Loading Warehouse    493
+Worker 046: Loading Warehouse    435 done
+Worker 046: Loading Warehouse    494
+Worker 001: Loading Warehouse    437 done
+Worker 001: Loading Warehouse    495
+Worker 015: Loading Warehouse    438 done
+Worker 015: Loading Warehouse    496
+Worker 008: Loading Warehouse    444 done
+Worker 008: Loading Warehouse    497
+Worker 002: Loading Warehouse    447 done
+Worker 002: Loading Warehouse    498
+Worker 033: Loading Warehouse    441 done
+Worker 033: Loading Warehouse    499
+Worker 040: Loading Warehouse    448 done
+Worker 040: Loading Warehouse    500
+Worker 013: Loading Warehouse    445 done
+Worker 013: Loading Warehouse    501
+Worker 034: Loading Warehouse    454 done
+Worker 034: Loading Warehouse    502
+Worker 006: Loading Warehouse    450 done
+Worker 006: Loading Warehouse    503
+Worker 049: Loading Warehouse    453 done
+Worker 049: Loading Warehouse    504
+Worker 038: Loading Warehouse    456 done
+Worker 038: Loading Warehouse    505
+Worker 010: Loading Warehouse    452 done
+Worker 010: Loading Warehouse    506
+Worker 017: Loading Warehouse    458 done
+Worker 017: Loading Warehouse    507
+Worker 042: Loading Warehouse    455 done
+Worker 042: Loading Warehouse    508
+Worker 016: Loading Warehouse    459 done
+Worker 029: Loading Warehouse    469 done
+Worker 024: Loading Warehouse    470 done
+Worker 029: Loading Warehouse    510
+Worker 024: Loading Warehouse    511
+Worker 016: Loading Warehouse    509
+Worker 004: Loading Warehouse    446 done
+Worker 004: Loading Warehouse    512
+Worker 030: Loading Warehouse    468 done
+Worker 030: Loading Warehouse    513
+Worker 032: Loading Warehouse    457 done
+Worker 032: Loading Warehouse    514
+Worker 005: Loading Warehouse    451 done
+Worker 005: Loading Warehouse    515
+Worker 047: Loading Warehouse    461 done
+Worker 047: Loading Warehouse    516
+Worker 045: Loading Warehouse    464 done
+Worker 045: Loading Warehouse    517
+Worker 036: Loading Warehouse    460 done
+Worker 036: Loading Warehouse    518
+Worker 048: Loading Warehouse    465 done
+Worker 048: Loading Warehouse    519
+Worker 037: Loading Warehouse    466 done
+Worker 037: Loading Warehouse    520
+Worker 000: Loading Warehouse    471 done
+Worker 000: Loading Warehouse    521
+Worker 031: Loading Warehouse    474 done
+Worker 031: Loading Warehouse    522
+Worker 011: Loading Warehouse    472 done
+Worker 011: Loading Warehouse    523
+Worker 043: Loading Warehouse    473 done
+Worker 043: Loading Warehouse    524
+Worker 023: Loading Warehouse    475 done
+Worker 023: Loading Warehouse    525
+Worker 018: Loading Warehouse    478 done
+Worker 018: Loading Warehouse    526
+Worker 020: Loading Warehouse    480 done
+Worker 020: Loading Warehouse    527
+Worker 019: Loading Warehouse    479 done
+Worker 019: Loading Warehouse    528
+Worker 028: Loading Warehouse    484 done
+Worker 028: Loading Warehouse    529
+Worker 025: Loading Warehouse    486 done
+Worker 025: Loading Warehouse    530
+Worker 009: Loading Warehouse    476 done
+Worker 009: Loading Warehouse    531
+Worker 041: Loading Warehouse    477 done
+Worker 041: Loading Warehouse    532
+Worker 039: Loading Warehouse    483 done
+Worker 039: Loading Warehouse    533
+Worker 007: Loading Warehouse    481 done
+Worker 007: Loading Warehouse    534
+Worker 026: Loading Warehouse    487 done
+Worker 026: Loading Warehouse    535
+Worker 003: Loading Warehouse    482 done
+Worker 003: Loading Warehouse    536
+Worker 027: Loading Warehouse    488 done
+Worker 027: Loading Warehouse    537
+Worker 035: Loading Warehouse    485 done
+Worker 035: Loading Warehouse    538
+Worker 022: Loading Warehouse    491 done
+Worker 022: Loading Warehouse    539
+Worker 012: Loading Warehouse    489 done
+Worker 012: Loading Warehouse    540
+Worker 021: Loading Warehouse    492 done
+Worker 021: Loading Warehouse    541
+Worker 044: Loading Warehouse    490 done
+Worker 044: Loading Warehouse    542
+Worker 046: Loading Warehouse    494 done
+Worker 046: Loading Warehouse    543
+Worker 014: Loading Warehouse    493 done
+Worker 014: Loading Warehouse    544
+Worker 001: Loading Warehouse    495 done
+Worker 001: Loading Warehouse    545
+Worker 029: Loading Warehouse    510 done
+Worker 029: Loading Warehouse    546
+Worker 024: Loading Warehouse    511 done
+Worker 002: Loading Warehouse    498 done
+Worker 024: Loading Warehouse    547
+Worker 002: Loading Warehouse    548
+Worker 030: Loading Warehouse    513 done
+Worker 030: Loading Warehouse    549
+Worker 033: Loading Warehouse    499 done
+Worker 033: Loading Warehouse    550
+Worker 008: Loading Warehouse    497 done
+Worker 008: Loading Warehouse    551
+Worker 015: Loading Warehouse    496 done
+Worker 015: Loading Warehouse    552
+Worker 006: Loading Warehouse    503 done
+Worker 006: Loading Warehouse    553
+Worker 034: Loading Warehouse    502 done
+Worker 034: Loading Warehouse    554
+Worker 040: Loading Warehouse    500 done
+Worker 040: Loading Warehouse    555
+Worker 038: Loading Warehouse    505 done
+Worker 038: Loading Warehouse    556
+Worker 049: Loading Warehouse    504 done
+Worker 049: Loading Warehouse    557
+Worker 010: Loading Warehouse    506 done
+Worker 010: Loading Warehouse    558
+Worker 004: Loading Warehouse    512 done
+Worker 004: Loading Warehouse    559
+Worker 017: Loading Warehouse    507 done
+Worker 017: Loading Warehouse    560
+Worker 042: Loading Warehouse    508 done
+Worker 042: Loading Warehouse    561
+Worker 013: Loading Warehouse    501 done
+Worker 013: Loading Warehouse    562
+Worker 016: Loading Warehouse    509 done
+Worker 016: Loading Warehouse    563
+Worker 005: Loading Warehouse    515 done
+Worker 005: Loading Warehouse    564
+Worker 036: Loading Warehouse    518 done
+Worker 036: Loading Warehouse    565
+Worker 048: Loading Warehouse    519 done
+Worker 048: Loading Warehouse    566
+Worker 032: Loading Warehouse    514 done
+Worker 032: Loading Warehouse    567
+Worker 047: Loading Warehouse    516 done
+Worker 047: Loading Warehouse    568
+Worker 037: Loading Warehouse    520 done
+Worker 037: Loading Warehouse    569
+Worker 045: Loading Warehouse    517 done
+Worker 045: Loading Warehouse    570
+Worker 000: Loading Warehouse    521 done
+Worker 000: Loading Warehouse    571
+Worker 031: Loading Warehouse    522 done
+Worker 031: Loading Warehouse    572
+Worker 023: Loading Warehouse    525 done
+Worker 023: Loading Warehouse    573
+Worker 018: Loading Warehouse    526 done
+Worker 018: Loading Warehouse    574
+Worker 011: Loading Warehouse    523 done
+Worker 020: Loading Warehouse    527 done
+Worker 011: Loading Warehouse    575
+Worker 020: Loading Warehouse    576
+Worker 019: Loading Warehouse    528 done
+Worker 019: Loading Warehouse    577
+Worker 043: Loading Warehouse    524 done
+Worker 043: Loading Warehouse    578
+Worker 028: Loading Warehouse    529 done
+Worker 028: Loading Warehouse    579
+Worker 025: Loading Warehouse    530 done
+Worker 025: Loading Warehouse    580
+Worker 009: Loading Warehouse    531 done
+Worker 009: Loading Warehouse    581
+Worker 041: Loading Warehouse    532 done
+Worker 041: Loading Warehouse    582
+Worker 026: Loading Warehouse    535 done
+Worker 026: Loading Warehouse    583
+Worker 027: Loading Warehouse    537 done
+Worker 027: Loading Warehouse    584
+Worker 007: Loading Warehouse    534 done
+Worker 007: Loading Warehouse    585
+Worker 039: Loading Warehouse    533 done
+Worker 039: Loading Warehouse    586
+Worker 022: Loading Warehouse    539 done
+Worker 022: Loading Warehouse    587
+Worker 003: Loading Warehouse    536 done
+Worker 003: Loading Warehouse    588
+Worker 021: Loading Warehouse    541 done
+Worker 021: Loading Warehouse    589
+Worker 035: Loading Warehouse    538 done
+Worker 035: Loading Warehouse    590
+Worker 012: Loading Warehouse    540 done
+Worker 012: Loading Warehouse    591
+Worker 044: Loading Warehouse    542 done
+Worker 044: Loading Warehouse    592
+Worker 030: Loading Warehouse    549 done
+Worker 030: Loading Warehouse    593
+Worker 024: Loading Warehouse    547 done
+Worker 029: Loading Warehouse    546 done
+Worker 024: Loading Warehouse    594
+Worker 029: Loading Warehouse    595
+Worker 046: Loading Warehouse    543 done
+Worker 046: Loading Warehouse    596
+Worker 014: Loading Warehouse    544 done
+Worker 014: Loading Warehouse    597
+Worker 001: Loading Warehouse    545 done
+Worker 001: Loading Warehouse    598
+Worker 002: Loading Warehouse    548 done
+Worker 002: Loading Warehouse    599
+Worker 033: Loading Warehouse    550 done
+Worker 033: Loading Warehouse    600
+Worker 015: Loading Warehouse    552 done
+Worker 015: Loading Warehouse    601
+Worker 034: Loading Warehouse    554 done
+Worker 034: Loading Warehouse    602
+Worker 008: Loading Warehouse    551 done
+Worker 008: Loading Warehouse    603
+Worker 006: Loading Warehouse    553 done
+Worker 006: Loading Warehouse    604
+Worker 004: Loading Warehouse    559 done
+Worker 004: Loading Warehouse    605
+Worker 049: Loading Warehouse    557 done
+Worker 049: Loading Warehouse    606
+Worker 038: Loading Warehouse    556 done
+Worker 038: Loading Warehouse    607
+Worker 010: Loading Warehouse    558 done
+Worker 010: Loading Warehouse    608
+Worker 042: Loading Warehouse    561 done
+Worker 042: Loading Warehouse    609
+Worker 036: Loading Warehouse    565 done
+Worker 017: Loading Warehouse    560 done
+Worker 036: Loading Warehouse    610
+Worker 017: Loading Warehouse    611
+Worker 040: Loading Warehouse    555 done
+Worker 040: Loading Warehouse    612
+Worker 016: Loading Warehouse    563 done
+Worker 016: Loading Warehouse    613
+Worker 013: Loading Warehouse    562 done
+Worker 013: Loading Warehouse    614
+Worker 048: Loading Warehouse    566 done
+Worker 048: Loading Warehouse    615
+Worker 005: Loading Warehouse    564 done
+Worker 005: Loading Warehouse    616
+Worker 031: Loading Warehouse    572 done
+Worker 031: Loading Warehouse    617
+Worker 032: Loading Warehouse    567 done
+Worker 032: Loading Warehouse    618
+Worker 047: Loading Warehouse    568 done
+Worker 047: Loading Warehouse    619
+Worker 045: Loading Warehouse    570 done
+Worker 045: Loading Warehouse    620
+Worker 037: Loading Warehouse    569 done
+Worker 037: Loading Warehouse    621
+Worker 023: Loading Warehouse    573 done
+Worker 023: Loading Warehouse    622
+Worker 000: Loading Warehouse    571 done
+Worker 000: Loading Warehouse    623
+Worker 018: Loading Warehouse    574 done
+Worker 018: Loading Warehouse    624
+Worker 020: Loading Warehouse    576 done
+Worker 020: Loading Warehouse    625
+Worker 019: Loading Warehouse    577 done
+Worker 019: Loading Warehouse    626
+Worker 028: Loading Warehouse    579 done
+Worker 028: Loading Warehouse    627
+Worker 025: Loading Warehouse    580 done
+Worker 025: Loading Warehouse    628
+Worker 011: Loading Warehouse    575 done
+Worker 011: Loading Warehouse    629
+Worker 043: Loading Warehouse    578 done
+Worker 043: Loading Warehouse    630
+Worker 026: Loading Warehouse    583 done
+Worker 026: Loading Warehouse    631
+Worker 027: Loading Warehouse    584 done
+Worker 027: Loading Warehouse    632
+Worker 009: Loading Warehouse    581 done
+Worker 009: Loading Warehouse    633
+Worker 041: Loading Warehouse    582 done
+Worker 041: Loading Warehouse    634
+Worker 007: Loading Warehouse    585 done
+Worker 007: Loading Warehouse    635
+Worker 022: Loading Warehouse    587 done
+Worker 022: Loading Warehouse    636
+Worker 039: Loading Warehouse    586 done
+Worker 039: Loading Warehouse    637
+Worker 021: Loading Warehouse    589 done
+Worker 021: Loading Warehouse    638
+Worker 003: Loading Warehouse    588 done
+Worker 003: Loading Warehouse    639
+Worker 035: Loading Warehouse    590 done
+Worker 035: Loading Warehouse    640
+Worker 031: Loading Warehouse    617 done
+Worker 031: Loading Warehouse    641
+Worker 029: Loading Warehouse    595 done
+Worker 029: Loading Warehouse    642
+Worker 024: Loading Warehouse    594 done
+Worker 024: Loading Warehouse    643
+Worker 012: Loading Warehouse    591 done
+Worker 012: Loading Warehouse    644
+Worker 044: Loading Warehouse    592 done
+Worker 044: Loading Warehouse    645
+Worker 030: Loading Warehouse    593 done
+Worker 030: Loading Warehouse    646
+Worker 046: Loading Warehouse    596 done
+Worker 046: Loading Warehouse    647
+Worker 014: Loading Warehouse    597 done
+Worker 014: Loading Warehouse    648
+Worker 023: Loading Warehouse    622 done
+Worker 023: Loading Warehouse    649
+Worker 001: Loading Warehouse    598 done
+Worker 001: Loading Warehouse    650
+Worker 033: Loading Warehouse    600 done
+Worker 033: Loading Warehouse    651
+Worker 002: Loading Warehouse    599 done
+Worker 002: Loading Warehouse    652
+Worker 034: Loading Warehouse    602 done
+Worker 034: Loading Warehouse    653
+Worker 015: Loading Warehouse    601 done
+Worker 015: Loading Warehouse    654
+Worker 004: Loading Warehouse    605 done
+Worker 004: Loading Warehouse    655
+Worker 006: Loading Warehouse    604 done
+Worker 006: Loading Warehouse    656
+Worker 038: Loading Warehouse    607 done
+Worker 038: Loading Warehouse    657
+Worker 049: Loading Warehouse    606 done
+Worker 049: Loading Warehouse    658
+Worker 008: Loading Warehouse    603 done
+Worker 008: Loading Warehouse    659
+Worker 036: Loading Warehouse    610 done
+Worker 036: Loading Warehouse    660
+Worker 010: Loading Warehouse    608 done
+Worker 010: Loading Warehouse    661
+Worker 016: Loading Warehouse    613 done
+Worker 016: Loading Warehouse    662
+Worker 017: Loading Warehouse    611 done
+Worker 017: Loading Warehouse    663
+Worker 042: Loading Warehouse    609 done
+Worker 042: Loading Warehouse    664
+Worker 048: Loading Warehouse    615 done
+Worker 048: Loading Warehouse    665
+Worker 013: Loading Warehouse    614 done
+Worker 013: Loading Warehouse    666
+Worker 040: Loading Warehouse    612 done
+Worker 040: Loading Warehouse    667
+Worker 005: Loading Warehouse    616 done
+Worker 005: Loading Warehouse    668
+Worker 018: Loading Warehouse    624 done
+Worker 018: Loading Warehouse    669
+Worker 032: Loading Warehouse    618 done
+Worker 032: Loading Warehouse    670
+Worker 047: Loading Warehouse    619 done
+Worker 047: Loading Warehouse    671
+Worker 019: Loading Warehouse    626 done
+Worker 019: Loading Warehouse    672
+Worker 045: Loading Warehouse    620 done
+Worker 045: Loading Warehouse    673
+Worker 037: Loading Warehouse    621 done
+Worker 037: Loading Warehouse    674
+Worker 028: Loading Warehouse    627 done
+Worker 028: Loading Warehouse    675
+Worker 020: Loading Warehouse    625 done
+Worker 020: Loading Warehouse    676
+Worker 025: Loading Warehouse    628 done
+Worker 025: Loading Warehouse    677
+Worker 000: Loading Warehouse    623 done
+Worker 000: Loading Warehouse    678
+Worker 011: Loading Warehouse    629 done
+Worker 011: Loading Warehouse    679
+Worker 043: Loading Warehouse    630 done
+Worker 043: Loading Warehouse    680
+Worker 026: Loading Warehouse    631 done
+Worker 026: Loading Warehouse    681
+Worker 027: Loading Warehouse    632 done
+Worker 027: Loading Warehouse    682
+Worker 041: Loading Warehouse    634 done
+Worker 041: Loading Warehouse    683
+Worker 009: Loading Warehouse    633 done
+Worker 009: Loading Warehouse    684
+Worker 022: Loading Warehouse    636 done
+Worker 022: Loading Warehouse    685
+Worker 031: Loading Warehouse    641 done
+Worker 031: Loading Warehouse    686
+Worker 021: Loading Warehouse    638 done
+Worker 021: Loading Warehouse    687
+Worker 007: Loading Warehouse    635 done
+Worker 007: Loading Warehouse    688
+Worker 039: Loading Warehouse    637 done
+Worker 039: Loading Warehouse    689
+Worker 023: Loading Warehouse    649 done
+Worker 023: Loading Warehouse    690
+Worker 003: Loading Warehouse    639 done
+Worker 003: Loading Warehouse    691
+Worker 035: Loading Warehouse    640 done
+Worker 035: Loading Warehouse    692
+Worker 024: Loading Warehouse    643 done
+Worker 024: Loading Warehouse    693
+Worker 029: Loading Warehouse    642 done
+Worker 029: Loading Warehouse    694
+Worker 018: Loading Warehouse    669 done
+Worker 018: Loading Warehouse    695
+Worker 019: Loading Warehouse    672 done
+Worker 019: Loading Warehouse    696
+Worker 030: Loading Warehouse    646 done
+Worker 030: Loading Warehouse    697
+Worker 020: Loading Warehouse    676 done
+Worker 020: Loading Warehouse    698
+Worker 012: Loading Warehouse    644 done
+Worker 012: Loading Warehouse    699
+Worker 028: Loading Warehouse    675 done
+Worker 028: Loading Warehouse    700
+Worker 044: Loading Warehouse    645 done
+Worker 044: Loading Warehouse    701
+Worker 025: Loading Warehouse    677 done
+Worker 025: Loading Warehouse    702
+Worker 046: Loading Warehouse    647 done
+Worker 046: Loading Warehouse    703
+Worker 014: Loading Warehouse    648 done
+Worker 014: Loading Warehouse    704
+Worker 001: Loading Warehouse    650 done
+Worker 001: Loading Warehouse    705
+Worker 002: Loading Warehouse    652 done
+Worker 002: Loading Warehouse    706
+Worker 033: Loading Warehouse    651 done
+Worker 033: Loading Warehouse    707
+Worker 034: Loading Warehouse    653 done
+Worker 034: Loading Warehouse    708
+Worker 015: Loading Warehouse    654 done
+Worker 015: Loading Warehouse    709
+Worker 004: Loading Warehouse    655 done
+Worker 004: Loading Warehouse    710
+Worker 038: Loading Warehouse    657 done
+Worker 038: Loading Warehouse    711
+Worker 016: Loading Warehouse    662 done
+Worker 016: Loading Warehouse    712
+Worker 006: Loading Warehouse    656 done
+Worker 006: Loading Warehouse    713
+Worker 048: Loading Warehouse    665 done
+Worker 048: Loading Warehouse    714
+Worker 049: Loading Warehouse    658 done
+Worker 049: Loading Warehouse    715
+Worker 013: Loading Warehouse    666 done
+Worker 013: Loading Warehouse    716
+Worker 036: Loading Warehouse    660 done
+Worker 036: Loading Warehouse    717
+Worker 017: Loading Warehouse    663 done
+Worker 017: Loading Warehouse    718
+Worker 042: Loading Warehouse    664 done
+Worker 042: Loading Warehouse    719
+Worker 010: Loading Warehouse    661 done
+Worker 010: Loading Warehouse    720
+Worker 005: Loading Warehouse    668 done
+Worker 005: Loading Warehouse    721
+Worker 008: Loading Warehouse    659 done
+Worker 008: Loading Warehouse    722
+Worker 040: Loading Warehouse    667 done
+Worker 040: Loading Warehouse    723
+Worker 047: Loading Warehouse    671 done
+Worker 047: Loading Warehouse    724
+Worker 032: Loading Warehouse    670 done
+Worker 032: Loading Warehouse    725
+Worker 037: Loading Warehouse    674 done
+Worker 037: Loading Warehouse    726
+Worker 045: Loading Warehouse    673 done
+Worker 045: Loading Warehouse    727
+Worker 000: Loading Warehouse    678 done
+Worker 000: Loading Warehouse    728
+Worker 011: Loading Warehouse    679 done
+Worker 011: Loading Warehouse    729
+Worker 043: Loading Warehouse    680 done
+Worker 043: Loading Warehouse    730
+Worker 027: Loading Warehouse    682 done
+Worker 027: Loading Warehouse    731
+Worker 031: Loading Warehouse    686 done
+Worker 031: Loading Warehouse    732
+Worker 026: Loading Warehouse    681 done
+Worker 026: Loading Warehouse    733
+Worker 023: Loading Warehouse    690 done
+Worker 023: Loading Warehouse    734
+Worker 022: Loading Warehouse    685 done
+Worker 022: Loading Warehouse    735
+Worker 041: Loading Warehouse    683 done
+Worker 041: Loading Warehouse    736
+Worker 009: Loading Warehouse    684 done
+Worker 009: Loading Warehouse    737
+Worker 021: Loading Warehouse    687 done
+Worker 021: Loading Warehouse    738
+Worker 018: Loading Warehouse    695 done
+Worker 018: Loading Warehouse    739
+Worker 007: Loading Warehouse    688 done
+Worker 007: Loading Warehouse    740
+Worker 039: Loading Warehouse    689 done
+Worker 039: Loading Warehouse    741
+Worker 019: Loading Warehouse    696 done
+Worker 019: Loading Warehouse    742
+Worker 020: Loading Warehouse    698 done
+Worker 020: Loading Warehouse    743
+Worker 028: Loading Warehouse    700 done
+Worker 028: Loading Warehouse    744
+Worker 025: Loading Warehouse    702 done
+Worker 025: Loading Warehouse    745
+Worker 024: Loading Warehouse    693 done
+Worker 024: Loading Warehouse    746
+Worker 003: Loading Warehouse    691 done
+Worker 003: Loading Warehouse    747
+Worker 029: Loading Warehouse    694 done
+Worker 029: Loading Warehouse    748
+Worker 035: Loading Warehouse    692 done
+Worker 035: Loading Warehouse    749
+Worker 030: Loading Warehouse    697 done
+Worker 030: Loading Warehouse    750
+Worker 012: Loading Warehouse    699 done
+Worker 012: Loading Warehouse    751
+Worker 044: Loading Warehouse    701 done
+Worker 044: Loading Warehouse    752
+Worker 046: Loading Warehouse    703 done
+Worker 046: Loading Warehouse    753
+Worker 014: Loading Warehouse    704 done
+Worker 014: Loading Warehouse    754
+Worker 002: Loading Warehouse    706 done
+Worker 002: Loading Warehouse    755
+Worker 001: Loading Warehouse    705 done
+Worker 001: Loading Warehouse    756
+Worker 034: Loading Warehouse    708 done
+Worker 034: Loading Warehouse    757
+Worker 033: Loading Warehouse    707 done
+Worker 033: Loading Warehouse    758
+Worker 038: Loading Warehouse    711 done
+Worker 038: Loading Warehouse    759
+Worker 006: Loading Warehouse    713 done
+Worker 006: Loading Warehouse    760
+Worker 004: Loading Warehouse    710 done
+Worker 004: Loading Warehouse    761
+Worker 015: Loading Warehouse    709 done
+Worker 015: Loading Warehouse    762
+Worker 048: Loading Warehouse    714 done
+Worker 048: Loading Warehouse    763
+Worker 016: Loading Warehouse    712 done
+Worker 016: Loading Warehouse    764
+Worker 049: Loading Warehouse    715 done
+Worker 049: Loading Warehouse    765
+Worker 036: Loading Warehouse    717 done
+Worker 036: Loading Warehouse    766
+Worker 017: Loading Warehouse    718 done
+Worker 017: Loading Warehouse    767
+Worker 010: Loading Warehouse    720 done
+Worker 010: Loading Warehouse    768
+Worker 013: Loading Warehouse    716 done
+Worker 013: Loading Warehouse    769
+Worker 042: Loading Warehouse    719 done
+Worker 042: Loading Warehouse    770
+Worker 005: Loading Warehouse    721 done
+Worker 005: Loading Warehouse    771
+Worker 008: Loading Warehouse    722 done
+Worker 008: Loading Warehouse    772
+Worker 047: Loading Warehouse    724 done
+Worker 047: Loading Warehouse    773
+Worker 040: Loading Warehouse    723 done
+Worker 040: Loading Warehouse    774
+Worker 032: Loading Warehouse    725 done
+Worker 032: Loading Warehouse    775
+Worker 037: Loading Warehouse    726 done
+Worker 037: Loading Warehouse    776
+Worker 045: Loading Warehouse    727 done
+Worker 045: Loading Warehouse    777
+Worker 000: Loading Warehouse    728 done
+Worker 000: Loading Warehouse    778
+Worker 031: Loading Warehouse    732 done
+Worker 031: Loading Warehouse    779
+Worker 011: Loading Warehouse    729 done
+Worker 011: Loading Warehouse    780
+Worker 043: Loading Warehouse    730 done
+Worker 043: Loading Warehouse    781
+Worker 026: Loading Warehouse    733 done
+Worker 026: Loading Warehouse    782
+Worker 027: Loading Warehouse    731 done
+Worker 027: Loading Warehouse    783
+Worker 023: Loading Warehouse    734 done
+Worker 023: Loading Warehouse    784
+Worker 018: Loading Warehouse    739 done
+Worker 018: Loading Warehouse    785
+Worker 019: Loading Warehouse    742 done
+Worker 019: Loading Warehouse    786
+Worker 022: Loading Warehouse    735 done
+Worker 022: Loading Warehouse    787
+Worker 020: Loading Warehouse    743 done
+Worker 020: Loading Warehouse    788
+Worker 028: Loading Warehouse    744 done
+Worker 028: Loading Warehouse    789
+Worker 021: Loading Warehouse    738 done
+Worker 021: Loading Warehouse    790
+Worker 041: Loading Warehouse    736 done
+Worker 041: Loading Warehouse    791
+Worker 009: Loading Warehouse    737 done
+Worker 009: Loading Warehouse    792
+Worker 025: Loading Warehouse    745 done
+Worker 025: Loading Warehouse    793
+Worker 007: Loading Warehouse    740 done
+Worker 007: Loading Warehouse    794
+Worker 039: Loading Warehouse    741 done
+Worker 039: Loading Warehouse    795
+Worker 024: Loading Warehouse    746 done
+Worker 024: Loading Warehouse    796
+Worker 029: Loading Warehouse    748 done
+Worker 029: Loading Warehouse    797
+Worker 030: Loading Warehouse    750 done
+Worker 030: Loading Warehouse    798
+Worker 003: Loading Warehouse    747 done
+Worker 003: Loading Warehouse    799
+Worker 035: Loading Warehouse    749 done
+Worker 035: Loading Warehouse    800
+Worker 012: Loading Warehouse    751 done
+Worker 012: Loading Warehouse    801
+Worker 044: Loading Warehouse    752 done
+Worker 044: Loading Warehouse    802
+Worker 046: Loading Warehouse    753 done
+Worker 046: Loading Warehouse    803
+Worker 014: Loading Warehouse    754 done
+Worker 014: Loading Warehouse    804
+Worker 002: Loading Warehouse    755 done
+Worker 002: Loading Warehouse    805
+Worker 034: Loading Warehouse    757 done
+Worker 034: Loading Warehouse    806
+Worker 001: Loading Warehouse    756 done
+Worker 001: Loading Warehouse    807
+Worker 038: Loading Warehouse    759 done
+Worker 038: Loading Warehouse    808
+Worker 006: Loading Warehouse    760 done
+Worker 006: Loading Warehouse    809
+Worker 033: Loading Warehouse    758 done
+Worker 033: Loading Warehouse    810
+Worker 004: Loading Warehouse    761 done
+Worker 004: Loading Warehouse    811
+Worker 015: Loading Warehouse    762 done
+Worker 015: Loading Warehouse    812
+Worker 048: Loading Warehouse    763 done
+Worker 048: Loading Warehouse    813
+Worker 016: Loading Warehouse    764 done
+Worker 016: Loading Warehouse    814
+Worker 049: Loading Warehouse    765 done
+Worker 049: Loading Warehouse    815
+Worker 036: Loading Warehouse    766 done
+Worker 036: Loading Warehouse    816
+Worker 010: Loading Warehouse    768 done
+Worker 010: Loading Warehouse    817
+Worker 042: Loading Warehouse    770 done
+Worker 042: Loading Warehouse    818
+Worker 017: Loading Warehouse    767 done
+Worker 017: Loading Warehouse    819
+Worker 013: Loading Warehouse    769 done
+Worker 013: Loading Warehouse    820
+Worker 008: Loading Warehouse    772 done
+Worker 008: Loading Warehouse    821
+Worker 040: Loading Warehouse    774 done
+Worker 040: Loading Warehouse    822
+Worker 047: Loading Warehouse    773 done
+Worker 047: Loading Warehouse    823
+Worker 005: Loading Warehouse    771 done
+Worker 005: Loading Warehouse    824
+Worker 045: Loading Warehouse    777 done
+Worker 045: Loading Warehouse    825
+Worker 037: Loading Warehouse    776 done
+Worker 037: Loading Warehouse    826
+Worker 032: Loading Warehouse    775 done
+Worker 032: Loading Warehouse    827
+Worker 031: Loading Warehouse    779 done
+Worker 031: Loading Warehouse    828
+Worker 023: Loading Warehouse    784 done
+Worker 023: Loading Warehouse    829
+Worker 000: Loading Warehouse    778 done
+Worker 000: Loading Warehouse    830
+Worker 011: Loading Warehouse    780 done
+Worker 011: Loading Warehouse    831
+Worker 043: Loading Warehouse    781 done
+Worker 043: Loading Warehouse    832
+Worker 026: Loading Warehouse    782 done
+Worker 026: Loading Warehouse    833
+Worker 019: Loading Warehouse    786 done
+Worker 019: Loading Warehouse    834
+Worker 027: Loading Warehouse    783 done
+Worker 027: Loading Warehouse    835
+Worker 018: Loading Warehouse    785 done
+Worker 018: Loading Warehouse    836
+Worker 020: Loading Warehouse    788 done
+Worker 020: Loading Warehouse    837
+Worker 028: Loading Warehouse    789 done
+Worker 028: Loading Warehouse    838
+Worker 025: Loading Warehouse    793 done
+Worker 025: Loading Warehouse    839
+Worker 022: Loading Warehouse    787 done
+Worker 022: Loading Warehouse    840
+Worker 021: Loading Warehouse    790 done
+Worker 021: Loading Warehouse    841
+Worker 041: Loading Warehouse    791 done
+Worker 041: Loading Warehouse    842
+Worker 009: Loading Warehouse    792 done
+Worker 009: Loading Warehouse    843
+Worker 007: Loading Warehouse    794 done
+Worker 007: Loading Warehouse    844
+Worker 039: Loading Warehouse    795 done
+Worker 039: Loading Warehouse    845
+Worker 024: Loading Warehouse    796 done
+Worker 024: Loading Warehouse    846
+Worker 029: Loading Warehouse    797 done
+Worker 029: Loading Warehouse    847
+Worker 030: Loading Warehouse    798 done
+Worker 030: Loading Warehouse    848
+Worker 003: Loading Warehouse    799 done
+Worker 003: Loading Warehouse    849
+Worker 035: Loading Warehouse    800 done
+Worker 035: Loading Warehouse    850
+Worker 012: Loading Warehouse    801 done
+Worker 012: Loading Warehouse    851
+Worker 044: Loading Warehouse    802 done
+Worker 044: Loading Warehouse    852
+Worker 031: Loading Warehouse    828 done
+Worker 031: Loading Warehouse    853
+Worker 014: Loading Warehouse    804 done
+Worker 014: Loading Warehouse    854
+Worker 046: Loading Warehouse    803 done
+Worker 046: Loading Warehouse    855
+Worker 002: Loading Warehouse    805 done
+Worker 002: Loading Warehouse    856
+Worker 034: Loading Warehouse    806 done
+Worker 034: Loading Warehouse    857
+Worker 001: Loading Warehouse    807 done
+Worker 001: Loading Warehouse    858
+Worker 038: Loading Warehouse    808 done
+Worker 038: Loading Warehouse    859
+Worker 006: Loading Warehouse    809 done
+Worker 006: Loading Warehouse    860
+Worker 033: Loading Warehouse    810 done
+Worker 033: Loading Warehouse    861
+Worker 048: Loading Warehouse    813 done
+Worker 048: Loading Warehouse    862
+Worker 015: Loading Warehouse    812 done
+Worker 015: Loading Warehouse    863
+Worker 016: Loading Warehouse    814 done
+Worker 016: Loading Warehouse    864
+Worker 004: Loading Warehouse    811 done
+Worker 004: Loading Warehouse    865
+Worker 010: Loading Warehouse    817 done
+Worker 010: Loading Warehouse    866
+Worker 042: Loading Warehouse    818 done
+Worker 042: Loading Warehouse    867
+Worker 036: Loading Warehouse    816 done
+Worker 036: Loading Warehouse    868
+Worker 049: Loading Warehouse    815 done
+Worker 049: Loading Warehouse    869
+Worker 017: Loading Warehouse    819 done
+Worker 017: Loading Warehouse    870
+Worker 013: Loading Warehouse    820 done
+Worker 013: Loading Warehouse    871
+Worker 008: Loading Warehouse    821 done
+Worker 008: Loading Warehouse    872
+Worker 047: Loading Warehouse    823 done
+Worker 047: Loading Warehouse    873
+Worker 040: Loading Warehouse    822 done
+Worker 040: Loading Warehouse    874
+Worker 023: Loading Warehouse    829 done
+Worker 023: Loading Warehouse    875
+Worker 045: Loading Warehouse    825 done
+Worker 045: Loading Warehouse    876
+Worker 005: Loading Warehouse    824 done
+Worker 005: Loading Warehouse    877
+Worker 032: Loading Warehouse    827 done
+Worker 032: Loading Warehouse    878
+Worker 037: Loading Warehouse    826 done
+Worker 037: Loading Warehouse    879
+Worker 019: Loading Warehouse    834 done
+Worker 019: Loading Warehouse    880
+Worker 018: Loading Warehouse    836 done
+Worker 018: Loading Warehouse    881
+Worker 020: Loading Warehouse    837 done
+Worker 020: Loading Warehouse    882
+Worker 028: Loading Warehouse    838 done
+Worker 028: Loading Warehouse    883
+Worker 025: Loading Warehouse    839 done
+Worker 025: Loading Warehouse    884
+Worker 011: Loading Warehouse    831 done
+Worker 011: Loading Warehouse    885
+Worker 026: Loading Warehouse    833 done
+Worker 026: Loading Warehouse    886
+Worker 000: Loading Warehouse    830 done
+Worker 000: Loading Warehouse    887
+Worker 027: Loading Warehouse    835 done
+Worker 027: Loading Warehouse    888
+Worker 043: Loading Warehouse    832 done
+Worker 043: Loading Warehouse    889
+Worker 022: Loading Warehouse    840 done
+Worker 022: Loading Warehouse    890
+Worker 021: Loading Warehouse    841 done
+Worker 021: Loading Warehouse    891
+Worker 041: Loading Warehouse    842 done
+Worker 041: Loading Warehouse    892
+Worker 009: Loading Warehouse    843 done
+Worker 009: Loading Warehouse    893
+Worker 024: Loading Warehouse    846 done
+Worker 024: Loading Warehouse    894
+Worker 007: Loading Warehouse    844 done
+Worker 007: Loading Warehouse    895
+Worker 029: Loading Warehouse    847 done
+Worker 029: Loading Warehouse    896
+Worker 039: Loading Warehouse    845 done
+Worker 039: Loading Warehouse    897
+Worker 030: Loading Warehouse    848 done
+Worker 030: Loading Warehouse    898
+Worker 031: Loading Warehouse    853 done
+Worker 031: Loading Warehouse    899
+Worker 003: Loading Warehouse    849 done
+Worker 003: Loading Warehouse    900
+Worker 035: Loading Warehouse    850 done
+Worker 035: Loading Warehouse    901
+Worker 012: Loading Warehouse    851 done
+Worker 012: Loading Warehouse    902
+Worker 023: Loading Warehouse    875 done
+Worker 023: Loading Warehouse    903
+Worker 044: Loading Warehouse    852 done
+Worker 044: Loading Warehouse    904
+Worker 014: Loading Warehouse    854 done
+Worker 014: Loading Warehouse    905
+Worker 046: Loading Warehouse    855 done
+Worker 046: Loading Warehouse    906
+Worker 002: Loading Warehouse    856 done
+Worker 002: Loading Warehouse    907
+Worker 034: Loading Warehouse    857 done
+Worker 034: Loading Warehouse    908
+Worker 038: Loading Warehouse    859 done
+Worker 038: Loading Warehouse    909
+Worker 001: Loading Warehouse    858 done
+Worker 001: Loading Warehouse    910
+Worker 006: Loading Warehouse    860 done
+Worker 006: Loading Warehouse    911
+Worker 033: Loading Warehouse    861 done
+Worker 033: Loading Warehouse    912
+Worker 019: Loading Warehouse    880 done
+Worker 019: Loading Warehouse    913
+Worker 048: Loading Warehouse    862 done
+Worker 048: Loading Warehouse    914
+Worker 016: Loading Warehouse    864 done
+Worker 016: Loading Warehouse    915
+Worker 015: Loading Warehouse    863 done
+Worker 015: Loading Warehouse    916
+Worker 004: Loading Warehouse    865 done
+Worker 004: Loading Warehouse    917
+Worker 018: Loading Warehouse    881 done
+Worker 018: Loading Warehouse    918
+Worker 010: Loading Warehouse    866 done
+Worker 010: Loading Warehouse    919
+Worker 042: Loading Warehouse    867 done
+Worker 042: Loading Warehouse    920
+Worker 049: Loading Warehouse    869 done
+Worker 049: Loading Warehouse    921
+Worker 036: Loading Warehouse    868 done
+Worker 036: Loading Warehouse    922
+Worker 020: Loading Warehouse    882 done
+Worker 020: Loading Warehouse    923
+Worker 017: Loading Warehouse    870 done
+Worker 017: Loading Warehouse    924
+Worker 008: Loading Warehouse    872 done
+Worker 008: Loading Warehouse    925
+Worker 040: Loading Warehouse    874 done
+Worker 040: Loading Warehouse    926
+Worker 028: Loading Warehouse    883 done
+Worker 028: Loading Warehouse    927
+Worker 047: Loading Warehouse    873 done
+Worker 047: Loading Warehouse    928
+Worker 013: Loading Warehouse    871 done
+Worker 013: Loading Warehouse    929
+Worker 005: Loading Warehouse    877 done
+Worker 005: Loading Warehouse    930
+Worker 025: Loading Warehouse    884 done
+Worker 025: Loading Warehouse    931
+Worker 045: Loading Warehouse    876 done
+Worker 045: Loading Warehouse    932
+Worker 037: Loading Warehouse    879 done
+Worker 037: Loading Warehouse    933
+Worker 032: Loading Warehouse    878 done
+Worker 032: Loading Warehouse    934
+Worker 026: Loading Warehouse    886 done
+Worker 026: Loading Warehouse    935
+Worker 027: Loading Warehouse    888 done
+Worker 027: Loading Warehouse    936
+Worker 011: Loading Warehouse    885 done
+Worker 011: Loading Warehouse    937
+Worker 043: Loading Warehouse    889 done
+Worker 043: Loading Warehouse    938
+Worker 000: Loading Warehouse    887 done
+Worker 000: Loading Warehouse    939
+Worker 022: Loading Warehouse    890 done
+Worker 022: Loading Warehouse    940
+Worker 021: Loading Warehouse    891 done
+Worker 021: Loading Warehouse    941
+Worker 041: Loading Warehouse    892 done
+Worker 041: Loading Warehouse    942
+Worker 009: Loading Warehouse    893 done
+Worker 009: Loading Warehouse    943
+Worker 031: Loading Warehouse    899 done
+Worker 031: Loading Warehouse    944
+Worker 024: Loading Warehouse    894 done
+Worker 024: Loading Warehouse    945
+Worker 029: Loading Warehouse    896 done
+Worker 029: Loading Warehouse    946
+Worker 030: Loading Warehouse    898 done
+Worker 030: Loading Warehouse    947
+Worker 007: Loading Warehouse    895 done
+Worker 007: Loading Warehouse    948
+Worker 039: Loading Warehouse    897 done
+Worker 039: Loading Warehouse    949
+Worker 023: Loading Warehouse    903 done
+Worker 023: Loading Warehouse    950
+Worker 019: Loading Warehouse    913 done
+Worker 019: Loading Warehouse    951
+Worker 003: Loading Warehouse    900 done
+Worker 003: Loading Warehouse    952
+Worker 018: Loading Warehouse    918 done
+Worker 018: Loading Warehouse    953
+Worker 020: Loading Warehouse    923 done
+Worker 020: Loading Warehouse    954
+Worker 035: Loading Warehouse    901 done
+Worker 035: Loading Warehouse    955
+Worker 012: Loading Warehouse    902 done
+Worker 012: Loading Warehouse    956
+Worker 028: Loading Warehouse    927 done
+Worker 028: Loading Warehouse    957
+Worker 044: Loading Warehouse    904 done
+Worker 044: Loading Warehouse    958
+Worker 014: Loading Warehouse    905 done
+Worker 014: Loading Warehouse    959
+Worker 002: Loading Warehouse    907 done
+Worker 002: Loading Warehouse    960
+Worker 046: Loading Warehouse    906 done
+Worker 046: Loading Warehouse    961
+Worker 025: Loading Warehouse    931 done
+Worker 025: Loading Warehouse    962
+Worker 034: Loading Warehouse    908 done
+Worker 034: Loading Warehouse    963
+Worker 038: Loading Warehouse    909 done
+Worker 038: Loading Warehouse    964
+Worker 001: Loading Warehouse    910 done
+Worker 001: Loading Warehouse    965
+Worker 006: Loading Warehouse    911 done
+Worker 006: Loading Warehouse    966
+Worker 048: Loading Warehouse    914 done
+Worker 048: Loading Warehouse    967
+Worker 016: Loading Warehouse    915 done
+Worker 033: Loading Warehouse    912 done
+Worker 016: Loading Warehouse    968
+Worker 033: Loading Warehouse    969
+Worker 015: Loading Warehouse    916 done
+Worker 015: Loading Warehouse    970
+Worker 004: Loading Warehouse    917 done
+Worker 004: Loading Warehouse    971
+Worker 010: Loading Warehouse    919 done
+Worker 010: Loading Warehouse    972
+Worker 042: Loading Warehouse    920 done
+Worker 042: Loading Warehouse    973
+Worker 049: Loading Warehouse    921 done
+Worker 049: Loading Warehouse    974
+Worker 017: Loading Warehouse    924 done
+Worker 017: Loading Warehouse    975
+Worker 036: Loading Warehouse    922 done
+Worker 036: Loading Warehouse    976
+Worker 008: Loading Warehouse    925 done
+Worker 008: Loading Warehouse    977
+Worker 040: Loading Warehouse    926 done
+Worker 040: Loading Warehouse    978
+Worker 047: Loading Warehouse    928 done
+Worker 047: Loading Warehouse    979
+Worker 013: Loading Warehouse    929 done
+Worker 013: Loading Warehouse    980
+Worker 005: Loading Warehouse    930 done
+Worker 005: Loading Warehouse    981
+Worker 045: Loading Warehouse    932 done
+Worker 045: Loading Warehouse    982
+Worker 037: Loading Warehouse    933 done
+Worker 037: Loading Warehouse    983
+Worker 026: Loading Warehouse    935 done
+Worker 026: Loading Warehouse    984
+Worker 027: Loading Warehouse    936 done
+Worker 027: Loading Warehouse    985
+Worker 032: Loading Warehouse    934 done
+Worker 032: Loading Warehouse    986
+Worker 011: Loading Warehouse    937 done
+Worker 011: Loading Warehouse    987
+Worker 043: Loading Warehouse    938 done
+Worker 043: Loading Warehouse    988
+Worker 022: Loading Warehouse    940 done
+Worker 022: Loading Warehouse    989
+Worker 021: Loading Warehouse    941 done
+Worker 021: Loading Warehouse    990
+Worker 000: Loading Warehouse    939 done
+Worker 000: Loading Warehouse    991
+Worker 031: Loading Warehouse    944 done
+Worker 031: Loading Warehouse    992
+Worker 041: Loading Warehouse    942 done
+Worker 041: Loading Warehouse    993
+Worker 023: Loading Warehouse    950 done
+Worker 023: Loading Warehouse    994
+Worker 009: Loading Warehouse    943 done
+Worker 009: Loading Warehouse    995
+Worker 024: Loading Warehouse    945 done
+Worker 024: Loading Warehouse    996
+Worker 029: Loading Warehouse    946 done
+Worker 029: Loading Warehouse    997
+Worker 030: Loading Warehouse    947 done
+Worker 030: Loading Warehouse    998
+Worker 007: Loading Warehouse    948 done
+Worker 007: Loading Warehouse    999
+Worker 039: Loading Warehouse    949 done
+Worker 039: Loading Warehouse   1000
+Worker 018: Loading Warehouse    953 done
+Worker 019: Loading Warehouse    951 done
+Worker 020: Loading Warehouse    954 done
+Worker 028: Loading Warehouse    957 done
+Worker 025: Loading Warehouse    962 done
+Worker 003: Loading Warehouse    952 done
+Worker 035: Loading Warehouse    955 done
+Worker 012: Loading Warehouse    956 done
+Worker 044: Loading Warehouse    958 done
+Worker 014: Loading Warehouse    959 done
+Worker 046: Loading Warehouse    961 done
+Worker 002: Loading Warehouse    960 done
+Worker 034: Loading Warehouse    963 done
+Worker 038: Loading Warehouse    964 done
+Worker 048: Loading Warehouse    967 done
+Worker 001: Loading Warehouse    965 done
+Worker 016: Loading Warehouse    968 done
+Worker 033: Loading Warehouse    969 done
+Worker 006: Loading Warehouse    966 done
+Worker 015: Loading Warehouse    970 done
+Worker 004: Loading Warehouse    971 done
+Worker 010: Loading Warehouse    972 done
+Worker 042: Loading Warehouse    973 done
+Worker 036: Loading Warehouse    976 done
+Worker 049: Loading Warehouse    974 done
+Worker 017: Loading Warehouse    975 done
+Worker 047: Loading Warehouse    979 done
+Worker 008: Loading Warehouse    977 done
+Worker 040: Loading Warehouse    978 done
+Worker 026: Loading Warehouse    984 done
+Worker 013: Loading Warehouse    980 done
+Worker 027: Loading Warehouse    985 done
+Worker 045: Loading Warehouse    982 done
+Worker 005: Loading Warehouse    981 done
+Worker 037: Loading Warehouse    983 done
+Worker 022: Loading Warehouse    989 done
+Worker 031: Loading Warehouse    992 done
+Worker 032: Loading Warehouse    986 done
+Worker 011: Loading Warehouse    987 done
+Worker 043: Loading Warehouse    988 done
+Worker 021: Loading Warehouse    990 done
+Worker 023: Loading Warehouse    994 done
+Worker 000: Loading Warehouse    991 done
+Worker 024: Loading Warehouse    996 done
+Worker 029: Loading Warehouse    997 done
+Worker 030: Loading Warehouse    998 done
+Worker 041: Loading Warehouse    993 done
+Worker 009: Loading Warehouse    995 done
+Worker 039: Loading Warehouse   1000 done
+Worker 007: Loading Warehouse    999 done
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/indexCreates.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+alter table bmsql_warehouse add constraint bmsql_warehouse_pkey
+primary key (w_id);
+alter table bmsql_district add constraint bmsql_district_pkey
+primary key (d_w_id, d_id);
+alter table bmsql_customer add constraint bmsql_customer_pkey
+primary key (c_w_id, c_d_id, c_id);
+create index bmsql_customer_idx1
+on  bmsql_customer (c_w_id, c_d_id, c_last, c_first);
+alter table bmsql_oorder add constraint bmsql_oorder_pkey
+primary key (o_w_id, o_d_id, o_id);
+create unique index bmsql_oorder_idx1
+on  bmsql_oorder (o_w_id, o_d_id, o_carrier_id, o_id);
+alter table bmsql_new_order add constraint bmsql_new_order_pkey
+primary key (no_w_id, no_d_id, no_o_id);
+alter table bmsql_order_line add constraint bmsql_order_line_pkey
+primary key (ol_w_id, ol_d_id, ol_o_id, ol_number);
+alter table bmsql_stock add constraint bmsql_stock_pkey
+primary key (s_w_id, s_i_id);
+Got error 100 - 'InnoDB error' from storage engine
+alter table bmsql_item add constraint bmsql_item_pkey
+primary key (i_id);
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/foreignKeys.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+alter table bmsql_district add constraint d_warehouse_fkey
+foreign key (d_w_id)
+references bmsql_warehouse (w_id);
+alter table bmsql_customer add constraint c_district_fkey
+foreign key (c_w_id, c_d_id)
+references bmsql_district (d_w_id, d_id);
+alter table bmsql_history add constraint h_customer_fkey
+foreign key (h_c_w_id, h_c_d_id, h_c_id)
+references bmsql_customer (c_w_id, c_d_id, c_id);
+alter table bmsql_history add constraint h_district_fkey
+foreign key (h_w_id, h_d_id)
+references bmsql_district (d_w_id, d_id);
+alter table bmsql_new_order add constraint no_order_fkey
+foreign key (no_w_id, no_d_id, no_o_id)
+references bmsql_oorder (o_w_id, o_d_id, o_id);
+alter table bmsql_oorder add constraint o_customer_fkey
+foreign key (o_w_id, o_d_id, o_c_id)
+references bmsql_customer (c_w_id, c_d_id, c_id);
+alter table bmsql_order_line add constraint ol_order_fkey
+foreign key (ol_w_id, ol_d_id, ol_o_id)
+references bmsql_oorder (o_w_id, o_d_id, o_id);
+alter table bmsql_order_line add constraint ol_stock_fkey
+foreign key (ol_supply_w_id, ol_i_id)
+references bmsql_stock (s_w_id, s_i_id);
+Failed to add the foreign key constraint. Missing index for constraint 'ol_stock_fkey' in the referenced table 'bmsql_stock'
+alter table bmsql_stock add constraint s_warehouse_fkey
+foreign key (s_w_id)
+references bmsql_warehouse (w_id);
+alter table bmsql_stock add constraint s_item_fkey
+foreign key (s_i_id)
+references bmsql_item (i_id);
+# ------------------------------------------------------------
+# Loading SQL file ./sql.mysql/extraHistID.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- Extra Schema objects/definitions for history.hist_id in Oracle
+-- ----
+-- ----
+--	This is an extra column not present in the TPC-C
+--	specs. It is useful for replication systems like
+--	Bucardo and Slony-I, which like to have a primary
+--	key on a table. It is an auto-increment or serial
+--	column type. The definition below is compatible
+--	with Oracle 11g, using the sequence in a trigger.
+-- ----
+-- Adjust the sequence above the current max(hist_id)
+# ------------------------------------------------------------
+# Loading SQL file ./sql.common/buildFinish.sql
+# ------------------------------------------------------------
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+-- ----
+-- Extra commands to run after the tables are created, loaded,
+-- indexes built and extra's created.
+-- ----
