@@ -11309,7 +11309,7 @@ if [ "$1" = "troubleshooting" -o "$1" = "trouble" ]; then
   fi
 
   if [ "$3" = ""  ]; then
-   read -p "Please input p1 p2 p3:" p1p2p3
+   read -p "Please input p1,p2,p3:" p1p2p3
     if [ -z "${p1p2p3}" ];then
          echo "no input , exit"
          exit 1
@@ -11361,7 +11361,7 @@ declare
 group by KGLHDNSP,KGLHDNSD order by 3 desc;
     v_namespace c_namespace%rowtype;
 
-    cursor c_blocker is
+  cursor c_blocker is
   SELECT s.inst_id, s.SID,s.USERNAME,s.TERMINAL,s.PROGRAM, l.kgllksnm "Obj Name", sq.sql_text
   FROM GV\$SESSION  s, GV\$SQL sq, x\$kgllk l
   WHERE s.INST_ID = sq.INST_ID
