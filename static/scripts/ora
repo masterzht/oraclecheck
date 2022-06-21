@@ -11359,11 +11359,12 @@ declare
     where KGLHDNSP in
     (select to_number(substr(to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx'),9,2),'xx') from dual)
 group by KGLHDNSP,KGLHDNSD order by 3 desc;
+-- p1转换为p1raw实际10进制转换为16进制
     v_namespace c_namespace%rowtype;
 
   cursor c_blocker is
   SELECT s.inst_id, s.SID,s.USERNAME,s.TERMINAL,s.PROGRAM, l.kgllksnm "Obj Name", sq.sql_text
-  FROM GV\$SESSION  s, GV\$SQL sq, x\$kgllk l
+  FROM gv\$session  s, gv\$sql sq, x\$kgllk l
   WHERE s.INST_ID = sq.INST_ID
   and s.SQL_HASH_VALUE = sq.HASH_VALUE
   and s.SQL_ADDRESS = sq.ADDRESS
@@ -11372,14 +11373,13 @@ group by KGLHDNSP,KGLHDNSD order by 3 desc;
   and s.SADDR in
       (SELECT KGLLKSES FROM X\$KGLLK LOCK_A
       WHERE KGLLKREQ = 0
-      AND EXISTS (SELECT LOCK_B.KGLLKHDL FROM X$KGLLK LOCK_B
+      AND EXISTS (SELECT LOCK_B.KGLLKHDL FROM X\$KGLLK LOCK_B
                       WHERE KGLLKSNM IN
                           (SELECT sid FROM v\$session_wait
                            WHERE wait_time = 0 AND event = 'library cache lock')
                       AND LOCK_A.KGLLKHDL = LOCK_B.KGLLKHDL
                       AND KGLLKREQ > 0));
     v_blocker c_blocker%rowtype;
-
 
   cursor c_waiter is
   SELECT s.inst_id, s.SID,s.USERNAME,s.TERMINAL,s.PROGRAM, l.kgllksnm "Obj Name", sq.sql_text
@@ -11403,13 +11403,12 @@ group by KGLHDNSP,KGLHDNSD order by 3 desc;
 
 begin
   dbms_output.enable(buffer_size=>NULL);
-select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
-to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
-REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3
-into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
+  select to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1),'xxxxxxxxxxxxx') as p1raw,
+  to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2),'xxxxxxxxxxxxx') as p2raw,
+  to_char(REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3),'xxxxxxxxxxxxx') as p3raw,
+  REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,1) as p1,
+  REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,2) as p2,
+  REGEXP_SUBSTR(:p1p2p3,'[^,]+',1,3) as p3 into v_p1raw,v_p2raw,v_p3raw,v_p1,v_p2,v_p3 from dual;
   dbms_output.put_line('
  Parameters:
 * P1 = handle address       :'|| v_p1 );
@@ -11428,21 +11427,21 @@ From x\$kglob');
     end loop;
     dbms_output.put_line('-----------------------------------------------------');
   close c_namespace;
-
+/**
 dbms_output.put_line('
 Blocker Sesssion and Object info');
   dbms_output.put_line('======================');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| inst# ' || '| SID    |' || ' USERNAME          ' || '| TERMINAL |' || ' PROGRAM     '|| '| OBJECT_NAME  |'  ' || '| SQL_TEXT           ' ||'|');
+  dbms_output.put_line('| inst# ' || '| SID    |' || ' USERNAME          ' || '| TERMINAL |' || ' PROGRAM     '|| '| OBJECT_NAME  |' || '| SQL_TEXT           ' ||'|');
   dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   open c_blocker;
     loop fetch c_blocker into v_blocker;
     exit when c_blocker%notfound;
-    dbms_output.put_line('| ' || lpad(v_blocker.inst_id,4) || ' | '|| lpad(v_blocker.SID,6) ||' | '|| rpad(vv_blocker_b.USERNAME,30) || ' | '|| lpad(v_b.TERMINAL,5) || ' | '|| lpad(v_b.PROGRAM,12) || ' | '|| lpad(v_b.Obj_Name,3) || ' |');
+    dbms_output.put_line('| ' || lpad(v_blocker.inst_id,4) || ' | '|| lpad(v_blocker.SID,6) ||' | '|| rpad(v_blocker_b.USERNAME,30) || ' | '|| lpad(v_b.TERMINAL,5) || ' | '|| lpad(v_b.PROGRAM,12) || ' | '|| lpad(v_b.Obj_Name,3) || ' |');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   close c_blocker;
-/**
+
 dbms_output.put_line('
 Waiter Sesssion and Object info');
   dbms_output.put_line('======================');
@@ -11456,6 +11455,7 @@ Waiter Sesssion and Object info');
     end loop;
     dbms_output.put_line('-------------------------------------------------------------------------------------------------');
   close c_waiter;
+  **/
 end;
 /
     $ECHO
