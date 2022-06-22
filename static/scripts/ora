@@ -11414,15 +11414,18 @@ begin
 * P1 = handle address       :'|| v_p1 );
   dbms_output.put_line('* P2 = lock address         :'|| v_p2 );
   dbms_output.put_line('* P3 = 100*Mode + Namespace :'|| v_p3 );
-  dbms_output.put_line('latch: cache buffers chains Information
+  dbms_output.put_line('* p1raw                 :'|| v_p1raw );
+  dbms_output.put_line('* p2raw                 :'|| v_p2raw );
+  dbms_output.put_line('* p3raw                 :'|| v_p3raw );
+  dbms_output.put_line('library cache lock Information
 From x\$kglob');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------');
-  dbms_output.put_line('| KGLHDNSP               |' || ' KGLHDNSD                 ' || '|');
-  dbms_output.put_line('-----------------------------------------------------');
+  dbms_output.put_line('-------------------------------------------------------------');
+  dbms_output.put_line('| KGLHDNSP               |' || ' KGLHDNSD                 ' || ' | ' || ' CNT |');
+  dbms_output.put_line('-------------------------------------------------------------');
   open c_namespace;
     loop fetch c_namespace into v_namespace;
-    exit when c_namespace%notfound;
+   exit when c_namespace%notfound;
     dbms_output.put_line('| ' || lpad(v_namespace.KGLHDNSP,22) ||' | '|| rpad(v_namespace.KGLHDNSD,24)  || ' |');
     end loop;
     dbms_output.put_line('-----------------------------------------------------');
