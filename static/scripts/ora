@@ -85,7 +85,7 @@ usage()
       - ltcenter                               ltcenter show active session message
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
-      - lt_index_monitor <port> <database>     PostgreSQLQ monitoring database index usage
+      - lt_index_monitor <port> <database>     PostgreSQL monitoring database index usage
       - mvsnap                                 view all_snapshots (mview) status
       - ora2pg                                 first edit ora2pg.conf to modify ip port and service_name
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
