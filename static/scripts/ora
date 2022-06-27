@@ -988,8 +988,9 @@ if [ "$1" = "ora2pg" ]; then
          echo "ORA-28000: The account is locked"
        elif [[ "$connect" =~ ^"${oracle_logon_flag}".* ]]; then
 	       mkdir -p $schema
-	       # default export object
+	       # default export object,如果Oracle数据库中有分区表和普通表,则需要同时指定TABLE和PARTITION
          data_type_list='TABLE
+         PARTITION
          COPY
          SEQUENCE
          SYNONYM'
@@ -1085,6 +1086,7 @@ if [ "$1" = "ora2pg" ]; then
        elif [ "$import_option" = "table_only" ]; then
          echo 'Importing only tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                          > imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'`     >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^PARTITION_'` >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          echo 'analyze verbose begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                               >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -c "analyze verbose"                                       >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &
        elif [ "$import_option" = "all" ]; then
