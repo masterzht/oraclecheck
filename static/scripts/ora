@@ -14001,7 +14001,16 @@ WHERE state != 'idle'
   -- AND ((clock_timestamp() - xact_start) > '{{.QueryAgeThresh}}'::interval OR (clock_timestamp() - query_start) > '{{.QueryAgeThresh}}'::interval)
 ORDER BY xact_age DESC;
  """
-#ltsql -Ulightdb -p $2 -x -c """SELECT a.query_id, a.usename as username, a.datname as db_name,p.pid, p.level, p.plan, a.query FROM pg_show_plans p LEFT JOIN lt_stat_activity a ON p.pid = a.pid AND p.level = 0 ORDER BY p.pid, p.level;"""
+ ltsql -p $2 -U lightdb -A -c """
+select pg_get_userbyid(userid) as "user",
+now() - query_start AS duration,
+query,
+plan
+ from pg_show_plans p join pg_stat_activity a using(pid)
+ where p.pid != pg_backend_pid()
+ and datname = current_database()
+ and now() - query_start > '0.0001s'::interval order by duration DESC limit 5;
+ """
 exit 0
 fi
 ######################################################
