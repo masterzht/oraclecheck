@@ -14173,15 +14173,9 @@ if [ "$1" = "binds" -o "$1" = "bind" -o "$1" = "bind_his" ]; then
     pro gv\$sql_bind_capture:
     select NAME BIND_NAME, POSITION POS, DATATYPE_STRING BIND_TYPE,
            WAS_CAPTURED CAPTURED,
-           case
-             when WAS_CAPTURED='YES' and LAST_CAPTURED is null
-             then 'YES'
-             else 'NO'
-           end "Reverted",
+           case when WAS_CAPTURED='YES' and LAST_CAPTURED is null then 'YES' else 'NO' end "Reverted",
            TO_CHAR(LAST_CAPTURED, 'HH:MI:SS (DD Mon)') LAST_CAPTURED,
-           case datatype
-           when 180 then to_char(anydata.accesstimestamp(value_anydata),'yyyy-mm-dd hh24:mi:ss')
-             else value_string end as VALUE_STRING
+           case datatype when 180 then to_char(anydata.accesstimestamp(value_anydata),'yyyy-mm-dd hh24:mi:ss') else value_string end as VALUE_STRING
            --VALUE_STRING
     from  gv\$sql_bind_capture
     where sql_id='$2';
