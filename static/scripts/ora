@@ -14076,17 +14076,15 @@ col logon_time for a10
 col kill_sql for a60
 prompt display the active sessions and sql in current node
 prompt =======================
-select /*+use_nl(a,b,c)*/         distinct a.sid || ',' || a.serial# as sid_and_serial#,
-                                  a.username,
-                                  a.terminal,
-                                  a.machine,
-                                  a.program,
-                                  b.spid,
-                                  c.sql_id,
-                                  substr(c.sql_text, 0, 30) as sql_text
-from v\$session a,
-     v\$process b,
-     v\$sql c
+select /*+use_nl(a,b,c)*/   distinct a.sid || ',' || a.serial# as sid_and_serial#,
+                            a.username,
+                            a.terminal,
+                            a.machine,
+                            a.program,
+                            b.spid,
+                            c.sql_id,
+                            substr(c.sql_text, 0, 30) as sql_text
+from v\$session a, v\$process b, v\$sql c
 where a.paddr = b.addr(+)
   and a.sql_hash_value = c.hash_value
   and a.sql_address = c.address
