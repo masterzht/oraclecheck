@@ -1,0 +1,405 @@
+#!/bin/bash
+
+function error_exit {
+  exit -1
+}
+
+
+#####################################################################################备份相关函数#################################################################################
+# 备份整库并排除部分表 
+# 参数$1为输出文件 $2-$N为排除的表名 ，无需排除任何表则不用填后面参数
+function expdb() 
+{
+    if [ -z "$1" ];then 
+      echo "备份文件导出路径必输"
+      exit -1
+    fi
+    
+    echo    "备份数据库$DBNAME开始"
+    count=1
+    for i in ${@:2}
+     do
+        echo "排除如下表$i"
+        if [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
+			if [ $count -eq 1 ]; then
+				count=$(expr $count + 1)
+				excludes="$i"$excludes
+			else
+				excludes=$excludes" --exclude-table=$i "
+			fi
+		elif [ "$DBTYPE" == "mysql" ];then
+            excludes="--ignore-table="$DBNAME"."$i" "$excludes
+        elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ]; then
+            if [ $count -eq 1 ]; then
+                count=`expr $count + 1`
+                excludes="$i"$excludes
+            else
+                excludes=$excludes,$i      
+            fi
+        elif [ "$DBTYPE" == "oracle" ]; then
+                if [ $count -eq 1 ]; then
+                    count=`expr $count + 1`
+                    excludes=\\\'"$i"\\\'$excludes
+                else
+                  excludes=$excludes"\,"\\\'"$i"\\\'      
+                fi
+        else
+            echo "数据库类型不匹配"
+            exit -1
+        fi
+     done
+    if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+		if [ "$excludes" != "" ]; then
+			EXCLUDETABLES="EXCLUDE=tables:$excludes"
+		fi
+    	if [ "$HOST" == "" ]; then
+            echo "dexp USERID=$USER/********@$DBNAME FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR  LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y"
+            dexp USERID=$USER/$PWD@$DBNAME FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR    LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y|| error_exit "执行失败"
+        else
+            echo "dexp USERID=$USER/********@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR   LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dexp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y|| error_exit "执行失败"
+        fi 
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
+            if [ "$excludes" != "" ]; then
+                EXCLUDETABLES="--exclude-table=$excludes"
+            fi
+			rm -rf $1
+			mkdir -p $1
+			echo "obdumper -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv  --table '*' $EXCLUDETABLES -f$1"
+    		obdumper -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv  --table '*' $EXCLUDETABLES -f$1 || error_exit "执行失败"
+    		# obdumper -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
+	elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
+		#lightdb的备份
+		if [ "$excludes" == "" ]; then
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit \"执行失败\""
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit "执行失败"
+		else
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -F t --exclude-table=$excludes -n$USER -f $1 || error_exit \"执行失败\""
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data --exclude-table=$excludes -n$USER  -f $1 || error_exit "执行失败"
+
+		fi
+    elif [ "$DBTYPE" == "mysql" ];then 
+        #/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
+        mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
+    elif [ "$DBTYPE" == "oracle" ];then
+        		if [ "$excludes" == "" ]; then
+			if [ "$HOST" == "" ]; then
+				echo "expdp $USER/********@$DBNAME DUMPFILE=$1 schemas=$USER DIRECTORY=$BACKUPDIR cluster=n  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+				expdp $USER/$PWD@$DBNAME DUMPFILE=$1 schemas=$USER DIRECTORY=$BACKUPDIR cluster=n  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+			else
+				echo "expdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+				expdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+			fi
+		else 
+			if [ "$HOST" == "" ]; then
+				echo "expdp $USER/********@$DBNAME DUMPFILE=$1 schemas=$USER DIRECTORY=$BACKUPDIR cluster=n    reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+				expdp $USER/$PWD@$DBNAME DUMPFILE=$1 schemas=$USER DIRECTORY=$BACKUPDIR cluster=n  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+			else
+				echo "expdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+				expdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+			fi
+		fi
+    else
+        echo "数据库类型不匹配"
+        exit -1
+    fi
+    echo    "备份数据库$DBNAME 结束"
+}
+
+function exptable() 
+{
+	if [ -z "$1" ];then              
+	  echo "备份文件导出路径必输"
+	  exit -1
+	fi
+	
+	echo    "备份数据库$DBNAME开始"
+	if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+			if [ "$HOST" == "" ]; then
+            echo "dexp USERID=$USER/********@$DBNAME FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$BACKUPTABLES LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dexp USERID=$USER/$PWD@$DBNAME FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$BACKUPTABLES LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y|| error_exit "执行失败"
+        else
+            echo "dexp USERID=$USER/********@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$BACKUPTABLES LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dexp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$BACKUPTABLES LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y|| error_exit "执行失败"
+        fi
+	elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
+			rm -rf $1
+			mkdir -p $1
+			echo "obdumper -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv  --table $BACKUPTABLES -f$1"
+			obdumper -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv  --table $BACKUPTABLES -f$1 || error_exit "执行失败"
+		#obdumper --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 || error_exit "执行失败"
+	elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
+		echo "BACKUPTABLES=$BACKUPTABLES"
+		BACKUPTABLES=$(echo $BACKUPTABLES | sed 's/ / -t /g')
+		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit \"执行失败\""
+		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data  -f $1 || error_exit "执行失败"
+	elif [ "$DBTYPE" == "mysql" ];then
+		#/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $BACKUPTABLES >> $1 || error_exit "执行失败"
+    echo "mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 "
+		mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 || error_exit "执行失败"
+	elif [ "$DBTYPE" == "oracle" ];then
+		if [ "$HOST" == "" ]; then
+            echo "expdp $USER/********@$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR tables=$BACKUPTABLES reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+            expdp $USER/$PWD@$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR tables=$BACKUPTABLES reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+        else
+            echo "expdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR tables=$BACKUPTABLES reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+            expdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR tables=$BACKUPTABLES reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+        fi
+	else
+		echo "数据库类型不匹配"
+		exit -1
+	fi
+	echo    "备份数据库$DBNAME 结束"
+}
+
+function exptablelikes() 
+{
+    if [ -z "$1" ];then 
+      echo "备份文件导出路径必输"
+      exit -1
+    fi
+    
+    echo    "备份数据库$DBNAME开始"
+    count=1
+    for i in ${@:2}
+     do
+        echo "排除如下表$i"
+        if [ "$DBTYPE" == "mysql" ];then
+            excludes="--ignore-table="$DBNAME"."$i" "$excludes
+        elif [ "$DBTYPE" == "oracle" ];then
+                if [ $count -eq 1 ];then
+                    count=`expr $count + 1`
+                    excludes=\\\'"$i"\\\'$excludes
+                else
+                  excludes=$excludes"\,"\\\'"$i"\\\' 
+                fi
+        else
+            echo "数据库类型不匹配"
+            exit -1
+        fi
+     done
+    
+    if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+        if [ "$HOST" == "" ]; then
+            echo "dexp USERID=$USER/********@$DBNAME FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y FUZZY_MATCH=Y "
+            dexp USERID=$USER/$PWD@$DBNAME FILE=$1  DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y || error_exit "执行失败"
+        else
+            echo "dexp USERID=$USER/********@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y FUZZY_MATCH=Y "
+            dexp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y FUZZY_MATCH=Y || error_exit "执行失败"
+        fi
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then 
+    		count=1
+        for i in $(obclient -u$USER -p$PWD -h$HOST -P$PORT $DBNAME -Bse "select * from user_tables where table_name like 'TBFUND%'")
+          do 
+            if [ $count -eq 1 ];then
+                        count=`expr $count + 1`
+                        includesql="$i"$includesql
+            else
+              includesql=$includesql" $i" 
+            fi
+          done
+        echo " obdumper  -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $includesql  > $1"
+         obdumper -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $includesql > $1 || error_exit "执行失败"
+    elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
+		count=1
+		for i in $(PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -t -c "select table_name from information_schema.tables where table_schema='$USER' and table_name like 'tbfund%'"); do
+			if [ $count -eq 1 ]; then
+				count=$(expr $count + 1)
+				includesql="$i"$includesql
+			else
+				includesql=$includesql" -t $i"
+			fi
+		done
+		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $includesql -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit \"执行失败\""
+		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $includesql -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit "执行失败"
+	elif [ "$DBTYPE" == "mysql" ];then
+        count=1
+        for i in $(mysql -u$USER -p$PWD -h$HOST -P$PORT $DBNAME -Bse "show tables like 'TBFUND%'")
+          do 
+            if [ $count -eq 1 ];then
+                        count=`expr $count + 1`
+                        includesql="$i"$includesql
+            else
+              includesql=$includesql" $i" 
+            fi
+          done
+        #/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes >> $1 || error_exit "执行失败"
+        echo " mysqldump  -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $includesql  > $1"
+        mysqldump  -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $includesql > $1 || error_exit "执行失败"
+    elif [ "$DBTYPE" == "oracle" ];then
+        if [ "$HOST" == "" ]; then
+            echo "expdp $USER/********@$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR include=TABLE:\"LIKE\'TBFUND%\'\" reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+            expdp $USER/$PWD@$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR include=TABLE:\"LIKE\'TBFUND%\'\" reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+        else
+            echo "expdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR include=TABLE:\"LIKE\'TBFUND%\'\" reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
+            expdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR include=TABLE:\"LIKE\'TBFUND%\'\" reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
+        fi
+    else
+        echo "数据库类型不匹配"
+        exit -1
+    fi
+    echo    "备份数据库$DBNAME 结束"
+}
+#####################################################################################备份相关函数#################################################################################
+
+#####################################################################################恢复相关函数#################################################################################
+#恢复函数,第一个变量为文件名
+function restore() 
+{
+    count=1
+    for i in ${@:2}
+     do
+        echo "排除如下表$i"
+        if [ "$DBTYPE" == "mysql" ];then
+            excludes="--ignore-table="$DBNAME"."$i" "$excludes
+        elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ]; then
+            if [ $count -eq 1 ]; then
+                count=`expr $count + 1`
+                excludes="$i"$excludes
+            else
+                excludes=$excludes,$i      
+            fi
+        elif [ "$DBTYPE" == "oracle" ]; then
+                if [ $count -eq 1 ]; then
+                    count=`expr $count + 1`
+                    excludes=\\\'"$i"\\\'$excludes
+                else
+                  excludes=$excludes"\,"\\\'"$i"\\\'      
+                fi
+        else
+            echo "数据库类型不匹配"
+            exit -1
+        fi
+     done
+    echo    "恢复数据开始:"$1 
+    if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+    	  if [ "$HOST" == "" ]; then
+            echo "dimp USERID=$USER/******** FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dimp USERID=$USER/$PWD FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y
+        else
+            echo "dimp USERID=$USER/********@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dimp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y
+        fi
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then     
+            if [ "$excludes" != "" ]; then
+                EXCLUDETABLES="--exclude-table=$excludes"
+            fi  
+    		# obloader -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET   
+			echo "obloader -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv --truncate-table --table '*' $EXCLUDETABLES -f$1"
+    		obloader -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv --truncate-table --table '*' $EXCLUDETABLES -f$1 || error_exit "执行失败"
+    elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
+            #PGPASSWORD=lightdb123 ltsql -Ulightdb -h$HOST -p $PORT -d $DBNAME -c "drop schema ${USER} cascade;" && 
+            #PGPASSWORD=lightdb123 ltsql -Ulightdb -h$HOST -p $PORT -d $DBNAME -c "create schema ${USER};" &&
+            #PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --section=post-data &&
+            #PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -j $PARALLEL -d $DBNAME --section=data &
+            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER  -d $DBNAME --section=pre-data -c -v &&
+	    PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER  -j $PARALLEL -d  $DBNAME --section=data
+    elif [ "$DBTYPE" == "mysql" ];then
+        mysql -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
+    elif [ "$DBTYPE" == "oracle" ];then
+        if [ "$HOST" == "" ]; then
+            echo "impdp $USER/********@$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL"
+            impdp $USER/$PWD@$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL
+        else
+            echo "impdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL"
+            impdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL
+        fi
+    else
+        echo "数据库类型不匹配"
+        exit -1
+    fi
+    echo    "恢复数据结束:"$1 
+}
+
+function restoretable() 
+{
+    echo    "恢复数据开始:"$1 
+    if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+        if [ "$HOST" == "" ]; then
+            echo "dimp USERID=$USER/******** FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dimp USERID=$USER/$PWD FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y
+        else
+            echo "dimp USERID=$USER/********@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
+            dimp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y
+        fi
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then 
+			echo "obloader -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv -f$1"
+    		obloader -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv -f$1 || error_exit "执行失败"
+     		#obloader -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
+    elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
+            PGPASSWORD=$PWD ltsql -U $USER -h$HOST -p $PORT -d $DBNAME -c "drop schema ${USER} cascade;" && 
+            PGPASSWORD=$PWD ltsql -U $USER -h$HOST -p $PORT -d $DBNAME -c "create schema ${USER};" &&
+            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data &&
+            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -j $PARALLEL -d $DBNAME --section=data 
+    elif [ "$DBTYPE" == "mysql" ];then
+        mysql -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
+    elif [ "$DBTYPE" == "oracle" ];then
+        if [ "$HOST" == "" ]; then
+            echo "impdp $USER/********@$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL"
+            impdp $USER/$PWD@$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL
+        else
+            echo "impdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL"
+            impdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 cluster=n DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE logfile=re$FILENAME$BACKUPFLAG.log parallel=$PARALLEL
+        fi
+    else
+        echo "数据库类型不匹配"
+        exit -1
+    fi
+    echo    "恢复数据结束:"$1 
+}
+
+##更新流程状态
+function updateprocessstatus() 
+{
+    if [ "$1" == "1" ];then
+        if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
+              #执行sql并获取结果
+          sqlstr="update tbfundtbscheduleprocess t set t.sche_deal_status='3' where (t.sche_code like '%fund_free_job_backup%' or t.sche_code like '%fund_daily_job_backup%' or t.sche_code like '%fund_daily_job_af_backup%' or t.sche_code like '%fund_daily_job_dep_backup%' or t.sche_code like '%fund_daily_job_yeb_backup%') and t.sche_deal_status ='Z';"
+          echo $sqlstr
+                if [ "$HOST" == "" ]; then
+                    conn=$USER/$PWD@$DBNAME
+                else
+                    conn=$USER/$PWD@$HOST:$PORT
+                fi
+          disql  $conn -e "$sqlstr"
+        elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
+        sql_text="update tbfundtbscheduleprocess t set t.sche_deal_status='3' where (t.sche_code like '%fund_free_job_backup%' or t.sche_code like '%fund_daily_job_backup%' or t.sche_code like '%fund_daily_job_af_backup%' or t.sche_code like '%fund_daily_job_dep_backup%' or t.sche_code like '%fund_daily_job_yeb_backup%') and t.sche_deal_status  ='Z';"
+        obclient -u$USER@$TENANT#$CLUSTER -p$PWD -h$HOST -P$PORT  -c  -D$DBNAME <<EOF
+        $sql_text
+        commit;
+        exit
+EOF
+        elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "update tbfundtbscheduleprocess t set sche_deal_status='3' where (t.sche_code like '%fund_free_job_backup%' or t.sche_code like '%fund_daily_job_backup%' or t.sche_code like '%fund_daily_job_af_backup%' or t.sche_code like '%fund_daily_job_dep_backup%' or t.sche_code like '%fund_daily_job_yeb_backup%') and t.sche_deal_status ='Z';" || error_exit "执行失败"
+		elif [ "$DBTYPE" == "mysql" ];then
+                mysql -u$USER -p$PWD -h$HOST -e "use $DBNAME;update tbfundtbscheduleprocess t set t.sche_deal_status='3' where (t.sche_code like '%fund_free_job_backup%' or t.sche_code like '%fund_daily_job_backup%' or t.sche_code like '%fund_daily_job_af_backup%' or t.sche_code like '%fund_daily_job_dep_backup%' or t.sche_code like '%fund_daily_job_yeb_backup%') and t.sche_deal_status ='Z';"  || error_exit "执行失败"
+            elif [ "$DBTYPE" == "oracle" ];then
+                #执行sql并获取结果
+                sqlstr="update tbfundtbscheduleprocess t set t.sche_deal_status='3' where (t.sche_code like '%fund_free_job_backup%' or t.sche_code like '%fund_daily_job_backup%' or t.sche_code like '%fund_daily_job_af_backup%' or t.sche_code like '%fund_daily_job_dep_backup%' or t.sche_code like '%fund_daily_job_yeb_backup%') and t.sche_deal_status ='Z';"
+                echo $sqlstr
+                if [ "$HOST" == "" ]; then
+                    conn=$USER/$PWD@$DBNAME
+                else
+                    conn=$USER/$PWD@$HOST:$PORT/$DBNAME
+                fi          
+                sql_exc=$(sqlplus -s /nolog <<EOF
+                    set echo off feedback off heading off underline off;
+                    conn  $conn;
+                    $sqlstr
+                    commit;
+                    exit;
+EOF
+            )
+            if [ -n "$sql_exc" ];then
+                    echo "执行失败,sql:[$sqlstr]"
+                exit -1;
+            fi
+        else
+            echo "数据库类型不匹配"
+            exit -1
+        fi
+    fi
+}
+
+
+#####################################################################################恢复相关函数#################################################################################
