@@ -83,6 +83,7 @@ usage()
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - ltactive                               ltactive show lightdb database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
       - ltcenter                               ltcenter show active session message
+      - lt_kill                                select pg_terminate_backend(pid);
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
       - lt_index_monitor <port> <database>     PostgreSQL monitoring database index usage
@@ -1002,8 +1003,8 @@ if [ "$1" = "ora2pg" ]; then
          for data_type in $data_type_list
          do
            echo 'exporting' ${data_type}' please wait...'
-           # 添加 -P 10 指定并行
-           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
+           # 添加 -P 20 指定并行
+           ora2pg -c ora2pg.conf -t SHOW_REPORT --estimate_cost -u $schema -p 20 -w $password -n $schema -t$data_type -b $schema -o ${data_type}_${schema}_${filedate}.sql > ${data_type}_${schema}_${filedate}.log 2>&1 &
          done
          echo 'background exporting...'
        fi
@@ -1094,6 +1095,7 @@ if [ "$1" = "ora2pg" ]; then
          ## 如果要不导入表注释掉下两行...
          echo 'Importing tables begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                                           > imp_${db_name}_${data_folder}.log 2>&1 &&
          PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^TABLE_'` >> imp_${db_name}_${data_folder}.log 2>&1 &&
+         PGPASSWORD=$password ltsql -U $username -h $ip -p $port -d $db_name -f ${data_folder}/`ls ${data_folder} | grep '^PARTITION_'` >> imp_${db_name}_${data_folder}_${import_option}.log 2>&1 &&
          for sql_file in `ls ${data_folder} | grep -v '^TABLE_' | grep -v '^FKEYS_'`
           do
            echo 'Importing '${sql_file}' begin at '`date +"%Y-%m-%d %H:%M:%S"`'...'                                        >> imp_${db_name}_${data_folder}.log 2>&1
@@ -14031,6 +14033,18 @@ if [ "$1" = "ltcenter" ]; then
 ltcenter top -U lightdb -dpostgres -h127.0.0.1 -p $2
 exit 0
 fi
+######################################################
+if [ "$1" = "lt_kill" ]; then
+
+  if [ "$2" = "" ]; then
+    echo "Usage: ora lt_kill <port> <pid>"
+    exit 1
+  fi
+
+ltsql -U lightdb -dpostgres -h127.0.0.1 -p $2 -c "select pg_terminate_backend('$3')"
+exit 0
+fi
+
 ##################################################
 if [ "$1" = "active" ]; then
 sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
