@@ -13895,12 +13895,11 @@ echo ""
 echo "select pg_terminate_backend('pid);"
 echo "======================"
  ltsql -p $2 -U lightdb -c """
-SELECT substr(md5(query),length(md5(query))-13) as sql_id,
-       pid                                                           AS os_pid,
+SELECT pid                                                            AS pid,
        usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' ||
-       client_port || '@' ||application_name                       AS "client_username_db_addr_port_appname",
+       client_port || '@' ||application_name                          AS "client_username_db_addr_port_appname",
        backend_type,
-       wait_event ||'@'||wait_event_type                             AS wait_event_class,
+       wait_event ||'@'||wait_event_type                              AS wait_event_class,
        state,
      -- date_trunc('seconds', clock_timestamp() - xact_start)::text   AS xact_age,
      -- date_trunc('seconds', clock_timestamp() - query_start)::text  AS query_age,
@@ -13917,7 +13916,7 @@ ORDER BY duration DESC;
  """
  ltsql -p $2 -U lightdb -c """
 select
-substr(md5(query),length(md5(query))-13) as sql_id,
+pid,
 pg_get_userbyid(userid) as "user",
 now() - query_start AS duration,
 --query,
