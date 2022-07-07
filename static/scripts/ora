@@ -8371,10 +8371,9 @@ fi
 if [ "$1" = "ltlock" -o "$1" = "ltwait_chain" ]; then
 
   if [ "$2" = "" ]; then
-    echo "Usage: ora ltwait_chain <port>"
+    echo "Usage: ora lt_lock <port>"
     exit 1
   fi
-
 
  ltsql -p $2 -Ulightdb -c """
 WITH RECURSIVE
@@ -8465,7 +8464,7 @@ WITH RECURSIVE
 , blocking_lock AS (
   SELECT
     ARRAY[date_part('epoch', query_start)::int, pid] AS seq,
-     0::int AS depth,
+     0::int AS "depth",
     -1::int AS blocker_pid,
     pid,
     concat('Connect: ',usename,' ',datname,' ',coalesce(host(client_addr)||':'||client_port, 'local')
@@ -8516,11 +8515,8 @@ UNION ALL
   LEFT JOIN acquired_lock acq ON (acq.pid = blocked.pid)
   WHERE blocker.depth < 5
   )
-SELECT concat(lpad('=> ', 4*depth, ' '),pid::text) AS "PID"
-, lock_info AS "Lock Info"
-, lock_state AS "State"
-FROM blocking_lock
-ORDER BY seq;
+SELECT concat(lpad('=> ', 4*depth, ' '),pid::text) AS "PID", lock_info AS "Lock Info", lock_state AS "State"
+FROM blocking_lock ORDER BY seq;
  """
 !
 exit 0
