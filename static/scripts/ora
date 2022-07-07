@@ -8544,7 +8544,6 @@ FROM pg_catalog.pg_database d
 !
 exit 0
 fi
-
 ############################################
 if [ "$1" = "awrsnap" -o "$1" = "listsnap" ]; then
 
