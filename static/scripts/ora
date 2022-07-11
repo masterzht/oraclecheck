@@ -13912,7 +13912,7 @@ WHERE state != 'idle'
   and now() - query_start > '0.0001s'::interval
   -- AND ((clock_timestamp() - xact_start) > '{{.QueryAgeThresh}}'::interval OR (clock_timestamp() - query_start) > '{{.QueryAgeThresh}}'::interval)
 ORDER BY duration DESC;
- """
+"""
  ltsql -p $2 -U lightdb -c """
 select
 pid,

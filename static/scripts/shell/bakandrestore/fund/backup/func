@@ -1,4 +1,5 @@
-lt_restore#!/bin/bash
+
+#!/bin/bash
 
 function error_exit {
   exit -1
@@ -6,15 +7,15 @@ function error_exit {
 
 
 #####################################################################################备份相关函数#################################################################################
-# 备份整库并排除部分表 
+# 备份整库并排除部分表
 # 参数$1为输出文件 $2-$N为排除的表名 ，无需排除任何表则不用填后面参数
-function expdb() 
+function expdb()
 {
-    if [ -z "$1" ];then 
+    if [ -z "$1" ];then
       echo "备份文件导出路径必输"
       exit -1
     fi
-    
+
     echo    "备份数据库$DBNAME开始"
     count=1
     for i in ${@:2}
@@ -24,8 +25,12 @@ function expdb()
 			if [ $count -eq 1 ]; then
 				count=$(expr $count + 1)
 				excludes="$i"$excludes
+				excludes_in_sql="$i"$excludes_in_sql
+				excludes_recover_single="$i"$excludes_recover_single
 			else
 				excludes=$excludes" --exclude-table=$i "
+				excludes_in_sql="$i','"$excludes_in_sql
+				excludes_recover_single=$excludes_recover_single" -t $i "
 			fi
 		elif [ "$DBTYPE" == "mysql" ];then
             excludes="--ignore-table="$DBNAME"."$i" "$excludes
@@ -34,14 +39,14 @@ function expdb()
                 count=`expr $count + 1`
                 excludes="$i"$excludes
             else
-                excludes=$excludes,$i      
+                excludes=$excludes,$i
             fi
         elif [ "$DBTYPE" == "oracle" ]; then
                 if [ $count -eq 1 ]; then
                     count=`expr $count + 1`
                     excludes=\\\'"$i"\\\'$excludes
                 else
-                  excludes=$excludes"\,"\\\'"$i"\\\'      
+                  excludes=$excludes"\,"\\\'"$i"\\\'
                 fi
         else
             echo "数据库类型不匹配"
@@ -58,7 +63,7 @@ function expdb()
         else
             echo "dexp USERID=$USER/********@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR $EXCLUDETABLES  LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
             dexp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR $EXCLUDETABLES LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y|| error_exit "执行失败"
-        fi 
+        fi
     elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
             if [ "$excludes" != "" ]; then
                 EXCLUDETABLES="--exclude-table=$excludes"
@@ -71,22 +76,29 @@ function expdb()
 	elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
 		#lightdb的备份
 		if [ "$excludes" == "" ]; then
-                        # 备份操作同时备份出删除外键和创建索引约束的脚本
+            # 备份操作同时备份出删除外键、创建索引约束、truncate table、drop indexes的脚本,
 			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v"
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v "
             rm -rf ${1} &&
-			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v && 
-            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql && 
-            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select table_name||','|| ddl as ddl from (SELECT case when split_part(conrelid::regclass::text, '.', 2) = '' then conrelid::regclass::text else split_part(conrelid::regclass::text, '.', 2) end as table_name, 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '$USER' union all select tablename, indexdef as ddl from pg_indexes where schemaname = '$USER') order by table_name;" -t > ${1}_Create_ConAndInd.sql && 
-            sed -i '/^$/d' ${1}_Create_ConAndInd.sql || error_exit "执行失败"
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v &&
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',') || ';' from pg_tables where schemaname='$USER'; " -t > $1_TruncateTable.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
 		else
 			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --if-exists -c -f $1 -v "
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $excludes_recover_single -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v "
+	        echo """select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBBACKUPINFO','TBRESTOREINFO');"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
 	        rm -rf ${1} &&
-            PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --if-exists -c -f $1 -v && 
-            PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
-            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select table_name||','|| ddl as ddl from (SELECT case when split_part(conrelid::regclass::text, '.', 2) = '' then conrelid::regclass::text else split_part(conrelid::regclass::text, '.', 2) end as table_name, 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '$USER' union all select tablename, indexdef as ddl from pg_indexes where schemaname = '$USER') order by table_name;" -t > ${1}_Create_ConAndInd.sql && 
-            sed -i '/^$/d' ${1}_Create_ConAndInd.sql || error_exit "执行失败"
+            PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --if-exists -c -f $1 -v &&
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $excludes_recover_single -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBBACKUPINFO','TBRESTOREINFO'); " -t > $1_TruncateTable.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
 		fi
-    elif [ "$DBTYPE" == "mysql" ];then 
+    elif [ "$DBTYPE" == "mysql" ];then
         #/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
         mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
     elif [ "$DBTYPE" == "oracle" ];then
@@ -98,7 +110,7 @@ function expdb()
 				echo "expdp $USER/********@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n EXCLUDE=STATISTICS,DB_LINK,password_history DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
 				expdp $USER/$PWD@$HOST:$PORT/$DBNAME DUMPFILE=$1 schemas=$USER cluster=n EXCLUDE=STATISTICS,DB_LINK,password_history DIRECTORY=$BACKUPDIR  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL || error_exit "执行失败"
 			fi
-		else 
+		else
 			EXCLUDETABLES="EXCLUDE=table:\"IN\($excludes\)\""
 			if [ "$HOST" == "" ]; then
 				echo "expdp $USER/********@$DBNAME DUMPFILE=$1 schemas=$USER DIRECTORY=$BACKUPDIR cluster=n EXCLUDE=STATISTICS,DB_LINK,password_history $EXCLUDETABLES  reuse_dumpfiles=y logfile=$FILENAME$BACKUPFLAG.log compression=ALL parallel=$PARALLEL"
@@ -115,13 +127,13 @@ function expdb()
     echo    "备份数据库$DBNAME 结束"
 }
 
-function exptable() 
+function exptable()
 {
-	if [ -z "$1" ];then              
+	if [ -z "$1" ];then
 	  echo "备份文件导出路径必输"
 	  exit -1
 	fi
-	
+
 	echo    "备份数据库$DBNAME开始"
 	if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
 			if [ "$HOST" == "" ]; then
@@ -140,9 +152,15 @@ function exptable()
 	elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
 		echo "BACKUPTABLES=$BACKUPTABLES"
 		BACKUPTABLES=$(echo $BACKUPTABLES | sed 's/ / -t /g')
+		BACKUPTABLES_IN_SQL=$(echo $BACKUPTABLES | sed "s/ /','/g")
+
 		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v"
         rm -rf ${1} &&
-		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v || error_exit "执行失败"
+		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v &&
+		PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) in ('$BACKUPTABLES_IN_SQL');" -t > $1_TruncateTable.sql &&
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+
 	elif [ "$DBTYPE" == "mysql" ];then
 		#/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $BACKUPTABLES >> $1 || error_exit "执行失败"
     echo "mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 "
@@ -162,13 +180,13 @@ function exptable()
 	echo    "备份数据库$DBNAME 结束"
 }
 
-function exptablelikes() 
+function exptablelikes()
 {
-    if [ -z "$1" ];then 
+    if [ -z "$1" ];then
       echo "备份文件导出路径必输"
       exit -1
     fi
-    
+
     echo    "备份数据库$DBNAME开始"
     count=1
     for i in ${@:2}
@@ -181,14 +199,14 @@ function exptablelikes()
                     count=`expr $count + 1`
                     excludes=\\\'"$i"\\\'$excludes
                 else
-                  excludes=$excludes"\,"\\\'"$i"\\\' 
+                  excludes=$excludes"\,"\\\'"$i"\\\'
                 fi
         else
             echo "数据库类型不匹配"
             exit -1
         fi
      done
-    
+
     if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
         if [ "$HOST" == "" ]; then
             echo "dexp USERID=$USER/********@$DBNAME FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y FUZZY_MATCH=Y "
@@ -197,15 +215,15 @@ function exptablelikes()
             echo "dexp USERID=$USER/********@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y FUZZY_MATCH=Y "
             dexp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLES=$USER."TBFUND%" LOG=$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL  DUMMY=Y FUZZY_MATCH=Y || error_exit "执行失败"
         fi
-    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then 
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
     		count=1
         for i in $(obclient -u$USER -p$PWD -h$HOST -P$PORT $DBNAME -Bse "select * from user_tables where table_name like 'TBFUND%'")
-          do 
+          do
             if [ $count -eq 1 ];then
                         count=`expr $count + 1`
                         includesql="$i"$includesql
             else
-              includesql=$includesql" $i" 
+              includesql=$includesql" $i"
             fi
           done
         echo " obdumper  -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $includesql  > $1"
@@ -216,25 +234,29 @@ function exptablelikes()
 			if [ $count -eq 1 ]; then
 				count=$(expr $count + 1)
 				includesql="$i"$includesql
+                includesql_in_sql="$i"$includesql_in_sql
 			else
 				includesql=$includesql" -t $i"
+				includesql_in_sql="$i','"$includesql_in_sql
 			fi
 		done
 		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $includesql -F d -j $PARALLEL --if-exists -c -f $1 -v"
         #PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p $PORT -d $DBNAME -n $USER -t $includesql -F d -j $PARALLEL --no-publications --no-subscriptions --no-unlogged-table-data --if-exists -c -f $1 &&
         rm -rf ${1} &&
 		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p $PORT -d $DBNAME -n $USER -t $includesql -F d -j $PARALLEL --if-exists -c -f $1 -v &&
-        PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER' and c.conrelid::regclass::text like 'tbfund%';" -t > ${1}_Foreign_Key.sql  || error_exit "执行失败"
+ 		PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and lower(tablename) in ('$includesql_in_sql');" -t > $1_TruncateTable.sql &&
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER' and c.conrelid::regclass::text like 'tbfund%';" -t > ${1}_Foreign_Key.sql  &&
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
 
 	elif [ "$DBTYPE" == "mysql" ];then
         count=1
         for i in $(mysql -u$USER -p$PWD -h$HOST -P$PORT $DBNAME -Bse "show tables like 'TBFUND%'")
-          do 
+          do
             if [ $count -eq 1 ];then
                         count=`expr $count + 1`
                         includesql="$i"$includesql
             else
-              includesql=$includesql" $i" 
+              includesql=$includesql" $i"
             fi
           done
         #/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes >> $1 || error_exit "执行失败"
@@ -258,7 +280,7 @@ function exptablelikes()
 
 #####################################################################################恢复相关函数#################################################################################
 #恢复函数,第一个变量为文件名
-function restore() 
+function restore()
 {
     count=1
     for i in ${@:2}
@@ -271,21 +293,21 @@ function restore()
                 count=`expr $count + 1`
                 excludes="$i"$excludes
             else
-                excludes=$excludes,$i      
+                excludes=$excludes,$i
             fi
         elif [ "$DBTYPE" == "oracle" ]; then
                 if [ $count -eq 1 ]; then
                     count=`expr $count + 1`
                     excludes=\\\'"$i"\\\'$excludes
                 else
-                  excludes=$excludes"\,"\\\'"$i"\\\'      
+                  excludes=$excludes"\,"\\\'"$i"\\\'
                 fi
         else
             echo "数据库类型不匹配"
             exit -1
         fi
      done
-    echo    "恢复数据开始:"$1 
+    echo    "恢复数据开始:"$1
     if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
     	  if [ "$HOST" == "" ]; then
             echo "dimp USERID=$USER/******** FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
@@ -294,15 +316,16 @@ function restore()
             echo "dimp USERID=$USER/********@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
             dimp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 SCHEMAS=$USER DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y || error_exit "执行失败"
         fi
-    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then     
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
             if [ "$excludes" != "" ]; then
                 EXCLUDETABLES="--exclude-table=$excludes"
-            fi  
-    		# obloader -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET   
+            fi
+    		# obloader -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
 			echo "obloader -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv --truncate-table --table '*' $EXCLUDETABLES -f$1"
     		obloader -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv --truncate-table --table '*' $EXCLUDETABLES -f$1 || error_exit "执行失败"
     elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
             #先删掉外键,因为fund60pub schema存在外键,如果指定-c 进行删除表会因父表和子表依赖错误从而删除失败
+            echo "PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --if-exists -c -v "
             PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_Foreign_Key.sql &&
             PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --if-exists -c -v &&
             PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data --if-exists -c -v &&
@@ -321,12 +344,12 @@ function restore()
         echo "数据库类型不匹配"
         exit -1
     fi
-    echo    "恢复数据结束:"$1 
+    echo    "恢复数据结束:"$1
 }
 
-function restoretable() 
+function restoretable()
 {
-    echo    "恢复数据开始:"$1 
+    echo    "恢复数据开始:"$1
     if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
         if [ "$HOST" == "" ]; then
             echo "dimp USERID=$USER/******** FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
@@ -335,21 +358,17 @@ function restoretable()
             echo "dimp USERID=$USER/********@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y"
             dimp USERID=$USER/$PWD@$HOST:$PORT FILE=$1 DIRECTORY=$BACKUPDIR TABLE_EXISTS_ACTION=REPLACE LOG=re$FILENAME$BACKUPFLAG.log PARALLEL=$PARALLEL DUMMY=Y || error_exit "执行失败"
         fi
-    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then 
+    elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then
 			echo "obloader -u$USER -p******** -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv -f$1"
     		obloader -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv -f$1 || error_exit "执行失败"
      		#obloader -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
     elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
-            #恢复trans和acco schema会走到这个分支进程恢复操作, java -jar 解决索引并行导入冲突和效率问题
-            #PGPASSWORD=$PWD ltsql -U $USER -h$HOST -p $PORT -d $DBNAME -c "drop schema ${USER} cascade;" && 
-            #PGPASSWORD=$PWD ltsql -U $USER -h$HOST -p $PORT -d $DBNAME -c "create schema ${USER};" &&
-            #PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data -v &&
-            #先删掉外键,因为fund60pub schema存在外键,如果指定-c 进行删除表会因父表和子表依赖错误从而删除失败
-            PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_Foreign_Key.sql &&
-            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --if-exists -c -v &&
-            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -j $PARALLEL -d $DBNAME --section=data --if-exists -c -v &&
-            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=post-data --if-exists -c -v  
-            #java -jar $PGHOME/bin/lt_lightdb_executor.jar "jdbc:postgresql://${HOST}:${PORT}/${DBNAME}" "${USER}" "${PWD}" ${1}_Create_ConAndInd.sql
+            #恢复fund60trans 用户schema会走到这个分支进程恢复操作
+            echo "PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_TruncateTable.sql"
+            echo "PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data -v"
+            PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_TruncateTable.sql &&
+            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data -v
+	        #PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_excludes_recover_single.sql
     elif [ "$DBTYPE" == "mysql" ];then
         mysql -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
     elif [ "$DBTYPE" == "oracle" ];then
@@ -364,11 +383,11 @@ function restoretable()
         echo "数据库类型不匹配"
         exit -1
     fi
-    echo    "恢复数据结束:"$1 
+    echo    "恢复数据结束:"$1
 }
 
 ##更新流程状态
-function updateprocessstatus() 
+function updateprocessstatus()
 {
     if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
           #执行sql并获取结果
@@ -399,7 +418,7 @@ EOF
             conn=$USER/$PWD@$DBNAME
         else
             conn=$USER/$PWD@$HOST:$PORT/$DBNAME
-        fi          
+        fi
         sql_exc=$(sqlplus -s /nolog <<EOF
             set echo off feedback off heading off underline off;
             conn  $conn;
@@ -420,3 +439,4 @@ EOF
 
 
 #####################################################################################恢复相关函数#################################################################################
+

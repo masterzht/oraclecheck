@@ -32,7 +32,7 @@ if [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "dm" ];then
 	   restoretable $FILENAME$BACKUPFLAG$BUSINTYPE.dmp 
 	fi
 elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
-		restore $BACKUPDIR/$FILENAME$BACKUPFLAG$BUSINTYPE
+		restoretable $BACKUPDIR/$FILENAME$BACKUPFLAG$BUSINTYPE
 elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "pg" ];then
 		restore $BACKUPDIR/$FILENAME$BACKUPFLAG$BUSINTYPE
 elif [ "$DBTYPE" == "oracle" ] && [ "$SUBDBTYPE" == "oceanbase" ];then

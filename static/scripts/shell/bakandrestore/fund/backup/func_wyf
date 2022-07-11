@@ -105,9 +105,9 @@ function expdb()
 	elif [ "$DBTYPE" == "mysql" -a "$SUBDBTYPE"=="lightdb" ]; then
 		#lightdb的备份
 		if [ "$excludes" == "" ]; then
-			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit \"执行失败\""
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL -f $1 || error_exit \"执行失败\""
 			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -t -c "select ' -I ' || listagg(indexname,' -I ') from pg_indexes where schemaname='$USER' group by tablename " > ${1}_index.txt
-			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit "执行失败"
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL -f $1 || error_exit "执行失败"
 		else
 			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -t -c "select ' -I ' || listagg(indexname,' -I ') from pg_indexes where schemaname='$USER' and tablename "'!~*'" '$excludes' group by tablename " > ${1}_index.txt
 			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -F t --exclude-table=$excludes -n$USER -f $1 || error_exit \"执行失败\""
@@ -168,9 +168,9 @@ function exptable()
 		echo "BACKUPTABLES=$BACKUPTABLES"
 		IN_CONDITION="'"$(echo $BACKUPTABLES | sed "s/ /','/g")"'"
 		BACKUPTABLES=$(echo $BACKUPTABLES | sed 's/ / -t /g')
-		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL  --no-publications --no-subscriptions --no-unlogged-table-data -f $1 || error_exit \"执行失败\""
+		echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL -f $1 || error_exit \"执行失败\""
 		PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -t -c "select '-I ' || listagg(indexname,' -I ') from pg_indexes where schemaname='$USER' and tablename in ('IN_CONDITION') group by tablename " > ${1}_index.txt
-		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL --no-publications --no-subscriptions --no-unlogged-table-data  -f $1 || error_exit "执行失败"
+		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL -f $1 || error_exit "执行失败"
 	elif [ "$DBTYPE" == "mysql" ];then
 		#/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $BACKUPTABLES >> $1 || error_exit "执行失败"
     echo "mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 "
