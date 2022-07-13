@@ -84,20 +84,48 @@ function expdb()
 			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
 			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',') || ';' from pg_tables where schemaname='$USER'; " -t > $1_TruncateTable.sql &&
             PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
-            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD constraint ' || c.conname || ' '|| pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+		elif [ "$excludes" != "" -o "$1" = "fund60pub" ]; then
+		    #排除表 fund60pub
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --exclude-table=TBFUNDBAKRESMAPPINGTABLE --if-exists -c -f $1 -v "
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -t $excludes_recover_single -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v "
+	        echo """select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBFUNDBAKRESMAPPINGTABLE','TBFUNDTBSCHEDULETASK','TBFUNDTBSCHEDULEAPPPROCESS','TBFUNDTBSCHEDULEJOB','TBFUNDTBSCHEDULEPROCESS','TBFUNDTBHISSCHEDULEPROCESS');"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
+            rm -rf ${1} &&
+            rm -rf ${1}_excludes_recover_single.sql &&
+            PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --exclude-table=TBFUNDBAKRESMAPPINGTABLE --exclude-table=TBFUNDTBSCHEDULETASK --exclude-table=TBFUNDTBSCHEDULEAPPPROCESS --exclude-table=TBFUNDTBSCHEDULEJOB --exclude-table=TBFUNDTBSCHEDULEPROCESS --exclude-table=TBFUNDTBHISSCHEDULEPROCESS --if-exists -c -f $1 -v &&
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -t $excludes_recover_single -t dual -t TBFUNDBAKRESMAPPINGTABLE -t TBFUNDTBSCHEDULETASK -t TBFUNDTBSCHEDULEAPPPROCESS -t TBFUNDTBSCHEDULEJOB -t TBFUNDTBSCHEDULEPROCESS -t TBFUNDTBHISSCHEDULEPROCESS -t tbscheduleprocess -t tbscheduletask --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBFUNDBAKRESMAPPINGTABLE','TBFUNDTBSCHEDULETASK','TBFUNDTBSCHEDULEAPPPROCESS','TBFUNDTBSCHEDULEJOB','TBFUNDTBSCHEDULEPROCESS','TBFUNDTBHISSCHEDULEPROCESS'); " -t > $1_TruncateTable.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+		elif [ "$excludes" != "" and $1 == "fund60query" ]; then
+		    #排除表 fund60query
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --exclude-table=TBFUNDBAKRESMAPPINGTABLE --exclude-table=TBFUNDTBSCHEDULETASK --exclude-table=TBFUNDTBSCHEDULEAPPPROCESS --exclude-table=TBFUNDTBSCHEDULEJOB --exclude-table=TBFUNDTBSCHEDULEPROCESS --exclude-table=TBFUNDTBHISSCHEDULEPROCESS --if-exists -c -f $1 -v "
+			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -t $excludes_recover_single -t dual -t TBFUNDBAKRESMAPPINGTABLE -t TBFUNDTBSCHEDULETASK -t TBFUNDTBSCHEDULEAPPPROCESS -t TBFUNDTBSCHEDULEJOB -t TBFUNDTBSCHEDULEPROCESS -t TBFUNDTBHISSCHEDULEPROCESS -t tbscheduleprocess -t tbscheduletask --if-exists -c -f ${1}_excludes_recover_single.sql -v "
+	        echo """select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBFUNDBAKRESMAPPINGTABLE','TBFUNDTBSCHEDULETASK','TBFUNDTBSCHEDULEAPPPROCESS','TBFUNDTBSCHEDULEJOB','TBFUNDTBSCHEDULEPROCESS','TBFUNDTBHISSCHEDULEPROCESS');"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
+	        echo """SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
+            rm -rf ${1} &&
+            rm -rf ${1}_excludes_recover_single.sql &&
+            PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --exclude-table=TBFUNDBAKRESMAPPINGTABLE --exclude-table=TBFUNDTBSCHEDULETASK --exclude-table=TBFUNDTBSCHEDULEAPPPROCESS --exclude-table=TBFUNDTBSCHEDULEJOB --exclude-table=TBFUNDTBSCHEDULEPROCESS --exclude-table=TBFUNDTBHISSCHEDULEPROCESS --if-exists -c -f $1 -v &&
+			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -t $excludes_recover_single -t dual -t TBFUNDBAKRESMAPPINGTABLE -t TBFUNDTBSCHEDULETASK -t TBFUNDTBSCHEDULEAPPPROCESS -t TBFUNDTBSCHEDULEJOB -t TBFUNDTBSCHEDULEPROCESS -t TBFUNDTBHISSCHEDULEPROCESS -t tbscheduleprocess -t tbscheduletask --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBFUNDBAKRESMAPPINGTABLE','TBFUNDTBSCHEDULETASK','TBFUNDTBSCHEDULEAPPPROCESS','TBFUNDTBSCHEDULEJOB','TBFUNDTBSCHEDULEPROCESS','TBFUNDTBHISSCHEDULEPROCESS'); " -t > $1_TruncateTable.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
 		else
 			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --if-exists -c -f $1 -v "
 			echo "PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $excludes_recover_single -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v "
-	        echo """select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBBACKUPINFO','TBRESTOREINFO');"""
+	        echo """select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql');"""
 	        echo """SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
 	        echo """SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';"""
 	        rm -rf ${1} &&
             PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -F d -j $PARALLEL --exclude-table=$excludes --if-exists -c -f $1 -v &&
 			PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -n$USER -t $excludes_recover_single -t dual --if-exists -c -f ${1}_excludes_recover_single.sql -v &&
-			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql') and upper(tablename) not in ('TBBACKUPINFO','TBRESTOREINFO'); " -t > $1_TruncateTable.sql &&
+			PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) not in ('$excludes_in_sql'); " -t > $1_TruncateTable.sql &&
             PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
-            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD constraint ' || c.conname || ' '|| pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
-        fi
+            PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+		fi
     elif [ "$DBTYPE" == "mysql" ];then
         #/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
         mysqldump  -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $excludes > $1 || error_exit "执行失败"
@@ -159,7 +187,8 @@ function exptable()
 		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p$PORT -d$DBNAME -t $BACKUPTABLES -n$USER -F d -j $PARALLEL --if-exists -c -f $1 -v &&
 		PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and upper(tablename) in ('$BACKUPTABLES_IN_SQL');" -t > $1_TruncateTable.sql &&
         PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Foreign_Key.sql &&
-        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD constraint ' || c.conname || ' '|| pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+
 	elif [ "$DBTYPE" == "mysql" ];then
 		#/usr/local/mysql-5.7.28-macos10.14-x86_64/bin/mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT $DBNAME $BACKUPTABLES >> $1 || error_exit "执行失败"
     echo "mysqldump --master-data=2 --single-transaction=TRUE -u$USER -p$PWD -h$HOST -P$PORT --databases $DBNAME --table $BACKUPTABLES > $1 "
@@ -245,7 +274,8 @@ function exptablelikes()
 		PGPASSWORD=$PWD lt_dump -U$USER -h$HOST -p $PORT -d $DBNAME -n $USER -t $includesql -F d -j $PARALLEL --if-exists -c -f $1 -v &&
  		PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "select 'truncate table ' || string_agg(schemaname||'.'||tablename,',')  || ';' from pg_tables where schemaname='$USER' and lower(tablename) in ('$includesql_in_sql');" -t > $1_TruncateTable.sql &&
         PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass || ' drop constraint if EXISTS ' || conname || ';' ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER' and c.conrelid::regclass::text like 'tbfund%';" -t > ${1}_Foreign_Key.sql  &&
-        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD constraint ' || c.conname || ' '|| pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+        PGPASSWORD=$PWD ltsql -U$USER -h$HOST -p$PORT -d$DBNAME -c "SELECT 'alter table ' || c.conrelid::regclass::text || ' ADD ' || pg_get_constraintdef(c.oid) ||';' as ddl FROM pg_constraint c INNER JOIN pg_namespace n ON n.oid = c.connamespace WHERE c.contype = 'f' and n.nspname = '$USER';" -t > ${1}_Create_ForeignKey.sql || error_exit "执行失败"
+
 	elif [ "$DBTYPE" == "mysql" ];then
         count=1
         for i in $(mysql -u$USER -p$PWD -h$HOST -P$PORT $DBNAME -Bse "show tables like 'TBFUND%'")
@@ -323,12 +353,11 @@ function restore()
     		obloader -u$USER -p$PWD -h$HOST -P$PORT  -c$CLUSTER -t$TENANT  -D$DBNAME --csv --truncate-table --table '*' $EXCLUDETABLES -f$1 || error_exit "执行失败"
     elif [ "$DBTYPE" == "mysql" ] && [ "$SUBDBTYPE" == "lightdb" ];then
             #先删掉外键,因为fund60pub schema存在外键,如果指定-c 进行删除表会因父表和子表依赖错误从而删除失败
-            echo "PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --if-exists -c -v "
+            echo "PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data -v"
             PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_Foreign_Key.sql &&
-            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=pre-data --if-exists -c -v &&
-            PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --section=post-data --if-exists -c -v &&
-            PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_Foreign_Key.sql &&
+            PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_TruncateTable.sql &&
             PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data --if-exists -c -v &&
+            PGPASSWORD=$PWD lt_restore ${1}_excludes_recover_single.sql -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME --if-exists -c -v &&
             PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_Create_ForeignKey.sql
     elif [ "$DBTYPE" == "mysql" ];then
         mysql -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
@@ -368,7 +397,6 @@ function restoretable()
             echo "PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data -v"
             PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_TruncateTable.sql &&
             PGPASSWORD=$PWD lt_restore $1 -U $USER -h $HOST -p $PORT -n $USER -d $DBNAME -j $PARALLEL --section=data -v
-	        #PGPASSWORD=$PWD ltsql -U $USER -h $HOST -p $PORT -d $DBNAME -f ${1}_excludes_recover_single.sql
     elif [ "$DBTYPE" == "mysql" ];then
         mysql -u$USER -p$PWD -h$HOST $DBNAME < $1 --default-character-set=$CHARSET
     elif [ "$DBTYPE" == "oracle" ];then
