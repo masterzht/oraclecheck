@@ -16,16 +16,20 @@ pg_stat_get_db_temp_bytes(d.oid) AS temp_bytes,
 pg_stat_get_db_deadlocks(d.oid) AS deadlocks,
 pg_stat_get_db_blk_read_time(d.oid) AS blk_read_time,
 pg_stat_get_db_blk_write_time(d.oid) AS blk_write_time,
-pg_database_size(d.oid) AS db_size, age(datfrozenxid),
+cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size, age(datfrozenxid),
 pg_stat_get_db_stat_reset_time(d.oid) AS stats_reset
 FROM pg_database d
 )
 SELECT datname DB,
-xact_commit commits,
-xact_rollback rollbacks,
-tup_inserted+tup_updated+tup_deleted transactions,
-CASE WHEN blks_fetch > 0 THEN blks_hit*100/blks_fetch ELSE NULL END  hit_ratio,temp_files,temp_bytes,
-db_size,age FROM pg_get_db;
+       xact_commit commits,
+       xact_rollback rollbacks,
+       tup_inserted+tup_updated+tup_deleted transactions,
+       CASE WHEN blks_fetch > 0 THEN blks_hit*100/blks_fetch ELSE NULL END  hit_ratio,
+       temp_files,
+       temp_bytes,
+       db_size,
+       age
+FROM pg_get_db;
 
 
 SELECT d.datname,
@@ -192,8 +196,28 @@ JOIN pg_get_confs lru ON lru.name = 'bgwriter_lru_maxpages';
 --------------
 --------------
 
-
-
-
-
-
+WITH max_age AS (
+            SELECT 2147483648::numeric as max_old_xid
+                 , setting    AS autovacuum_freeze_max_age
+            FROM pg_catalog.pg_settings
+            WHERE name = 'autovacuum_freeze_max_age'),
+     per_database_stats AS (
+            SELECT datname
+                 , m.max_old_xid::numeric
+             , m.autovacuum_freeze_max_age::numeric
+                 , age(d.datfrozenxid) AS oldest_current_xid
+            FROM pg_catalog.pg_database d
+            JOIN max_age m ON (true)
+            WHERE d.datallowconn
+            and datname != 'template1')
+        SELECT 'instance'                                                                   datname
+             , max(oldest_current_xid)                                                   AS oldest_current_xid
+             , max(ROUND(100 * (oldest_current_xid / max_old_xid::float)))               AS percent_towards_wraparound
+             , max(ROUND(100 * (oldest_current_xid / autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac
+        FROM per_database_stats
+        union all
+        SELECT datname
+             , oldest_current_xid                                                   AS oldest_current_xid
+             , ROUND(100 * (oldest_current_xid / max_old_xid::float),4)               AS percent_towards_wraparound
+             , ROUND(100 * (oldest_current_xid / autovacuum_freeze_max_age::float),4) AS percent_towards_emergency_autovac
+        FROM per_database_stats order by 1;

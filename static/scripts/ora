@@ -83,6 +83,7 @@ usage()
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - ltactive                               ltactive show lightdb database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
       - ltcenter                               ltcenter show active session message
+      - lt_db_age                              show database age free information
       - lt_kill                                select pg_terminate_backend(pid);
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
@@ -13972,8 +13973,47 @@ JOIN pg_get_confs lru ON lru.name = 'bgwriter_lru_maxpages';
 exit 0
 fi
 ######################################################
-
-
+if [ "$1" = "lt_db_age" ]; then
+  if [ "$2" = "" ]; then
+    echo "Usage: ora lt_db_age <port>"
+    exit 1
+  fi
+ ltsql -p $2 -U lightdb -c """
+with pg_get_db as
+(
+SELECT d.oid, d.datname,
+pg_stat_get_db_xact_commit(d.oid) AS xact_commit,
+pg_stat_get_db_xact_rollback(d.oid) AS xact_rollback,
+pg_stat_get_db_blocks_fetched(d.oid) AS blks_fetch,
+pg_stat_get_db_blocks_hit(d.oid) AS blks_hit,
+pg_stat_get_db_tuples_returned(d.oid) AS tup_returned,
+pg_stat_get_db_tuples_fetched(d.oid) AS tup_fetched,
+pg_stat_get_db_tuples_inserted(d.oid) AS tup_inserted,
+pg_stat_get_db_tuples_updated(d.oid) AS tup_updated,
+pg_stat_get_db_tuples_deleted(d.oid) AS tup_deleted,
+pg_stat_get_db_temp_files(d.oid) AS temp_files,
+pg_stat_get_db_temp_bytes(d.oid) AS temp_bytes,
+pg_stat_get_db_deadlocks(d.oid) AS deadlocks,
+pg_stat_get_db_blk_read_time(d.oid) AS blk_read_time,
+pg_stat_get_db_blk_write_time(d.oid) AS blk_write_time,
+cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size, age(datfrozenxid),
+pg_stat_get_db_stat_reset_time(d.oid) AS stats_reset
+FROM pg_database d
+)
+SELECT datname DB,
+       xact_commit commits,
+       xact_rollback rollbacks,
+       tup_inserted+tup_updated+tup_deleted transactions,
+       CASE WHEN blks_fetch > 0 THEN blks_hit*100/blks_fetch ELSE NULL END  hit_ratio,
+       temp_files,
+       temp_bytes,
+       db_size,
+       age
+FROM pg_get_db;
+ """
+exit 0
+fi
+######################################################
 if [ "$1" = "ltcenter" ]; then
 
   if [ "$2" = "" ]; then
