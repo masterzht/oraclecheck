@@ -28,7 +28,42 @@ CASE WHEN blks_fetch > 0 THEN blks_hit*100/blks_fetch ELSE NULL END  hit_ratio,t
 db_size,age FROM pg_get_db;
 
 
--- table-info
+SELECT d.datname,
+       datid,
+       age(datfrozenxid)                        AS age,
+       datistemplate                            AS is_template,
+       datallowconn                             AS allow_conn,
+       datconnlimit                             AS conn_limit,
+       datfrozenxid::TEXT::BIGINT               as frozen_xid,
+       numbackends,
+       xact_commit,
+       xact_rollback,
+       xact_rollback + xact_commit              AS xact_total,
+       blks_read,
+       blks_hit,
+       blks_read + blks_hit                     AS blks_access,
+       tup_returned,
+       tup_fetched,
+       tup_inserted,
+       tup_updated,
+       tup_deleted,
+       tup_inserted + tup_updated + tup_deleted AS tup_modified,
+       conflicts,
+       temp_files,
+       temp_bytes,
+       deadlocks,
+       coalesce(checksum_failures, -1)          AS cks_fails,
+       checksum_last_failure                    AS cks_fail_time,
+       blk_read_time,
+       blk_write_time,
+       extract(EPOCH FROM stats_reset)          AS reset_time
+FROM pg_database d
+         JOIN pg_stat_database sd ON d.oid = sd.datid;
+
+
+--------------------------------------------------------
+-- table info
+--------------------------------------------------------
 with pg_get_rel as (select oid                                                                                  AS relid,
                            relnamespace,
                            relpages::bigint                                                                        blks,
@@ -98,14 +133,15 @@ FROM pg_get_rel r
 ORDER BY r.tab_ind_size DESC
 LIMIT 10000;
 
-----------
-
+------------------------------------------
+-- index info
+------------------------------------------
 with pg_get_index as (
 SELECT indexrelid as indexrelid,indrelid,indisunique,indisprimary, pg_stat_get_numscans(indexrelid) as numscans,pg_table_size(indexrelid) as size from pg_index),
      pg_get_class as (
 SELECT oid as reloid ,relname,relkind,relnamespace FROM pg_class WHERE relnamespace NOT IN (SELECT oid FROM pg_namespace WHERE nspname in ('pg_catalog','information_schema'))
      )
-SELECT ct.relname AS "Table", ci.relname as "Index",indisunique,indisprimary,numscans,size
+SELECT ct.relname AS "Table", ci.relname as "Index",indisunique as "unique?",indisprimary as "primary?",numscans,size
   FROM pg_get_index i
   JOIN pg_get_class ct on i.indrelid = ct.reloid and ct.relkind != 't'
   JOIN pg_get_class ci ON i.indexrelid = ci.reloid
@@ -113,9 +149,9 @@ ORDER BY size DESC LIMIT 10000;
 
 
 
-------------------
-
-------------------
+------------------------------------------
+-- background and checkpoint
+------------------------------------------
 with pg_get_confs as ( SELECT name,setting,unit,sourcefile as source FROM pg_settings),
      pg_gather    as (SELECT current_timestamp as collect_ts ,
      (current_user||' - pg_gather.V'||version()) as usr,
@@ -152,3 +188,12 @@ CROSS JOIN
     FROM pg_stat_bgwriter) AS bg
 JOIN pg_get_confs delay ON delay.name = 'bgwriter_delay'
 JOIN pg_get_confs lru ON lru.name = 'bgwriter_lru_maxpages';
+
+--------------
+--------------
+
+
+
+
+
+
