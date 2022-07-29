@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/项目/20220320 tsdb压测/安装包/稳定性测试工具及文档" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/项目/EM SVN/Sources/tools/caict/文档/信通院性能和稳定测试-资料&amp;工具/chaostest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/项目/EM SVN/Sources/tools/caict/文档/稳定性测试工具及文档/chaostest" vcs="Git" />
   </component>
 </project>

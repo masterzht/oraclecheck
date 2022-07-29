@@ -87,6 +87,7 @@ usage()
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
       - lt_index_monitor <port> <database>     PostgreSQL monitoring database index usage
+      - ltbg                                   show PostgreSQL Background Writer and Checkpointer Information
       - mvsnap                                 view all_snapshots (mview) status
       - ora2pg                                 first edit ora2pg.conf to modify ip port and service_name
       - obj  <part of obj info>[owner]         view detail info for given part of a object_name  ,need %
@@ -13895,31 +13896,27 @@ echo ""
 echo "select pg_terminate_backend('pid);"
 echo "======================"
  ltsql -p $2 -U lightdb -c """
-SELECT pid                                                            AS pid,
+SELECT pid                                                     AS pid,
        usename || '@' || datname || '@' || coalesce(client_addr::TEXT, 'localhost') || ':' || client_port || '@' ||application_name  AS "client_username_db_addr_port_appname",
        backend_type,
-       wait_event ||'@'||wait_event_type                              AS wait_event_class,
+       wait_event ||'@'||wait_event_type                       AS wait_event_class,
        state,
-       -- date_trunc('seconds', clock_timestamp() - xact_start)::text   AS xact_age,
-       -- date_trunc('seconds', clock_timestamp() - query_start)::text  AS query_age,
-       -- date_trunc('seconds', clock_timestamp() - state_change)::text AS change_age,
        pg_catalog.to_char(now() - query_start,'hh24:mi:ss.ms') AS duration,
-       --regexp_replace(query, '(( ){2,}|\t+)', ' ', 'g')               AS query
-       regexp_replace(query, E'\\s+', ' ', 'g') as query
+       regexp_replace(query, E'\\s+', ' ', 'g') AS query
 FROM pg_stat_activity
 WHERE state != 'idle'
-  and pid <> pg_backend_pid()
+  and pid != pg_backend_pid()
   and now() - query_start > '0.0001s'::interval
   -- AND ((clock_timestamp() - xact_start) > '{{.QueryAgeThresh}}'::interval OR (clock_timestamp() - query_start) > '{{.QueryAgeThresh}}'::interval)
 ORDER BY duration DESC;
 """
+
  ltsql -p $2 -U lightdb -c """
-select
-pid,
-pg_get_userbyid(userid) as "user",
-now() - query_start AS duration,
---query,
-plan
+select pid,
+       pg_get_userbyid(userid) as "user",
+       now() - query_start AS duration,
+       --query,
+       plan
  from pg_show_plans
  p join pg_stat_activity a using(pid)
  where p.pid != pg_backend_pid()
@@ -13929,6 +13926,54 @@ plan
 exit 0
 fi
 ######################################################
+if [ "$1" = "ltbg" ]; then
+  if [ "$2" = "" ]; then
+    echo "Usage: ora ltbg <port>"
+    exit 1
+  fi
+ ltsql -p $2 -U lightdb -c -X """
+with pg_get_confs as ( SELECT name,setting,unit,sourcefile as source FROM pg_settings),
+     pg_gather    as (SELECT current_timestamp as collect_ts ,
+     (current_user||' - pg_gather.V'||version()) as usr,
+     current_database() as db,
+     version() as ver,
+     pg_postmaster_start_time() as pg_start_ts,
+     pg_is_in_recovery() as recovery,
+     inet_client_addr() as client,
+     inet_server_addr() as server,
+     pg_conf_load_time() as reload_ts,
+     CASE WHEN pg_is_in_recovery() THEN pg_last_wal_receive_lsn() ELSE pg_current_wal_lsn() END as current_wal)
+SELECT round(checkpoints_req*100/tot_cp,1) "Forced Checkpoint %" ,
+round(min_since_reset/tot_cp,2) "avg mins between CP",
+round(checkpoint_write_time::numeric/(tot_cp*1000),4) "Avg CP write time (s)",
+round(checkpoint_sync_time::numeric/(tot_cp*1000),4)  "Avg CP sync time (s)",
+round(total_buffers::numeric*8192/(1024*1024),2) "Tot MB Written",
+round((buffers_checkpoint::numeric/tot_cp)*8192/(1024*1024),4) "MB per CP",
+round(buffers_checkpoint::numeric*8192/(min_since_reset*60*1024*1024),4) "Checkpoint MBps",
+round(buffers_clean::numeric*8192/(min_since_reset*60*1024*1024),4) "Bgwriter MBps",
+round(buffers_backend::numeric*8192/(min_since_reset*60*1024*1024),4) "Backend MBps",
+round(total_buffers::numeric*8192/(min_since_reset*60*1024*1024),4) "Total MBps",
+round(buffers_alloc::numeric/total_buffers,3)  "New buffers ratio",
+round(100.0*buffers_checkpoint/total_buffers,1)  "Clean by checkpoints (%)",
+round(100.0*buffers_clean/total_buffers,1)   "Clean by bgwriter (%)",
+round(100.0*buffers_backend/total_buffers,1)  "Clean by backends (%)",
+round(100.0*maxwritten_clean/(min_since_reset*60000 / delay.setting::numeric),2)   "Bgwriter halts (%) per runs (**1)",
+coalesce(round(100.0*maxwritten_clean/(nullif(buffers_clean,0)/ lru.setting::numeric),2),0)  "Bgwriter halt (%) due to LRU hit (**2)"
+FROM pg_stat_bgwriter
+CROSS JOIN
+(SELECT
+    round(extract('epoch' from (select collect_ts from pg_gather) - stats_reset)/60)::numeric min_since_reset,
+    buffers_checkpoint + buffers_clean + buffers_backend total_buffers,
+    checkpoints_timed+checkpoints_req tot_cp
+    FROM pg_stat_bgwriter) AS bg
+JOIN pg_get_confs delay ON delay.name = 'bgwriter_delay'
+JOIN pg_get_confs lru ON lru.name = 'bgwriter_lru_maxpages';
+ """
+exit 0
+fi
+######################################################
+
+
 if [ "$1" = "ltcenter" ]; then
 
   if [ "$2" = "" ]; then
