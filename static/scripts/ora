@@ -83,7 +83,7 @@ usage()
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - ltactive                               ltactive show lightdb database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
       - ltcenter                               ltcenter show active session message
-      - lt_db_age                              show database age free information
+      - lt_freeze_age                          show database/table freeze age information
       - lt_kill                                select pg_terminate_backend(pid);
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
@@ -13937,9 +13937,9 @@ if [ "$1" = "ltbg" ]; then
 exit 0
 fi
 ######################################################
-if [ "$1" = "lt_db_age" ]; then
+if [ "$1" = "lt_freeze_age" ]; then
   if [ "$2" = "" ]; then
-    echo "Usage: ora lt_db_age <port>"
+    echo "Usage: ora lt_freeze_age <port>"
     exit 1
   fi
  ltsql -p $2 -U lightdb -c """
