@@ -14017,7 +14017,7 @@ if [ "$1" = "lt_freeze_age" ]; then
     echo "Usage: ora lt_freeze_age <port>"
     exit 1
   fi
-echo """Show Table That Freeze Age > 100000000"""
+echo """Show Tables That Freeze Age > 100000000 in The Cluster"""
 echo """======================="""
  ltsql -p $2 -U lightdb -c """
 WITH tabfreeze AS (
