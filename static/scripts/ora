@@ -13974,24 +13974,22 @@ with pg_get_rel as (select oid                                                  
                                   GROUP BY 1, 2) AS foo) AS rs
                                JOIN pg_class cc ON cc.oid = rs.table_oid
                                JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname <> 'information_schema')
-SELECT c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE
-                                                                                                WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)'
-                                                                                                ELSE '' END "Name",
-       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                  "Schema",
-       r.n_live_tup                                                                                         "Live tup",
-       r.n_dead_tup                                                                                         "Dead tup",
-       CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead/Live",
-       r.rel_size                                                                                           "Rel size",
-       r.tot_tab_size                                                                                       "Tot.Tab size",
-       r.tab_ind_size                                                                                       "Tab+Ind size",
+SELECT c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)' ELSE '' END "TAB_NAME",
+       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                  "SCHEMA_NAME",
+       r.n_live_tup                                                                                         "Live_tup",
+       r.n_dead_tup                                                                                         "Dead_tup",
+       CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead_DIVISION_Live",
+       r.rel_size                                                                                           "Rel_size",
+       r.tot_tab_size                                                                                       "Tot_Tab_size",
+       r.tab_ind_size                                                                                       "Tab_And_Ind_size",
        r.rel_age,
-       to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last vacuum",
-       to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last analyze",
+       to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last_vacuum",
+       to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last_analyze",
        r.vac_nos,
-       ct.relname                                                                                           "Toast name",
-       rt.tab_ind_size                                                                                      "Toast+Ind",
-       rt.rel_age                                                                                           "Toast Age",
-       GREATEST(r.rel_age, rt.rel_age)                                                                      "Max age"
+       ct.relname                                                                                           "Toast_name",
+       rt.tab_ind_size                                                                                      "Toast_And_Ind",
+       rt.rel_age                                                                                           "Toast_Age",
+       GREATEST(r.rel_age, rt.rel_age)                                                                      "Max_age"
 FROM pg_get_rel r
          JOIN pg_get_class c ON r.relid = c.reloid AND c.relkind NOT IN ('t', 'p')
          LEFT JOIN pg_get_toast t ON r.relid = t.relid
