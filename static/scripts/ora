@@ -82,7 +82,7 @@ usage()
       - lobfree <owner><lobname>               display free space for give securefile lob segmentname(no basicfile type) need \\$\\$
       - logon                                  Statistics listener log login times, Usage: ./ora logon \"06-JAN-2022 15\" sec LISTENER_SCAN1""
       - ltactive                               show lightdb database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
-      - ltactive                               show PostgreSQL/LightDB TABLE Information
+      - lttab                                  show PostgreSQL/LightDB TABLE Information
       - ltcenter                               ltcenter show active session message
       - lt_freeze_age                          show database/table freeze age information
       - lt_kill                                select pg_terminate_backend(pid);
