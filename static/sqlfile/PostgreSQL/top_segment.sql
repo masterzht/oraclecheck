@@ -16,7 +16,8 @@ pg_stat_get_db_temp_bytes(d.oid) AS temp_bytes,
 pg_stat_get_db_deadlocks(d.oid) AS deadlocks,
 pg_stat_get_db_blk_read_time(d.oid) AS blk_read_time,
 pg_stat_get_db_blk_write_time(d.oid) AS blk_write_time,
-cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size, age(datfrozenxid),
+cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size,
+age(datfrozenxid),
 pg_stat_get_db_stat_reset_time(d.oid) AS stats_reset
 FROM pg_database d
 )
@@ -68,6 +69,7 @@ FROM pg_database d
 --------------------------------------------------------
 -- table info
 --------------------------------------------------------
+
 with pg_get_rel as (select oid                                                                                  AS relid,
                            relnamespace,
                            relpages::bigint                                                                        blks,
@@ -76,6 +78,7 @@ with pg_get_rel as (select oid                                                  
                            pg_relation_size(oid)                                                                   rel_size,
                            pg_table_size(oid)                                                                      tot_tab_size,
                            pg_total_relation_size(oid)                                                             tab_ind_size,
+                           relfrozenxid,
                            age(relfrozenxid)                                                                       rel_age,
                            GREATEST(pg_stat_get_last_autovacuum_time(oid), pg_stat_get_last_vacuum_time(oid))   AS last_vac,
                            GREATEST(pg_stat_get_last_autoanalyze_time(oid), pg_stat_get_last_analyze_time(oid)) AS last_anlyze,
@@ -88,19 +91,24 @@ with pg_get_rel as (select oid                                                  
                             (SELECT oid FROM pg_namespace WHERE nspname in ('pg_catalog', 'information_schema'))),
      pg_get_toast as (SELECT oid as relid, reltoastrelid as toastid FROM pg_class WHERE reltoastrelid != 0),
      pg_tab_bloat as (SELECT table_oid,
-                             CEIL((cc.reltuples * ((datahdr + ma - (CASE WHEN datahdr % ma = 0 THEN ma ELSE datahdr % ma END)) + nullhdr2 + 4)) / (bs - 20::float)) AS est_pages
+                             CEIL((cc.reltuples *
+                                   ((datahdr + ma - (CASE WHEN datahdr % ma = 0 THEN ma ELSE datahdr % ma END)) +
+                                    nullhdr2 + 4)) / (bs - 20::float)) AS est_pages
                       FROM (SELECT ma,
                                    bs,
                                    table_oid,
                                    (datawidth + (hdr + ma - (case when hdr % ma = 0 THEN ma ELSE hdr % ma END)))::numeric AS datahdr,
-                                   (maxfracsum * (nullhdr + ma - (case when nullhdr % ma = 0 THEN ma ELSE nullhdr % ma END)))          AS nullhdr2
+                                   (maxfracsum *
+                                    (nullhdr + ma - (case when nullhdr % ma = 0 THEN ma ELSE nullhdr % ma END)))          AS nullhdr2
                             FROM (SELECT s.starelid                                                 as table_oid,
                                          23                                                         AS hdr,
                                          8                                                          AS ma,
                                          8192                                                       AS bs,
                                          SUM((1 - stanullfrac) * stawidth)                          AS datawidth,
                                          MAX(stanullfrac)                                           AS maxfracsum,
-                                         23 + (SELECT 1 + count(*) / 8 FROM pg_statistic s2 WHERE stanullfrac <> 0 AND s.starelid = s2.starelid) AS nullhdr
+                                         23 + (SELECT 1 + count(*) / 8
+                                               FROM pg_statistic s2
+                                               WHERE stanullfrac <> 0 AND s.starelid = s2.starelid) AS nullhdr
                                   FROM pg_statistic s
                                   GROUP BY 1, 2) AS foo) AS rs
                                JOIN pg_class cc ON cc.oid = rs.table_oid
@@ -108,13 +116,16 @@ with pg_get_rel as (select oid                                                  
 SELECT c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE
                                                                                                 WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)'
                                                                                                 ELSE '' END "Name",
-       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                  "Schema",
+       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                        "Schema",
        r.n_live_tup                                                                                         "Live tup",
        r.n_dead_tup                                                                                         "Dead tup",
        CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead/Live",
        r.rel_size                                                                                           "Rel size",
        r.tot_tab_size                                                                                       "Tot.Tab size",
        r.tab_ind_size                                                                                       "Tab+Ind size",
+       (SELECT max(age(backend_xmin)) FROM pg_stat_activity  WHERE state != 'idle')                         "backend_xmin",
+       txid_current()                                                                                       "current_txid",
+       r.relfrozenxid,
        r.rel_age,
        to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last vacuum",
        to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last analyze",
@@ -220,7 +231,7 @@ WITH max_age AS (
 
 
 
-postgres=# SELECT
+SELECT
     datname,
     age(datfrozenxid) AS frozen_xid_age,
     ROUND(100 * (age(datfrozenxid) / 2000000000.0::float)) consumed_txid_pct,
@@ -242,8 +253,7 @@ FROM
 
 WITH q AS (
 SELECT
-  (SELECT max(age(backend_xmin))
-      FROM pg_stat_activity  WHERE state != 'idle' )       AS oldest_running_xact_age,
+  (SELECT max(age(backend_xmin)) FROM pg_stat_activity  WHERE state != 'idle' ) AS oldest_running_xact_age,
   (SELECT max(age(transaction)) FROM pg_prepared_xacts)    AS oldest_prepared_xact_age,
   (SELECT max(age(xmin)) FROM pg_replication_slots)        AS oldest_replication_slot_age,
   (SELECT max(age(backend_xmin)) FROM pg_stat_replication) AS oldest_replica_xact_age
@@ -257,7 +267,7 @@ FROM q;
 
 
 WITH max_age AS (
-    SELECT 2000000000 as max_old_xid
+    SELECT 2^31::numeric as max_old_xid
         , setting AS autovacuum_freeze_max_age
         FROM pg_catalog.pg_settings
         WHERE name = 'autovacuum_freeze_max_age' )
@@ -273,3 +283,42 @@ SELECT max(oldest_current_xid) AS oldest_current_xid
     , max(ROUND(100*(oldest_current_xid/max_old_xid::float))) AS percent_towards_wraparound
     , max(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac
 FROM per_database_stats;
+
+
+--定时把半年前的分区freeze一下就好了
+--通常我是每天跑一下脚本，把年龄在1990000000的表的给vacuum了
+--冻结只要对旧的分区表做就好了
+
+
+WITH deadrow_tables AS (
+                SELECT relid::regclass as full_table_name,
+                       ((n_dead_tup::numeric) / ( n_live_tup + 1 )) as dead_pct,
+                       pg_relation_size(relid) as table_bytes
+                FROM pg_stat_user_tables
+                WHERE n_dead_tup > 100
+                AND ((now() - last_autovacuum) > INTERVAL '1 hour' OR last_autovacuum IS NULL )
+                AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
+SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
+WHERE dead_pct > 0.05
+AND table_bytes > 1000000
+ORDER BY dead_pct DESC, table_bytes DESC;
+
+
+
+WITH tabfreeze AS (
+    SELECT pg_class.oid::regclass                                        AS full_table_name,
+           greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
+           pg_relation_size(pg_class.oid)
+    FROM pg_class
+             JOIN pg_namespace ON pg_class.relnamespace = pg_namespace.oid
+             LEFT OUTER JOIN pg_class as toast
+                             ON pg_class.reltoastrelid = toast.oid
+    WHERE nspname not in ('pg_catalog', 'information_schema')
+      AND nspname NOT LIKE 'pg_temp%'
+      AND pg_class.relkind = 'r'
+)
+SELECT *
+FROM tabfreeze
+WHERE freeze_age > 100000000
+ORDER BY freeze_age DESC
+LIMIT 1000;

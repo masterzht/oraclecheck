@@ -84,7 +84,7 @@ usage()
       - ltactive                               show PostgreSQL database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
       - lttab                                  show PostgreSQL/LightDB TABLE Information
       - ltcenter                               ltcenter show active session message
-      - lt_freeze_age                          show database/table freeze age information
+      - lt_freeze_age                          PostgreSQL free age Information
       - lt_kill                                select pg_terminate_backend(pid);
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
@@ -117,7 +117,6 @@ usage()
       - rman                                   rman status and RECOVERY_FILE_DEST info
 
       - s                                      login to oracle database
-      - lt <port>                              login to lightdb database
       - seq                                    show sequences have bad setting (order_flag='Y' or cache_size<=20)
       - sessions [all]|<active>                ora sessions [active](def)|all  (active:also no BACKGROUD)
       - snapper \"12:10\" 40                     AAS and session event
@@ -14018,6 +14017,41 @@ if [ "$1" = "lt_freeze_age" ]; then
     echo "Usage: ora lt_freeze_age <port>"
     exit 1
   fi
+echo """Show Table That Freeze Age > 100000000"""
+ ltsql -p $2 -U lightdb -c """
+WITH tabfreeze AS (
+    SELECT pg_class.oid::regclass                                        AS full_table_name,
+           greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
+           pg_relation_size(pg_class.oid)
+    FROM pg_class
+             JOIN pg_namespace ON pg_class.relnamespace = pg_namespace.oid
+             LEFT OUTER JOIN pg_class as toast
+                             ON pg_class.reltoastrelid = toast.oid
+    WHERE nspname not in ('pg_catalog', 'information_schema')
+      AND nspname NOT LIKE 'pg_temp%'
+      AND pg_class.relkind = 'r'
+)
+SELECT *
+FROM tabfreeze
+WHERE freeze_age > 100000000
+ORDER BY freeze_age DESC
+LIMIT 1000;
+ """
+echo """dead_pct > 50 and table_size > 10M """
+ ltsql -p $2 -U lightdb -c """
+WITH deadrow_tables AS (
+                SELECT relid::regclass as full_table_name,
+                       ((n_dead_tup::numeric) / ( n_live_tup + 1 )) as dead_pct,
+                       pg_relation_size(relid) as table_bytes
+                FROM pg_stat_user_tables
+                WHERE n_dead_tup > 100
+                AND ((now() - last_autovacuum) > INTERVAL '1 hour' OR last_autovacuum IS NULL )
+                AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
+SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
+WHERE dead_pct > 0.05
+AND table_bytes/1024/1024 > 10M
+ORDER BY dead_pct DESC, table_bytes DESC;
+"""
  ltsql -p $2 -U lightdb -c """
 with pg_get_db as
 (
