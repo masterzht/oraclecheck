@@ -88,24 +88,19 @@ with pg_get_rel as (select oid                                                  
                             (SELECT oid FROM pg_namespace WHERE nspname in ('pg_catalog', 'information_schema'))),
      pg_get_toast as (SELECT oid as relid, reltoastrelid as toastid FROM pg_class WHERE reltoastrelid != 0),
      pg_tab_bloat as (SELECT table_oid,
-                             CEIL((cc.reltuples *
-                                   ((datahdr + ma - (CASE WHEN datahdr % ma = 0 THEN ma ELSE datahdr % ma END)) +
-                                    nullhdr2 + 4)) / (bs - 20::float)) AS est_pages
+                             CEIL((cc.reltuples * ((datahdr + ma - (CASE WHEN datahdr % ma = 0 THEN ma ELSE datahdr % ma END)) + nullhdr2 + 4)) / (bs - 20::float)) AS est_pages
                       FROM (SELECT ma,
                                    bs,
                                    table_oid,
                                    (datawidth + (hdr + ma - (case when hdr % ma = 0 THEN ma ELSE hdr % ma END)))::numeric AS datahdr,
-                                   (maxfracsum *
-                                    (nullhdr + ma - (case when nullhdr % ma = 0 THEN ma ELSE nullhdr % ma END)))          AS nullhdr2
+                                   (maxfracsum * (nullhdr + ma - (case when nullhdr % ma = 0 THEN ma ELSE nullhdr % ma END)))          AS nullhdr2
                             FROM (SELECT s.starelid                                                 as table_oid,
                                          23                                                         AS hdr,
                                          8                                                          AS ma,
                                          8192                                                       AS bs,
                                          SUM((1 - stanullfrac) * stawidth)                          AS datawidth,
                                          MAX(stanullfrac)                                           AS maxfracsum,
-                                         23 + (SELECT 1 + count(*) / 8
-                                               FROM pg_statistic s2
-                                               WHERE stanullfrac <> 0 AND s.starelid = s2.starelid) AS nullhdr
+                                         23 + (SELECT 1 + count(*) / 8 FROM pg_statistic s2 WHERE stanullfrac <> 0 AND s.starelid = s2.starelid) AS nullhdr
                                   FROM pg_statistic s
                                   GROUP BY 1, 2) AS foo) AS rs
                                JOIN pg_class cc ON cc.oid = rs.table_oid
@@ -113,7 +108,7 @@ with pg_get_rel as (select oid                                                  
 SELECT c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE
                                                                                                 WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)'
                                                                                                 ELSE '' END "Name",
-       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                        "Schema",
+       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                  "Schema",
        r.n_live_tup                                                                                         "Live tup",
        r.n_dead_tup                                                                                         "Dead tup",
        CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead/Live",
@@ -221,3 +216,60 @@ WITH max_age AS (
              , ROUND(100 * (oldest_current_xid / max_old_xid::float),4)               AS percent_towards_wraparound
              , ROUND(100 * (oldest_current_xid / autovacuum_freeze_max_age::float),4) AS percent_towards_emergency_autovac
         FROM per_database_stats order by 1;
+
+
+
+
+postgres=# SELECT
+    datname,
+    age(datfrozenxid) AS frozen_xid_age,
+    ROUND(100 * (age(datfrozenxid) / 2000000000.0::float)) consumed_txid_pct,
+    current_setting('autovacuum_freeze_max_age')::int - age(datfrozenxid) AS remaining_aggressive_vacuum
+FROM
+    pg_database;
+  datname  | frozen_xid_age | consumed_txid_pct | remaining_aggressive_vacuum
+-----------+----------------+-------------------+-----------------------------
+ template1 |        1656123 |                 0 |                   198343877
+ template0 |        1656123 |                 0 |                   198343877
+ postgres  |        1656123 |                 0 |                   198343877
+ mydb      |        1656123 |                 0 |                   198343877
+(4 rows)
+
+- datname contains the name of the database.
+- frozen_xid_age represents the age of the database-level frozen transaction ID. A higher value (for example, greater than autovacuum_freeze_max_age) means that the database needs attention.
+- consumed_txid_pct represents the percentage of the transaction ID against the maximum transaction ID limit (2 billion transaction IDs) for the database.
+- remaining_aggressive_vacuum represents the available transaction ID space before it reaches the aggressive VACUUM mode—how close the database is to the autovacuum_freeze_max_age value. A negative value means that there are some tables in the database that trigger an aggressive VACUUM operation due to the age of pg_class.relfrozentxid.
+
+WITH q AS (
+SELECT
+  (SELECT max(age(backend_xmin))
+      FROM pg_stat_activity  WHERE state != 'idle' )       AS oldest_running_xact_age,
+  (SELECT max(age(transaction)) FROM pg_prepared_xacts)    AS oldest_prepared_xact_age,
+  (SELECT max(age(xmin)) FROM pg_replication_slots)        AS oldest_replication_slot_age,
+  (SELECT max(age(backend_xmin)) FROM pg_stat_replication) AS oldest_replica_xact_age
+)
+SELECT *,
+       2^31 - oldest_running_xact_age AS oldest_running_xact_left,
+       2^31 - oldest_prepared_xact_age AS oldest_prepared_xact_left,
+       2^31 - oldest_replication_slot_age AS oldest_replication_slot_left,
+       2^31 - oldest_replica_xact_age AS oldest_replica_xact_left
+FROM q;
+
+
+WITH max_age AS (
+    SELECT 2000000000 as max_old_xid
+        , setting AS autovacuum_freeze_max_age
+        FROM pg_catalog.pg_settings
+        WHERE name = 'autovacuum_freeze_max_age' )
+, per_database_stats AS (
+    SELECT datname
+        , m.max_old_xid::int
+        , m.autovacuum_freeze_max_age::int
+        , age(d.datfrozenxid) AS oldest_current_xid
+    FROM pg_catalog.pg_database d
+    JOIN max_age m ON (true)
+    WHERE d.datallowconn )
+SELECT max(oldest_current_xid) AS oldest_current_xid
+    , max(ROUND(100*(oldest_current_xid/max_old_xid::float))) AS percent_towards_wraparound
+    , max(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac
+FROM per_database_stats;
