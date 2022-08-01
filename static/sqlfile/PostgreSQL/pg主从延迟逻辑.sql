@@ -1,5 +1,5 @@
-通过WAL延迟时间衡量
-主库执行查询：
+--通过WAL延迟时间衡量
+--主库执行查询:
  SELECT application_name                            AS appname,
         usename,
         coalesce(client_addr::TEXT, 'localhost')    AS address,
