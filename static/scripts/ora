@@ -14018,6 +14018,7 @@ if [ "$1" = "lt_freeze_age" ]; then
     exit 1
   fi
 echo """Show Table That Freeze Age > 100000000"""
+echo """======================="""
  ltsql -p $2 -U lightdb -c """
 WITH tabfreeze AS (
     SELECT pg_class.oid::regclass                                        AS full_table_name,
@@ -14037,7 +14038,8 @@ WHERE freeze_age > 100000000
 ORDER BY freeze_age DESC
 LIMIT 1000;
  """
-echo """dead_pct > 50 and table_size > 10M """
+echo """Show dead_pct > 50 and table_size > 10M in The Cluster """
+echo """======================="""
  ltsql -p $2 -U lightdb -c """
 WITH deadrow_tables AS (
                 SELECT relid::regclass as full_table_name,
@@ -14049,9 +14051,11 @@ WITH deadrow_tables AS (
                 AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
 SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
 WHERE dead_pct > 0.05
-AND table_bytes/1024/1024 > 10M
+AND table_bytes/1024/1024 > 10
 ORDER BY dead_pct DESC, table_bytes DESC;
 """
+echo """Show Database Freeze Age Information """
+echo """======================="""
  ltsql -p $2 -U lightdb -c """
 with pg_get_db as
 (
