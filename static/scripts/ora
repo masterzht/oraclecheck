@@ -84,7 +84,7 @@ usage()
       - ltactive                               show PostgreSQL database active sessions,include pg_show_plans https://www.hs.net/lightdb/docs/html/pg-show-plans.html
       - lttab                                  show PostgreSQL/LightDB TABLE Information
       - ltcenter                               ltcenter show active session message
-      - lt_freeze_age                          PostgreSQL free age Information
+      - lt_age                                 PostgreSQL free age Information
       - lt_kill                                select pg_terminate_backend(pid);
       - lt_dump                                parallel lt_dump
       - lt_restore                             importing --section=pre-data --section=post-data --section=data
@@ -14012,9 +14012,9 @@ if [ "$1" = "ltbg" ]; then
 exit 0
 fi
 ######################################################
-if [ "$1" = "lt_freeze_age" ]; then
+if [ "$1" = "lt_age" ]; then
   if [ "$2" = "" ]; then
-    echo "Usage: ora lt_freeze_age <port>"
+    echo "Usage: ora lt_age <port>"
     exit 1
   fi
 echo """Show Tables That Freeze Age > 100000000 in The Cluster"""
