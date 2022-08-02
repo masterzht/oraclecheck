@@ -13989,6 +13989,7 @@ WITH tabfreeze AS (
     SELECT pg_class.oid::regclass                                        AS full_table_name,
            greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
            pg_size_pretty(pg_relation_size(pg_class.oid)) as pg_relation_size,
+           pg_size_pretty(pg_total_relation_size(pg_class.oid)) as tab_and_ind_size,
            greatest(pg_stat_get_last_autoanalyze_time(pg_class.oid), pg_stat_get_last_analyze_time(pg_class.oid)) as last_anlyze,
            greatest(pg_stat_get_last_autovacuum_time(pg_class.oid), pg_stat_get_last_vacuum_time(pg_class.oid)) as last_vacuum
     FROM pg_class
@@ -13999,12 +14000,14 @@ WITH tabfreeze AS (
       AND nspname NOT LIKE 'pg_temp%'
       AND pg_class.relkind = 'r'
 )
-SELECT full_table_name,freeze_age,pg_relation_size,
+SELECT full_table_name,
+freeze_age,
+pg_relation_size,
+tab_and_ind_size,
 to_char(last_anlyze,'yyyy-mm-dd hh24:mi:ss') as last_anlyze,
 to_char(last_vacuum,'yyyy-mm-dd hh24:mi:ss') as last_vacuum
 FROM tabfreeze
-WHERE freeze_age > 150000000
-ORDER BY freeze_age DESC
+WHERE freeze_age > 150000000 ORDER BY freeze_age DESC
 LIMIT 1000;
  """
 echo """Show dead_pct > 50 and table_size > 10M in The Cluster """
@@ -14024,7 +14027,7 @@ AND table_bytes/1024/1024 > 10
 ORDER BY dead_pct DESC, table_bytes DESC;
 """
 
-echo """Show Tables Freeze Age Information in The Cluster """
+echo """Show Tables Freeze Age Information in The Database """
 echo """======================="""
  ltsql -p $2 -U lightdb -d $3 -c """
 with pg_get_rel as (select oid                                                                                  AS relid,
@@ -14070,7 +14073,7 @@ SELECT (select n.nspname from pg_namespace n where n.oid = r.relnamespace) ||'.'
        CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead_DIVISION_Live",
        r.rel_size                                                                                           "Rel_size",
        r.tot_tab_size                                                                                       "Tot_Tab_size",
-       r.tab_ind_size                                                                                       "TabAndIndSize",
+       --r.tab_ind_size                                                                                       "TabAndIndSize",
        r.rel_age,
        --to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last_vacuum",
        --to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last_analyze",
@@ -14086,7 +14089,7 @@ FROM pg_get_rel r
          LEFT JOIN pg_get_rel rt ON rt.relid = t.toastid
          LEFT JOIN pg_tab_bloat tb ON r.relid = tb.table_oid
 ORDER BY r.rel_age DESC
-LIMIT 10000;
+LIMIT 100;
 """
 exit 0
 fi
