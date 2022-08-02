@@ -1,7 +1,7 @@
 LOAD DATABASE
 FROM mysql://root:123456@10.20.39.60:33061/scheduler_light
 INTO postgresql://scheduler_light:scheduler_light@10.19.36.28:5432/scheduler_light
-WITH include drop, create tables, create indexes, reset sequences, foreign keys
+WITH include drop, create tables, create indexes, reset sequences, foreign keys，prefetch rows = 100, batch rows = 100
 
 CAST type int with extra auto_increment to serial drop typemod,
 type int to int drop typemod,
