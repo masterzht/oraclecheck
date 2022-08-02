@@ -355,7 +355,7 @@ if [ "$1" = "ltdg" ]; then
         coalesce(extract(EPOCH FROM write_lag), 0)  AS write_lag,
         coalesce(extract(EPOCH FROM flush_lag), 0)  AS flush_lag,
         coalesce(extract(EPOCH FROM replay_lag), 0) AS replay_lag,
-        extract(EPOCH FROM current_timestamp)       AS 'time',
+        extract(EPOCH FROM current_timestamp)       AS current_time,
         extract(EPOCH FROM backend_start)           AS launch_time,
         extract(EPOCH FROM reply_time)              AS reply_time
  FROM pg_stat_replication,
