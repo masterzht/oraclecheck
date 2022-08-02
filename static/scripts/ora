@@ -13980,7 +13980,7 @@ SELECT datname DB,
        age,
        (2^31 - age) as txid_left,
        lpad((cast(round(100* ((2^31-age)/2^31),2) as varchar) || ' %'),14) as txid_left_pct
-FROM pg_get_db;
+FROM pg_get_db order by age desc;
  """
 echo """Show Tables That Freeze Age > 150000000 in The Database"""
 echo """======================="""
@@ -13988,7 +13988,7 @@ echo """======================="""
 WITH tabfreeze AS (
     SELECT pg_class.oid::regclass                                        AS full_table_name,
            greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
-           pg_relation_size(pg_class.oid) as pg_relation_size,
+           pg_size_pretty(pg_relation_size(pg_class.oid)) as pg_relation_size,
            greatest(pg_stat_get_last_autoanalyze_time(pg_class.oid), pg_stat_get_last_analyze_time(pg_class.oid)) as last_anlyze,
            greatest(pg_stat_get_last_autovacuum_time(pg_class.oid), pg_stat_get_last_vacuum_time(pg_class.oid)) as last_vacuum
     FROM pg_class
@@ -13999,7 +13999,9 @@ WITH tabfreeze AS (
       AND nspname NOT LIKE 'pg_temp%'
       AND pg_class.relkind = 'r'
 )
-SELECT full_table_name,freeze_age,pg_relation_size,last_anlyze,last_vacuum
+SELECT full_table_name,freeze_age,pg_relation_size,
+to_char(last_anlyze,'yyyy-mm-dd hh24:mi:ss') as last_anlyze,
+to_char(last_vacuum,'yyyy-mm-dd hh24:mi:ss') as last_vacuum
 FROM tabfreeze
 WHERE freeze_age > 150000000
 ORDER BY freeze_age DESC
