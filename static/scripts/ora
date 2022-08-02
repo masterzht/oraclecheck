@@ -13939,46 +13939,11 @@ fi
 ######################################################
 if [ "$1" = "lt_age" ]; then
   if [ "$2" = "" ]; then
-    echo "Usage: ora lt_age <port>"
+    echo "Usage: ora lt_age <port> <db_name>"
     exit 1
   fi
-echo """Show Tables That Freeze Age > 100000000 in The Cluster"""
-echo """======================="""
- ltsql -p $2 -U lightdb -c """
-WITH tabfreeze AS (
-    SELECT pg_class.oid::regclass                                        AS full_table_name,
-           greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
-           pg_relation_size(pg_class.oid)
-    FROM pg_class
-             JOIN pg_namespace ON pg_class.relnamespace = pg_namespace.oid
-             LEFT OUTER JOIN pg_class as toast
-                             ON pg_class.reltoastrelid = toast.oid
-    WHERE nspname not in ('pg_catalog', 'information_schema')
-      AND nspname NOT LIKE 'pg_temp%'
-      AND pg_class.relkind = 'r'
-)
-SELECT *
-FROM tabfreeze
-WHERE freeze_age > 100000000
-ORDER BY freeze_age DESC
-LIMIT 1000;
- """
-echo """Show dead_pct > 50 and table_size > 10M in The Cluster """
-echo """======================="""
- ltsql -p $2 -U lightdb -c """
-WITH deadrow_tables AS (
-                SELECT relid::regclass as full_table_name,
-                       ((n_dead_tup::numeric) / ( n_live_tup + 1 )) as dead_pct,
-                       pg_relation_size(relid) as table_bytes
-                FROM pg_stat_user_tables
-                WHERE n_dead_tup > 100
-                AND ((now() - last_autovacuum) > INTERVAL '1 hour' OR last_autovacuum IS NULL )
-                AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
-SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
-WHERE dead_pct > 0.05
-AND table_bytes/1024/1024 > 10
-ORDER BY dead_pct DESC, table_bytes DESC;
-"""
+
+echo ""
 echo """Show Database Freeze Age Information """
 echo """======================="""
  ltsql -p $2 -U lightdb -c """
@@ -13999,7 +13964,8 @@ pg_stat_get_db_temp_bytes(d.oid) AS temp_bytes,
 pg_stat_get_db_deadlocks(d.oid) AS deadlocks,
 pg_stat_get_db_blk_read_time(d.oid) AS blk_read_time,
 pg_stat_get_db_blk_write_time(d.oid) AS blk_write_time,
-cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size, age(datfrozenxid),
+cast(round(pg_database_size(d.oid)/1024/1024/1024,2) as varchar )|| ' G' AS db_size,
+age(datfrozenxid),
 pg_stat_get_db_stat_reset_time(d.oid) AS stats_reset
 FROM pg_database d
 )
@@ -14010,13 +13976,55 @@ SELECT datname DB,
        CASE WHEN blks_fetch > 0 THEN blks_hit*100/blks_fetch ELSE NULL END  hit_ratio,
        temp_files,
        temp_bytes,
-       db_size,
-       age
+       lpad(db_size,12) as db_size,
+       age,
+       (2^31 - age) as txid_left,
+       lpad((cast(round(100* ((2^31-age)/2^31),2) as varchar) || ' %'),14) as txid_left_pct
 FROM pg_get_db;
  """
-echo """Show Tables Freeze Age Information in The Cluster """
+echo """Show Tables That Freeze Age > 150000000 in The Database"""
+echo """======================="""
+ ltsql -p $2 -U lightdb -d $3 -c """
+WITH tabfreeze AS (
+    SELECT pg_class.oid::regclass                                        AS full_table_name,
+           greatest(age(pg_class.relfrozenxid), age(toast.relfrozenxid)) as freeze_age,
+           pg_relation_size(pg_class.oid) as pg_relation_size,
+           greatest(pg_stat_get_last_autoanalyze_time(pg_class.oid), pg_stat_get_last_analyze_time(pg_class.oid)) as last_anlyze,
+           greatest(pg_stat_get_last_autovacuum_time(pg_class.oid), pg_stat_get_last_vacuum_time(pg_class.oid)) as last_vacuum
+    FROM pg_class
+             JOIN pg_namespace ON pg_class.relnamespace = pg_namespace.oid
+             LEFT OUTER JOIN pg_class as toast
+                             ON pg_class.reltoastrelid = toast.oid
+    WHERE nspname not in ('pg_catalog', 'information_schema')
+      AND nspname NOT LIKE 'pg_temp%'
+      AND pg_class.relkind = 'r'
+)
+SELECT full_table_name,freeze_age,pg_relation_size,last_anlyze,last_vacuum
+FROM tabfreeze
+WHERE freeze_age > 150000000
+ORDER BY freeze_age DESC
+LIMIT 1000;
+ """
+echo """Show dead_pct > 50 and table_size > 10M in The Cluster """
 echo """======================="""
  ltsql -p $2 -U lightdb -c """
+WITH deadrow_tables AS (
+                SELECT relid::regclass as full_table_name,
+                       ((n_dead_tup::numeric) / ( n_live_tup + 1 )) as dead_pct,
+                       pg_relation_size(relid) as table_bytes
+                FROM pg_stat_user_tables
+                WHERE n_dead_tup > 100
+                AND ((now() - last_autovacuum) > INTERVAL '1 hour' OR last_autovacuum IS NULL )
+                AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
+SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
+WHERE dead_pct > 0.05
+AND table_bytes/1024/1024 > 10
+ORDER BY dead_pct DESC, table_bytes DESC;
+"""
+
+echo """Show Tables Freeze Age Information in The Cluster """
+echo """======================="""
+ ltsql -p $2 -U lightdb -d $3 -c """
 with pg_get_rel as (select oid                                                                                  AS relid,
                            relnamespace,
                            relpages::bigint                                                                        blks,
@@ -14054,17 +14062,16 @@ with pg_get_rel as (select oid                                                  
                                   GROUP BY 1, 2) AS foo) AS rs
                                JOIN pg_class cc ON cc.oid = rs.table_oid
                                JOIN pg_namespace nn ON cc.relnamespace = nn.oid AND nn.nspname <> 'information_schema')
-SELECT c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)' ELSE '' END "TAB_NAME",
-       (select n.nspname from pg_namespace n where n.oid = r.relnamespace)                                  "SCHEMA_NAME",
+SELECT (select n.nspname from pg_namespace n where n.oid = r.relnamespace) ||'.' ||c.relname || CASE WHEN c.relkind != 'r' THEN ' (' || c.relkind || ')' ELSE '' END || CASE WHEN r.blks > 999 AND r.blks > tb.est_pages THEN ' (' || (r.blks - tb.est_pages) * 100 / r.blks || '% bloat*)' ELSE '' END "SCHEMA_TAB_NAME",
        r.n_live_tup                                                                                         "Live_tup",
        r.n_dead_tup                                                                                         "Dead_tup",
        CASE WHEN r.n_live_tup <> 0 THEN ROUND((r.n_dead_tup::real / r.n_live_tup::real)::numeric, 4) END    "Dead_DIVISION_Live",
        r.rel_size                                                                                           "Rel_size",
        r.tot_tab_size                                                                                       "Tot_Tab_size",
-       r.tab_ind_size                                                                                       "Tab_And_Ind_size",
+       r.tab_ind_size                                                                                       "TabAndIndSize",
        r.rel_age,
-       to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last_vacuum",
-       to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last_analyze",
+       --to_char(r.last_vac, 'YYYY-MM-DD HH24:MI:SS')                                                         "Last_vacuum",
+       --to_char(r.last_anlyze, 'YYYY-MM-DD HH24:MI:SS')                                                      "Last_analyze",
        r.vac_nos,
        ct.relname                                                                                           "Toast_name",
        rt.tab_ind_size                                                                                      "Toast_And_Ind",
