@@ -13977,6 +13977,7 @@ SELECT datname DB,
        temp_files,
        temp_bytes,
        lpad(db_size,12) as db_size,
+       txid_current()   as txid_current,
        age,
        (2^31 - age) as txid_left,
        lpad((cast(round(100* ((2^31-age)/2^31),2) as varchar) || ' %'),14) as txid_left_pct
