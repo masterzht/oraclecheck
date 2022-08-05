@@ -1013,7 +1013,7 @@ if [ "$1" = "ora2pg" ]; then
      done
    elif [ "$2" = "imp" ]; then
      echo ""
-     echo "Make sure target Lightdb has been created database (schema no needed) for the importing database"
+     echo "Make sure target Lightdb has been created database (schema created or not no needed) for the importing database"
      echo ""
      while true
      do
