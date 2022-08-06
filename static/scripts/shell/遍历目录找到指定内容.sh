@@ -1,1 +1,1 @@
-grep -rnw '/home/ta6/server' -e "fund60"
+grep -rnw '/data1' -e "port=7000"
