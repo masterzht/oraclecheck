@@ -1,7 +1,7 @@
 LOAD DATABASE
 FROM mysql://root:123456@10.20.39.60:33061/scheduler_light
 INTO postgresql://scheduler_light:scheduler_light@10.19.36.28:5432/scheduler_light
-WITH include drop, create tables, create indexes, reset sequences, foreign keys，prefetch rows = 100, batch rows = 100
+WITH include drop, create tables, create indexes, reset sequences, foreign keys, prefetch rows = 100, batch rows = 100
 
 CAST type int with extra auto_increment to serial drop typemod,
 type int to int drop typemod,
@@ -23,6 +23,7 @@ type bigint to bigint drop typemod,
 type float to numeric,
 type double to numeric,
 type numeric to numeric keep typemod,
-type decimal to decimal keep typemod
+type decimal to decimal keep typemod,
+type datetime to timestamp drop default drop not null using zero-dates-to-null ## mysql datetime no timezone
 BEFORE LOAD DO
 $$ select 1; $$;
