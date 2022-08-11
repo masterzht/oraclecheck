@@ -1,0 +1,13 @@
+db=postgres
+driver=org.postgresql.Driver
+conn=jdbc:postgresql://10.20.30.193:12345/bmsql
+user=bmsql
+password=bmsql
+warehouses=100
+loadWorkers=30
+terminals=200
+runMins=3
+limitTxnsPerMin=10000000
+terminalWarehouseFixed=false
+useStoredProcedures=false
+
