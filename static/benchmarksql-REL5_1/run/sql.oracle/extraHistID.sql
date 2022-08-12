@@ -48,11 +48,4 @@ create trigger bmsql_history_before_insert
 alter table bmsql_history add constraint pk_bmsql_history primary key (hist_id) using index local PCTFREE 60 INITRANS 100 MAXTRANS 255 COMPUTE STATISTICS;
 
 -- gather statistics
-begin
-  dbms_stats.gather_schema_stats(
-  ownname=>'BENCHMARKSQL',
-  estimate_percent=>100,
-  cascade=> TRUE,
-  degree =>26);
-end;
-/
+exec dbms_stats.gather_schema_stats(ownname=>'BENCHMARKSQL', estimate_percent=>100, cascade=> TRUE, degree =>26);
