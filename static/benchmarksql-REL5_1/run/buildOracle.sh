@@ -1,1 +1,0 @@
-./runDatabaseBuild_for_oracle.sh oracle_1000w.properties
