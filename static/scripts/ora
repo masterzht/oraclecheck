@@ -302,7 +302,7 @@ exit 0
 fi
 #####################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
-  $ORACLE_HOME/bin/sqlplus / as sysdba
+  /bin/rlwrap $ORACLE_HOME/bin/sqlplus / as sysdba
 fi
 #####################################
 if [ "$1" = "dg_info" -o "$1" = "dg" ]; then
