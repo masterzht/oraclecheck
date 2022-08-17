@@ -33,9 +33,8 @@ usage()
     - Set environment variable DBUSER to change default connect string which  is \"/ as sysdba\"
     - Set environment variable ORA_TMP to the default temp directory (default if /tmp when not set)
 "
-#echo "sed -n /\"^if \[ \\\"\\\$1\"/p ora|awk '{print \$5 \"            \" \$9}'|sort"
-}
-################################
+
+
 ###################################
 #very important init parameter
 filedate=`date +"%Y%m%d_%H%M%S"`
@@ -43,9 +42,7 @@ ECHO=""
 DEFNODISP="--"
 DEFDISP=""
 INST="1"
-
 ###################################
-#####################################
 if [ "$1" = "dg" ]; then
 
   if [ "$2" = "" ]; then
