@@ -302,6 +302,7 @@ exit 0
 fi
 #####################################
 if [ "$1" = "s" -o "$1" = "S" ]; then
+  #yum install -y readline
   /bin/rlwrap $ORACLE_HOME/bin/sqlplus / as sysdba
 fi
 #####################################
