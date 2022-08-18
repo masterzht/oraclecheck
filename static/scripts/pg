@@ -33,7 +33,7 @@ usage()
     - Set environment variable DBUSER to change default connect string which  is \"/ as sysdba\"
     - Set environment variable ORA_TMP to the default temp directory (default if /tmp when not set)
 "
-
+}
 
 ###################################
 #very important init parameter
@@ -961,20 +961,9 @@ if [ "$1" = "ltcenter" ]; then
 ltcenter top -U lightdb -dpostgres -h127.0.0.1 -p $2
 exit 0
 fi
-######################################################
-if [ "$1" = "kill" ]; then
-
-  if [ "$2" = "" ]; then
-    echo "Usage: pg kill <port> <pid>"
-    exit 1
-  fi
-
-ltsql -U lightdb -dpostgres -h127.0.0.1 -p $2 -c "select pg_terminate_backend('$3')"
-exit 0
-fi
 
 ##########################################################
 # Run a shell command. Useful when combined with repeat...
 ##########################################################
 usage
-echo "Command 'pg $1' not defined,please check the command again."
+echo "Command 'ora $1' not defined,please check the command again."
