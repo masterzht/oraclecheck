@@ -1,2 +1,6 @@
-tpl/benchmarksql/
+tpl/benchmarksql/build
+tpl/benchmarksql/dist
+tpl/benchmarksql/doc
+tpl/benchmarksql/src
+tpl/benchmarksql/lib
 tpl
