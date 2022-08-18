@@ -867,7 +867,7 @@ FROM tabfreeze
 WHERE freeze_age > 150000000 ORDER BY freeze_age DESC
 LIMIT 1000;
  """
-echo """Show dead_pct > 50 and table_size > 10M in The Cluster """
+echo """Show dead_pct > 10 and table_size > 10M in The Cluster """
 echo """======================="""
  ltsql -p $2 -U lightdb -c """
 WITH deadrow_tables AS (
@@ -879,7 +879,7 @@ WITH deadrow_tables AS (
                 AND ((now() - last_autovacuum) > INTERVAL '1 hour' OR last_autovacuum IS NULL )
                 AND ((now() - last_vacuum) > INTERVAL '1 hour' OR last_vacuum IS NULL ))
 SELECT full_table_name ,dead_pct,table_bytes FROM deadrow_tables
-WHERE dead_pct > 0.05
+WHERE dead_pct > 0.001
 AND table_bytes/1024/1024 > 10
 ORDER BY dead_pct DESC, table_bytes DESC;
 """
@@ -961,7 +961,46 @@ if [ "$1" = "ltcenter" ]; then
 ltcenter top -U lightdb -dpostgres -h127.0.0.1 -p $2
 exit 0
 fi
+########################################################################
+if [ "$1" = "ltddl" ]; then
 
+  if [ "$2" = "" ]; then
+    echo "ora get_ddl <port> <object_name>/<relfilenode>"
+    exit 1
+  fi
+  object_name=$2
+ ltsql -p $2 -Ulightdb -c "
+ SELECT c.oid,
+       (select rolname from pg_authid auth where auth.oid = c.relowner)            as username,
+       (select tbs.spcname from pg_tablespace tbs where tbs.oid = c.reltablespace) as tablesapce_name,
+       (select n.nspname from pg_catalog.pg_namespace n where n.oid = c.relnamespace) || '.' ||
+       c.relname                                                                   as object_name,
+       c.relfilenode                                                               as relfilenode,
+       pg_catalog.pg_relation_filepath(c.oid)                                      as object_location,
+       pg_catalog.pg_relation_filepath(c.reltoastrelid)                            as toast_object_location,
+       pg_catalog.pg_size_pretty(pg_catalog.pg_table_size(c.oid))                  as object_size,
+       CASE c.relkind
+           WHEN 'r' THEN 'table'
+           WHEN 'v' THEN 'view'
+           WHEN 'm' THEN 'materialized view'
+           WHEN 'i' THEN 'index'
+           WHEN 'S' THEN 'sequence'
+           WHEN 's' THEN 'special'
+           WHEN 'f' THEN 'foreign table'
+           WHEN 'p' THEN 'partitioned table'
+           WHEN 'I' THEN 'partitioned index' END                                   as object_type,
+       (select am.amname from pg_am am where am.oid = c.relam)                     as object_access_method,
+       CASE c.relpersistence
+           WHEN 'p' THEN 'permanent'
+           WHEN 't' THEN 'temporary'
+           WHEN 'u' THEN 'unlogged' END                                            as temp_or_nologging,
+       (select type.typname from pg_type type where type.oid = c.reltype)          as typname
+FROM pg_catalog.pg_class c
+WHERE (c.relname = '$3' or c.oid = '$3' or c.relfilenode = '$3') -- and pg_catalog.pg_table_is_visible(c.oid)
+ORDER BY 1, 2;
+ "
+ exit 0
+fi
 ##########################################################
 # Run a shell command. Useful when combined with repeat...
 ##########################################################
