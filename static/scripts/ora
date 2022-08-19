@@ -9198,7 +9198,7 @@ declare
         a.default_tablespace,
         a.temporary_tablespace as temp_tbs,
         a.user_id,
-        to_char(a.created,'yyyymmdd') as created,
+        to_char(a.created,'yyyymmdd hh24:mi') as created,
         a.profile,
         a.account_status,
         b.lcount,
@@ -9243,15 +9243,15 @@ begin
   dbms_output.put_line('
 User Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| USERNAME             |' || ' DEFAULT_TABLESPACE |' || ' DEFAULT_TEMP_TBS ' || '| USER_ID |' || ' CREATED  ' || '| PROFILE   |' || ' ACCOUNT_STATUS ' || '| LCOUNT ' || '|    USER_MB ' || '| DBA PRIV '|| '|');
-  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| USERNAME             |' || ' DEFAULT_TABLESPACE |' || ' DEFAULT_TEMP_TBS ' || '| USER_ID |' || ' CREATED        ' || '| PROFILE   |' || ' ACCOUNT_STATUS ' || '| LCOUNT ' || '|    USER_MB ' || '| DBA PRIV '|| '|');
+  dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_user;
     loop fetch c_user into v_user;
     exit when c_user%notfound;
-    dbms_output.put_line('| ' || rpad(v_user.USERNAME,20) || ' | ' || rpad(v_user.DEFAULT_TABLESPACE,18) ||' | '|| rpad(v_user.TEMP_TBS,16) || ' | ' || lpad(v_user.USER_ID,7) || ' | ' || lpad(v_user.CREATED,8) || ' | ' || rpad(v_user.PROFILE,9) || ' | ' || rpad(v_user.ACCOUNT_STATUS,14) || ' | ' || lpad(v_user.LCOUNT,6) || ' | ' || lpad(v_user.USER_SEGMENT_MB,10) || ' | ' || rpad(v_user.DBA_PRIVS,8) ||' |');
+    dbms_output.put_line('| ' || rpad(v_user.USERNAME,20) || ' | ' || rpad(v_user.DEFAULT_TABLESPACE,18) ||' | '|| rpad(v_user.TEMP_TBS,16) || ' | ' || lpad(v_user.USER_ID,7) || ' | ' || lpad(v_user.CREATED,14) || ' | ' || rpad(v_user.PROFILE,9) || ' | ' || rpad(v_user.ACCOUNT_STATUS,14) || ' | ' || lpad(v_user.LCOUNT,6) || ' | ' || lpad(v_user.USER_SEGMENT_MB,10) || ' | ' || rpad(v_user.DBA_PRIVS,8) ||' |');
     end loop;
-    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('---------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_user;
 
   dbms_output.put_line('
