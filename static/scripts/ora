@@ -2,7 +2,6 @@
 #
 # Copyright (c) 2018, 2028, HengSheng IT HangZhou.  All rights reserved.
 # Author: chongzi
-
 usage()
 {
   echo "
@@ -70,7 +69,6 @@ usage()
       - index_creating                         index is creating
 
       - job                                    show all jobs
-
       - troubleshooting                        Usage:./ora troubleshooting event_name p1,p2,p3 eg ./ora troubleshooting \"latch: cache buffers chains\" 259201931656,177,0
 
       - logminer                               the usage of logminer
