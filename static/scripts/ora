@@ -8239,6 +8239,8 @@ declare
       then 'Open the Debug mode for storage index on the cell'
      when ksppinm = '_rollback_segment_count' and ksppstvl < '100'
       then 'Recommend to set to <12000>'
+     when ksppinm = '_log_parallelism_max' and ksppstvl < 3
+      then 'set _log_parallelism_max = Cpus/2 to Avoid latch: redo allocation Events See https://developer.aliyun.com/article/248977'
      when ksppinm = '_ash_size' and ksppstvl <= '1048618'
       then 'Set <250M> If SGA is large enough, See Doc ID 1385872.1,Document 1952274.1,Document 243132.1'
      when ksppinm = '_adg_parselock_timeout' and ksppstvl < '500'
