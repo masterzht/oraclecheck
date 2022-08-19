@@ -8262,7 +8262,7 @@ declare
       '_clusterwide_global_transactions', 'optimizer_adaptive_features', '_optimizer_inmemory_access_path', '_optimizer_cbqt_or_expansion',
       '_optimizer_unnest_scalar_sq', '_sql_plan_directive_mgmt_control', '_optimizer_dsdir_usage_control',
       '_rollback_segment_count', '_highthreshold_undoretention', '_smm_max_size', '_pga_max_size', '_px_adaptive_dist_method',
-      '_optimizer_strans_adaptive_pruning', '_optimizer_nlj_hj_adaptive_join'
+      '_optimizer_strans_adaptive_pruning', '_optimizer_nlj_hj_adaptive_join','_log_parallelism_dynamic','_log_parallelism_max'
       )
       union all
       select name,
