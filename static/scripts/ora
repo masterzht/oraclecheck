@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (c) 2018, 2028, HengSheng IT HangZhou.  All rights reserved.
-# Author: chongzi
+# Author: yaochong45026@hundsun.com
 usage()
 {
   echo "
