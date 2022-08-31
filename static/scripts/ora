@@ -7062,6 +7062,52 @@ spool off
 exit 0
 fi
 #########################################
+if [ "$1" = "dg_rman" ]; then
+  if [ "$2" = "" ]; then
+   echo ""
+	 echo "usage: ./ora dg_rman /data/oracle/rman"
+	 echo """backup_dir end with out /"""
+   echo "======================"
+   exit 1
+  fi
+
+  echo $ORACLE_SID
+
+  #!/bin/bash
+  export ORACLE_SID=${ORACLE_SID}
+rman target / <<eof
+  run{
+  allocate channel c1 device type disk;
+  allocate channel c2 device type disk;
+  allocate channel c3 device type disk;
+  allocate channel c4 device type disk;
+  allocate channel c5 device type disk;
+  sql'alter system archive log current';
+  BACKUP
+      as compressed backupset tag forstandby_1101
+      filesperset 20
+      database format '${backup_dir}/full_bk_%s_%p_%t';
+  BACKUP as compressed backupset tag forstandby_test archivelog all format '${backup_dir}/arch_bk_%s_%p_%t';
+  backup current controlfile for standby format '${backup_dir}/ctl_bk_%s_%p_%t';
+  release channel c1;
+  release channel c2;
+  release channel c3;
+  release channel c4;
+  release channel c5;
+  }
+  exit;
+eof
+  echo "begin backup standby controlfile..."
+rman target / << eof
+  run{
+  allocate channel c1 device type disk;
+  backup current controlfile for standby format '${backup_dir}/ctl_bk_%s_%p_%t';
+  release channel c1;
+  }
+  exit;
+eof
+fi
+#########################################
 if [ "$1" = "seq" -o "$1" = "sequence" ]; then
 
   sqlplus -s /NOLOG << ! | egrep -v "Session altered|Connected|rows selected"
