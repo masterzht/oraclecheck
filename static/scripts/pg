@@ -282,33 +282,6 @@ echo 'exporting secuss'
 fi
 ############################################
 
-if [ "$1" = "lt_dump" ]; then
-
-   if [ "$2" = "" ]; then
-     read -p "please input superuser [exit or EXIT]:" username
-     read -p "please input superuser password[exit or EXIT]:" password
-     read -p "please input database name[exit or EXIT]:" db_name
-     read -p "please input target ip address[exit or EXIT]:" ip
-     read -p "please input target lightdb port[exit or EXIT]:" port
-     read -p "please input data folder[exit or EXIT]:" data_folder
-    mkdir -p $schema
-
-    if [ -z "${schema}" ];then
-        echo "input schema error"
-    fi
-    if [ -z "${password}" ];then
-        echo "input password error"
-    fi
-  fi
-# default export object
-
-   time PGPASSWORD=$password lt_dump -Fd -U $username -h $ip -p $port -d $db_name -j 16 -f $db_name -v > $db_name.log 2>&1 &
-   echo 'exporting' ${data_type}' please wait...'
-
-exit 0
-echo 'exporting secuss'
-fi
-######################################
 if [ "$1" = "ddl" ]; then
 
   if [ "$2" = "" ]; then
