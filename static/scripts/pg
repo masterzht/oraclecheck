@@ -638,16 +638,7 @@ select pid,
  """
 exit 0
 fi
-######################################################
-if [ "$1" = "bg" ]; then
-  if [ "$2" = "" ]; then
-    echo "Usage: pg bg <port>"
-    exit 1
-  fi
- ltsql -p $2 -U lightdb -c -X """
- """
-exit 0
-fi
+
 ######################################################
 if [ "$1" = "age" ]; then
   if [ "$2" = "" ]; then
