@@ -8315,7 +8315,7 @@ declare
       union all
       select name,
       decode(value,null,'None',value) as value,
-      case when name = 'open_cursors' and (value < 300 or value > 1000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
+      case when name = 'open_cursors' and (value < 300 or value > 3000) then 'open_cursors recommend to set to more than <300>, 3000 is enough'
            when name = 'control_file_record_keep_time' and value <= 15 then 'control_file_record_keep_time recommend to set to <31>,Doc 47322.1'
            when name = 'cursor_sharing' and value <> 'EXACT' then 'Recommend to set to <EXACT>, <FORCE> Forcing SQL that does not use binding variables into binding variables'
            when name = 'audit_trail' and value <> 'NONE' then 'If necessary set value to <NONE> to close Audit'
