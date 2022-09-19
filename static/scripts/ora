@@ -11491,22 +11491,25 @@ declare
      decode(t.DATA_TYPE, 'NUMBER',t.DATA_TYPE||'('|| decode(t.DATA_PRECISION, null,t.DATA_LENGTH||')', t.DATA_PRECISION||','||t.DATA_SCALE||')'), 'DATE',t.DATA_TYPE, 'LONG',t.DATA_TYPE, 'LONG RAW',t.DATA_TYPE,'ROWID',t.DATA_TYPE, 'MLSLABEL',t.DATA_TYPE, t.DATA_TYPE||'('||t.DATA_LENGTH||')') ||' '||
      decode(t.nullable, 'N','NOT NULL', 'n','NOT NULL', NULL) col1,
               B.NUM_ROWS,
-              T.NUM_NULLS,
-              round(100 * T.DENSITY,2) as DENSITY,
-              A.NUM_DISTINCT CARDINALITY,
+              decode(T.NUM_NULLS,null,'Nil',T.NUM_NULLS) as NUM_NULLS,
+              decode(round(100 * T.DENSITY,2),NULL,'Nil',round(100 * T.DENSITY,2)) as DENSITY,
+              decode(A.NUM_DISTINCT,NULL,'Nil',A.NUM_DISTINCT) as  CARDINALITY,
               ROUND(A.NUM_DISTINCT / decode(B.NUM_ROWS,0,1,B.NUM_ROWS) * 100, 2) SELECTIVITY,
               A.HISTOGRAM,
               A.NUM_BUCKETS,
               decode(T.SAMPLE_SIZE,null,0,T.SAMPLE_SIZE) as SAMPLE_SIZE,
-              T.GLOBAL_STATS,
-              T.USER_STATS,
+              decode(T.GLOBAL_STATS,null,'Nil',T.GLOBAL_STATS) as GLOBAL_STATS,
+              decode(T.USER_STATS,null,'Nil',T.USER_STATS) as USER_STATS,
               decode(to_char(T.last_analyzed,'YYYYMMDD HH24:MI'),null,'None',to_char(T.last_analyzed,'YYYYMMDD HH24:MI')) as last1
         FROM DBA_TAB_COL_STATISTICS A, DBA_TABLES B,dba_tab_columns T
-    WHERE A.OWNER = B.OWNER AND A.OWNER = T.OWNER
-     AND A.TABLE_NAME = T.TABLE_NAME
+    WHERE A.OWNER = B.OWNER
+     AND A.OWNER = T.OWNER(+)
+     AND A.TABLE_NAME = T.TABLE_NAME(+)
      AND A.TABLE_NAME = B.TABLE_NAME
-     AND T.COLUMN_NAME = A.COLUMN_NAME
-     AND A.TABLE_NAME = upper(:table_name) AND a.owner = upper(:owner) order by A.OWNER,A.COLUMN_NAME;
+     AND A.COLUMN_NAME = T.COLUMN_NAME(+)
+     AND A.TABLE_NAME = upper(:table_name)
+     AND a.owner = upper(:owner)
+     order by A.OWNER,A.COLUMN_NAME;
      v_stats c_stats%rowtype;
 
    cursor c_p_s is SELECT A.PARTITION_NAME, A.COLUMN_NAME,
@@ -11646,15 +11649,15 @@ GST Means GLOBAL_STATS
 UST Means USER_STATS
 Non partition Table Statistics Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| COLUMN_NAME          |' || ' COLUMN_DETAIL        | ' ||' NUM_ROWS   |' || ' NUM_NULLS   |'|| ' DENSITY ' || '| CARDINALITY |' || ' SELECT% ' || '| HISTOGRAM      |' || ' NUM_BUCKETS' || ' | SAMPLE_SIZE |'|| ' GST ' || '| UST ' ||'|');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| COLUMN_NAME                    |' || ' COLUMN_DETAIL        | ' ||' NUM_ROWS   |' || ' NUM_NULLS   |'|| ' DENSITY ' || '| CARDINALITY |' || ' SELECT% ' || '| HISTOGRAM      |' || ' NUM_BUCKETS' || ' | SAMPLE_SIZE |'|| ' GST ' || '| UST ' ||'|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_stats;
     loop fetch c_stats into v_stats;
     exit when c_stats%notfound;
-    dbms_output.put_line('| ' || rpad(v_stats.COLUMN_NAME,20) ||' | '|| rpad(v_stats.COL1,20)  ||' | '|| lpad(v_stats.NUM_ROWS,11) || ' | '|| lpad(v_stats.NUM_NULLS,11) || ' | ' || lpad(v_stats.DENSITY,7) ||' | '|| lpad(v_stats.CARDINALITY,11) || ' | '|| lpad(v_stats.SELECTIVITY || '%',7) || ' | '|| lpad(v_stats.HISTOGRAM,14) || ' | '|| lpad(v_stats.NUM_BUCKETS,11) ||' | ' || lpad(v_stats.SAMPLE_SIZE,11) ||' | ' || lpad(v_stats.GLOBAL_STATS,3)|| ' | ' || lpad(v_stats.USER_STATS,3) || ' |');
+    dbms_output.put_line('| ' || rpad(v_stats.COLUMN_NAME,30) ||' | '|| rpad(v_stats.COL1,20)  ||' | '|| lpad(v_stats.NUM_ROWS,11) || ' | '|| lpad(v_stats.NUM_NULLS,11) || ' | ' || lpad(v_stats.DENSITY,7) ||' | '|| lpad(v_stats.CARDINALITY,11) || ' | '|| lpad(v_stats.SELECTIVITY || '%',7) || ' | '|| lpad(v_stats.HISTOGRAM,14) || ' | '|| lpad(v_stats.NUM_BUCKETS,11) ||' | ' || lpad(v_stats.SAMPLE_SIZE,11) ||' | ' || lpad(v_stats.GLOBAL_STATS,3)|| ' | ' || lpad(v_stats.USER_STATS,3) || ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_stats;
 
   dbms_output.put_line('
