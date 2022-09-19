@@ -11646,15 +11646,15 @@ GST Means GLOBAL_STATS
 UST Means USER_STATS
 Non partition Table Statistics Information');
   dbms_output.put_line('======================');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| COLUMN_NAME          |' || ' COLUMN_DETAIL        | ' ||' NUM_ROWS   |' || ' NUM_NULLS   |'|| ' DENSITY ' || '| CARDINALITY |' || ' SELECT% ' || '| HISTOGRAM |' || ' NUM_BUCKETS' || ' | SAMPLE_SIZE |'|| ' GST ' || '| UST ' ||'|');
-  dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| COLUMN_NAME          |' || ' COLUMN_DETAIL        | ' ||' NUM_ROWS   |' || ' NUM_NULLS   |'|| ' DENSITY ' || '| CARDINALITY |' || ' SELECT% ' || '| HISTOGRAM      |' || ' NUM_BUCKETS' || ' | SAMPLE_SIZE |'|| ' GST ' || '| UST ' ||'|');
+  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   open c_stats;
     loop fetch c_stats into v_stats;
     exit when c_stats%notfound;
-    dbms_output.put_line('| ' || rpad(v_stats.COLUMN_NAME,20) ||' | '|| rpad(v_stats.COL1,20)  ||' | '|| lpad(v_stats.NUM_ROWS,11) || ' | '|| lpad(v_stats.NUM_NULLS,11) || ' | ' || lpad(v_stats.DENSITY,7) ||' | '|| lpad(v_stats.CARDINALITY,11) || ' | '|| lpad(v_stats.SELECTIVITY || '%',7) || ' | '|| lpad(v_stats.HISTOGRAM,9) || ' | '|| lpad(v_stats.NUM_BUCKETS,11) ||' | ' || lpad(v_stats.SAMPLE_SIZE,11) ||' | ' || lpad(v_stats.GLOBAL_STATS,3)|| ' | ' || lpad(v_stats.USER_STATS,3) || ' |');
+    dbms_output.put_line('| ' || rpad(v_stats.COLUMN_NAME,20) ||' | '|| rpad(v_stats.COL1,20)  ||' | '|| lpad(v_stats.NUM_ROWS,11) || ' | '|| lpad(v_stats.NUM_NULLS,11) || ' | ' || lpad(v_stats.DENSITY,7) ||' | '|| lpad(v_stats.CARDINALITY,11) || ' | '|| lpad(v_stats.SELECTIVITY || '%',7) || ' | '|| lpad(v_stats.HISTOGRAM,14) || ' | '|| lpad(v_stats.NUM_BUCKETS,11) ||' | ' || lpad(v_stats.SAMPLE_SIZE,11) ||' | ' || lpad(v_stats.GLOBAL_STATS,3)|| ' | ' || lpad(v_stats.USER_STATS,3) || ' |');
     end loop;
-    dbms_output.put_line('-----------------------------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_stats;
 
   dbms_output.put_line('
