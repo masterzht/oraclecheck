@@ -11698,16 +11698,16 @@ Non partition Table Modification,Stats Expired Reason Information(dba_tab_modifi
   dbms_output.put_line('
 Count the number of occurrences for Join or Where');
   dbms_output.put_line('======================');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
-  dbms_output.put_line('| COLUMN_NAME           |' || ' TIMESTAMP         |' || ' where = search ' || '| = join |' || ' <> join ' || '| where_range_search |' || ' where_like_search ' || '| where_null_search ' || '|');
-  dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------');
+  dbms_output.put_line('| COLUMN_NAME                     |' || ' TIMESTAMP         |' || ' where = search ' || '| = join |' || ' <> join ' || '| where_range_search |' || ' where_like_search ' || '| where_null_search ' || '|');
+  dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------');
   dbms_stats.flush_database_monitoring_info;
   open c_j;
     loop fetch c_j into v_j;
     exit when c_j%notfound;
-    dbms_output.put_line('| ' || rpad(v_j.column_name,21) || ' | ' || rpad(v_j.timestamp,17) ||' | '|| lpad(v_j.where_equal_search,14) || ' | ' || lpad(v_j.equal_join,6) || ' | ' || lpad(v_j.none_equal_join,7) || ' | ' || lpad(v_j.where_range_search,18) || ' | ' || lpad(v_j.where_like_search,17) || ' | ' || lpad(v_j.where_null_search,17) ||  ' |');
+    dbms_output.put_line('| ' || rpad(v_j.column_name,31) || ' | ' || rpad(v_j.timestamp,17) ||' | '|| lpad(v_j.where_equal_search,14) || ' | ' || lpad(v_j.equal_join,6) || ' | ' || lpad(v_j.none_equal_join,7) || ' | ' || lpad(v_j.where_range_search,18) || ' | ' || lpad(v_j.where_like_search,17) || ' | ' || lpad(v_j.where_null_search,17) ||  ' |');
     end loop;
-    dbms_output.put_line('----------------------------------------------------------------------------------------------------------------------------------------------');
+    dbms_output.put_line('--------------------------------------------------------------------------------------------------------------------------------------------------------');
   close c_j;
 
   else
