@@ -13281,8 +13281,8 @@ col KILL_SQL for a56
 col "P1 P2 P3" for a34
 col logon_time for a10
 col kill_sql for a60
-prompt =======================
 prompt display the active sessions and events in current node
+prompt =======================
 select /*+ ordered use_nl(a,b) */
     trim(to_char(a.sql_id))                                                              as sql_id,
     b.spid                                                                               as spid,
